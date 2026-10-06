@@ -1,29 +1,35 @@
-/* My Dents — front-end Vanilla JS + Supabase */
+/* My Dents — núcleo (auth, navegação, helpers, modal, abas) + telas Início, Pacientes, Agenda e Planos.
+   Os demais módulos (cadastros, orcamentos, debitos, caixa, producao, financeiro) se registram com MD.register(). */
 (() => {
   'use strict';
 
   const cfg = window.MYDENTS_CONFIG || {};
   const db = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
 
+  /* ---------- helpers ---------- */
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const digits = (v) => String(v || '').replace(/\D/g, '');
   const fmtCPF = (v) => digits(v).replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
   const fmtDT = (iso) => new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
-  const brl = (n) => Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  const today = () => new Date().toLocaleDateString('sv-SE'); // YYYY-MM-DD local
+  const fmtD = (d) => (d ? new Date(String(d).slice(0, 10) + 'T00:00').toLocaleDateString('pt-BR') : '–');
+  const brl = (n) => Number(n || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const num = (v) => { const n = parseFloat(String(v ?? '').replace(',', '.')); return Number.isFinite(n) ? n : 0; };
+  const today = () => new Date().toLocaleDateString('sv-SE'); // YYYY-MM-DD (fuso local)
+  const monthStart = (d = new Date()) => new Date(d.getFullYear(), d.getMonth(), 1).toLocaleDateString('sv-SE');
+  const monthEnd = (d = new Date()) => new Date(d.getFullYear(), d.getMonth() + 1, 0).toLocaleDateString('sv-SE');
+  const daysTo = (d) => Math.round((new Date(String(d).slice(0, 10) + 'T00:00') - new Date(today() + 'T00:00')) / 86400000);
 
-  const state = { unidades: [], dentistas: [], pacientes: [], planos: [], unidadeId: '' };
+  const state = { unidades: [], dentistas: [], pacientes: [], planos: [], procedimentos: [], contas: [], perfil: {}, user: null, unidadeId: '' };
 
-  /* ---------- utilidades de UI ---------- */
   let toastTimer;
   function toast(msg, error = false) {
     const t = $('#toast');
     t.textContent = msg;
     t.className = 'show' + (error ? ' error' : '');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => (t.className = ''), 3500);
+    toastTimer = setTimeout(() => (t.className = ''), error ? 6000 : 3500);
   }
 
   function validarCPF(cpf) {
@@ -37,196 +43,273 @@
     return true;
   }
 
-  const options = (list, label, placeholder) =>
-    `<option value="">${placeholder}</option>` + list.map((i) => `<option value="${esc(i.id)}">${esc(label(i))}</option>`).join('');
+  const opts = (list, label, placeholder = 'Selecione…', selected = '') =>
+    (placeholder === null ? '' : `<option value="">${esc(placeholder)}</option>`) +
+    list.map((i) => `<option value="${esc(i.id ?? i.value)}"${String(i.id ?? i.value) === String(selected) ? ' selected' : ''}>${esc(label(i))}</option>`).join('');
 
-  function fillSelects() {
-    $$('[data-unidades]').forEach((s) => (s.innerHTML = options(state.unidades, (u) => u.nome, 'Selecione…')));
-    $$('[data-dentistas]').forEach((s) => (s.innerHTML = options(state.dentistas, (d) => d.nome, 'Selecione…')));
-    $$('[data-pacientes]').forEach((s) => (s.innerHTML = options(state.pacientes, (p) => p.nome, 'Selecione…')));
-    $$('[data-planos]').forEach((s) => (s.innerHTML = options(state.planos, (p) => `${p.nome} — ${brl(p.valor_mensal)}`, 'Selecione…')));
-    $('#filtro-unidade').innerHTML = options(state.unidades, (u) => u.nome, 'Todas as unidades');
-    $('#filtro-unidade').value = state.unidadeId;
+  const rows = (list, fn, vazio, colspan) =>
+    list.length ? list.map(fn).join('') : `<tr><td colspan="${colspan}" class="empty">${esc(vazio)}</td></tr>`;
+
+  const table = (head, body) =>
+    `<div class="table-wrap"><table><thead><tr>${head.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>`;
+
+  const badge = (s) => `<span class="badge ${esc(s)}">${esc(String(s).replace('_', ' '))}</span>`;
+  const porUnidade = (q, col = 'unidade_id') => (state.unidadeId ? q.eq(col, state.unidadeId) : q);
+  const can = (p) => !!(state.perfil.admin || state.perfil[p]);
+  const nomeUnidade = () => state.unidades.find((u) => u.id === state.unidadeId)?.nome || 'Todas as unidades';
+
+  async function rpc(name, args) {
+    const { data, error } = await db.rpc(name, args);
+    if (error) throw new Error(error.message);
+    return data;
+  }
+  async function q(promise) {
+    const { data, error, count } = await promise;
+    if (error) throw new Error(error.message);
+    return count != null && data == null ? count : data;
   }
 
-  function rows(tbody, list, cols, emptyMsg, colspan) {
-    tbody.innerHTML = list.length ? list.map(cols).join('') : `<tr><td colspan="${colspan}" class="empty">${emptyMsg}</td></tr>`;
-  }
-
-  /* ---------- dados ---------- */
-  async function carregarBase() {
-    const [u, d, p, pl] = await Promise.all([
-      db.from('unidades').select('*').eq('ativo', true).order('nome'),
-      db.from('dentistas').select('*, unidades(nome)').eq('ativo', true).order('nome'),
-      db.from('pacientes').select('*, unidades(nome)').order('nome'),
-      db.from('planos').select('*').eq('ativo', true).order('valor_mensal'),
-    ]);
-    for (const r of [u, d, p, pl]) if (r.error) return toast('Erro ao carregar dados: ' + r.error.message, true);
-    Object.assign(state, { unidades: u.data, dentistas: d.data, pacientes: p.data, planos: pl.data });
-    fillSelects();
-  }
-
-  const porUnidade = (q) => (state.unidadeId ? q.eq('unidade_id', state.unidadeId) : q);
-
-  /* ---------- views ---------- */
-  const views = {
-    async dashboard() {
-      const ini = new Date(today() + 'T00:00:00').toISOString();
-      const fim = new Date(today() + 'T23:59:59').toISOString();
-      const hoje = await porUnidade(db.from('agendamentos').select('status').gte('data_hora', ini).lte('data_hora', fim).neq('status', 'cancelado'));
-      const pac = await porUnidade(db.from('pacientes').select('id', { count: 'exact', head: true }));
-      const ass = await db.from('assinaturas').select('id', { count: 'exact', head: true }).eq('status', 'ativa');
-      $('#st-hoje').textContent = hoje.data?.length ?? '–';
-      $('#st-conf').textContent = hoje.data?.filter((a) => a.status === 'confirmado').length ?? '–';
-      $('#st-pac').textContent = pac.count ?? '–';
-      $('#st-ass').textContent = ass.count ?? '–';
-
-      const prox = await porUnidade(
-        db.from('agendamentos').select('*, pacientes(nome), dentistas(nome), unidades(nome)')
-          .gte('data_hora', new Date().toISOString()).neq('status', 'cancelado').order('data_hora').limit(8)
-      );
-      rows($('#tb-proximos'), prox.data || [], (a) =>
-        `<tr><td>${fmtDT(a.data_hora)}</td><td>${esc(a.pacientes?.nome)}</td><td>${esc(a.dentistas?.nome)}</td><td>${esc(a.unidades?.nome)}</td><td><span class="badge ${a.status}">${a.status}</span></td></tr>`,
-        'Nenhum atendimento futuro.', 5);
-    },
-
-    async pacientes() {
-      const termo = $('#busca-paciente').value.trim().toLowerCase();
-      const lista = state.pacientes.filter((p) =>
-        (!state.unidadeId || p.unidade_id === state.unidadeId) &&
-        (!termo || p.nome.toLowerCase().includes(termo) || p.cpf.includes(digits(termo) || '§')));
-      rows($('#tb-pacientes'), lista, (p) =>
-        `<tr><td>${esc(p.nome)}</td><td>${fmtCPF(p.cpf)}</td><td>${esc(p.telefone)}</td><td>${esc(p.unidades?.nome)}</td>
-         <td><button class="btn ghost sm" data-agendar="${esc(p.id)}">Agendar</button></td></tr>`,
-        'Nenhum paciente encontrado.', 5);
-    },
-
-    async agenda() {
-      const dia = $('#filtro-data').value || today();
-      const q = porUnidade(
-        db.from('agendamentos').select('*, pacientes(nome), dentistas(nome), unidades(nome)')
-          .gte('data_hora', new Date(dia + 'T00:00:00').toISOString())
-          .lte('data_hora', new Date(dia + 'T23:59:59').toISOString()).order('data_hora')
-      );
-      const { data, error } = await q;
-      if (error) return toast(error.message, true);
-      rows($('#tb-agenda'), data, (a) =>
-        `<tr><td>${new Date(a.data_hora).toLocaleTimeString('pt-BR', { timeStyle: 'short' })}</td><td>${esc(a.pacientes?.nome)}</td><td>${esc(a.dentistas?.nome)}</td>
-         <td>${esc(a.procedimento)}</td><td>${esc(a.unidades?.nome)}</td>
-         <td><select data-status="${esc(a.id)}">${['agendado', 'confirmado', 'em_atendimento', 'realizado', 'faltou', 'cancelado']
-           .map((s) => `<option ${s === a.status ? 'selected' : ''}>${s}</option>`).join('')}</select></td></tr>`,
-        'Sem agendamentos neste dia.', 6);
-    },
-
-    async planos() {
-      $('#lista-planos').innerHTML = state.planos.map((p) =>
-        `<div class="card"><b>${esc(p.nome)}</b><div style="font-size:1.4rem;margin:.3rem 0">${brl(p.valor_mensal)}<small>/mês</small></div><span style="color:var(--muted);font-size:.85rem">${esc(p.descricao)}</span></div>`).join('');
-      const { data, error } = await db.from('assinaturas').select('*, pacientes(nome), planos(nome)').order('criado_em', { ascending: false });
-      if (error) return toast(error.message, true);
-      rows($('#tb-assin'), data, (a) =>
-        `<tr><td>${esc(a.pacientes?.nome)}</td><td>${esc(a.planos?.nome)}</td><td>${new Date(a.inicio + 'T00:00').toLocaleDateString('pt-BR')}</td>
-         <td><span class="badge ${a.status}">${a.status}</span></td>
-         <td>${a.status === 'ativa' ? `<button class="btn ghost sm" data-cancelar-ass="${esc(a.id)}">Cancelar</button>` : ''}</td></tr>`,
-        'Nenhuma assinatura.', 5);
-    },
-
-    async dentistas() {
-      rows($('#tb-dentistas'), state.dentistas, (d) =>
-        `<tr><td>${esc(d.nome)}</td><td>${fmtCPF(d.cpf)}</td><td>${esc(d.especialidade)}</td><td>${esc(d.unidades?.nome)}</td></tr>`,
-        'Nenhum dentista cadastrado.', 4);
-    },
-  };
-
-  const titles = { dashboard: 'Início', pacientes: 'Pacientes', agenda: 'Agenda', planos: 'Planos / Assinaturas', dentistas: 'Dentistas' };
-
-  async function navigate() {
-    const v = location.hash.slice(1) in views ? location.hash.slice(1) : 'dashboard';
-    $$('.view').forEach((s) => (s.hidden = s.id !== 'view-' + v));
-    $$('.nav a').forEach((a) => a.classList.toggle('active', a.dataset.view === v));
-    $('#view-title').textContent = titles[v];
-    $('#sidebar').classList.remove('open');
-    await views[v]();
-  }
-
-  /* ---------- salvar dados (exemplo de INSERT) ---------- */
-  function formData(form) {
-    const o = Object.fromEntries(new FormData(form));
-    for (const k in o) if (o[k] === '') o[k] = null;
+  /* ---------- formulários e modal ---------- */
+  function formValues(form) {
+    const o = {};
+    for (const [k, v] of new FormData(form)) o[k] = typeof v === 'string' && v.trim() === '' ? null : v;
     return o;
   }
 
-  async function salvar(form, dlg, tabela, payload, okMsg, depois) {
-    const btn = form.querySelector('button:not([type])');
-    btn.disabled = true;
-    const { error } = await db.from(tabela).insert(payload);
-    btn.disabled = false;
-    if (error) {
-      const msg = error.code === '23505'
-        ? (tabela === 'agendamentos' ? 'Esse dentista já tem atendimento neste horário.' : 'Já existe um cadastro com esse CPF.')
-        : error.message;
-      return toast(msg, true);
+  function modal({ title, body, submit = 'Salvar', wide = false, onSubmit, onOpen, extra = '' }) {
+    const dlg = document.createElement('dialog');
+    if (wide) dlg.className = 'wide';
+    dlg.innerHTML = `<form novalidate><h3>${esc(title)}</h3><div class="modal-body">${body}</div>
+      <div class="form-actions">${extra}<button type="button" class="btn ghost" data-close>${onSubmit ? 'Cancelar' : 'Fechar'}</button>
+      ${onSubmit ? `<button class="btn" data-submit>${esc(submit)}</button>` : ''}</div></form>`;
+    document.body.appendChild(dlg);
+    const form = dlg.querySelector('form');
+    dlg.querySelector('[data-close]').onclick = () => dlg.close();
+    dlg.addEventListener('close', () => dlg.remove());
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!onSubmit) return;
+      if (!form.checkValidity()) { form.reportValidity(); return; }
+      const btn = form.querySelector('[data-submit]');
+      btn.disabled = true;
+      try {
+        const r = await onSubmit(formValues(form), form, dlg);
+        if (r !== false) dlg.close();
+      } catch (err) {
+        if (!err?.cancel) toast(err?.message || String(err), true);
+      } finally { btn.disabled = false; }
+    });
+    dlg.showModal();
+    if (onOpen) onOpen(form, dlg);
+    return dlg;
+  }
+
+  const tabState = {};
+  function tabs(host, id, list) {
+    const cur = list.some((t) => t.id === tabState[id]) ? tabState[id] : list[0].id;
+    host.innerHTML = `<div class="tabs">${list.map((t) => `<button class="tab${t.id === cur ? ' active' : ''}" data-tab="${t.id}">${esc(t.label)}</button>`).join('')}</div><div class="tab-body"></div>`;
+    $$('.tab', host).forEach((b) => (b.onclick = () => { tabState[id] = b.dataset.tab; tabs(host, id, list); }));
+    return Promise.resolve(list.find((t) => t.id === cur).render($('.tab-body', host))).catch((e) => toast(e.message, true));
+  }
+
+  /* ---------- registro de telas ---------- */
+  const views = [];
+  const register = (id, title, render, order = 100) => { views.push({ id, title, render, order }); views.sort((a, b) => a.order - b.order); };
+  let navToken = 0;
+
+  async function navigate() {
+    const v = views.find((x) => x.id === location.hash.slice(1)) || views[0];
+    const token = ++navToken;
+    $$('.nav a').forEach((a) => a.classList.toggle('active', a.dataset.view === v.id));
+    $('#view-title').textContent = v.title;
+    $('#sidebar').classList.remove('open');
+    const sec = document.createElement('section');
+    sec.className = 'view';
+    try { await v.render(sec); } catch (e) { sec.innerHTML = `<div class="card empty">Erro ao carregar: ${esc(e.message)}</div>`; }
+    if (token !== navToken) return;
+    $('#view-root').replaceChildren(sec);
+  }
+  const refresh = () => navigate();
+
+  /* ---------- dados-base ---------- */
+  async function carregarBase() {
+    const get = (p) => p.then((r) => { if (r.error) throw new Error(r.error.message); return r.data; });
+    const [u, d, p, pl, pr, c, pf] = await Promise.all([
+      get(db.from('unidades').select('*').eq('ativo', true).order('nome')),
+      get(db.from('dentistas').select('*, unidades(nome)').eq('ativo', true).order('nome')),
+      get(db.from('pacientes').select('*, unidades(nome)').order('nome')),
+      get(db.from('planos').select('*').eq('ativo', true).order('valor_mensal')),
+      get(db.from('procedimentos').select('*').order('nome')),
+      get(db.from('contas_bancarias').select('*').eq('ativo', true).order('nome')),
+      get(db.from('perfis_usuario').select('*').eq('user_id', state.user.id)),
+    ]);
+    Object.assign(state, { unidades: u, dentistas: d, pacientes: p, planos: pl, procedimentos: pr, contas: c, perfil: pf[0] || {} });
+    $('#filtro-unidade').innerHTML = opts(state.unidades, (x) => x.nome, 'Todas as unidades', state.unidadeId);
+  }
+
+  /* ---------- Início ---------- */
+  register('dashboard', 'Início', async (el) => {
+    el.innerHTML = `<div class="grid">
+        <div class="card stat"><span>Atendimentos hoje</span><b id="st-hoje">–</b></div>
+        <div class="card stat"><span>Confirmados hoje</span><b id="st-conf">–</b></div>
+        <div class="card stat"><span>Pacientes</span><b id="st-pac">–</b></div>
+        <div class="card stat"><span>Débitos em aberto</span><b id="st-deb">–</b></div>
+        <div class="card stat"><span>Cartão a receber</span><b id="st-cart">–</b></div>
+        <div class="card stat"><span>Comissões a pagar</span><b id="st-com">–</b></div>
+      </div>
+      <div class="card" id="alertas" hidden></div>
+      <div class="card"><h3 style="margin-top:0">Próximos atendimentos</h3><div id="proximos"></div></div>`;
+    const ini = new Date(today() + 'T00:00:00').toISOString();
+    const fim = new Date(today() + 'T23:59:59').toISOString();
+    const [hoje, pac, deb, cart, prev, prox] = await Promise.all([
+      porUnidade(db.from('agendamentos').select('status').gte('data_hora', ini).lte('data_hora', fim).neq('status', 'cancelado')),
+      porUnidade(db.from('pacientes').select('id', { count: 'exact', head: true })),
+      porUnidade(db.from('debitos').select('saldo').in('status', ['pendente', 'parcial'])),
+      porUnidade(db.from('recebimentos').select('valor_liquido').eq('status', 'previsto')),
+      db.from('previsoes').select('*, dentistas(nome)').eq('status', 'prevista').order('vencimento'),
+      porUnidade(db.from('agendamentos').select('*, pacientes(nome), dentistas(nome), unidades(nome)')
+        .gte('data_hora', new Date().toISOString()).neq('status', 'cancelado').order('data_hora').limit(8)),
+    ]);
+    const sum = (r, k) => (r.data || []).reduce((s, x) => s + Number(x[k]), 0);
+    $('#st-hoje', el).textContent = hoje.data?.length ?? '–';
+    $('#st-conf', el).textContent = hoje.data?.filter((a) => a.status === 'confirmado').length ?? '–';
+    $('#st-pac', el).textContent = pac.count ?? '–';
+    $('#st-deb', el).textContent = brl(sum(deb, 'saldo'));
+    $('#st-cart', el).textContent = brl(sum(cart, 'valor_liquido'));
+    $('#st-com', el).textContent = brl((prev.data || []).filter((p) => p.origem === 'producao').reduce((s, p) => s + Number(p.valor), 0));
+    const urgentes = (prev.data || []).filter((p) => daysTo(p.vencimento) <= 5);
+    if (urgentes.length) {
+      const box = $('#alertas', el);
+      box.hidden = false;
+      box.innerHTML = `<h3 style="margin-top:0">Pagamentos a vencer</h3>` + urgentes.map((p) => {
+        const d = daysTo(p.vencimento);
+        return `<div class="alerta ${d < 0 ? 'vencido' : 'atencao'}">${d < 0 ? 'Vencido' : 'Vence'} ${fmtD(p.vencimento)} · ${esc(p.dentistas?.nome || p.fornecedor || p.descricao)} · ${brl(p.valor)}</div>`;
+      }).join('');
     }
-    dlg.close();
-    form.reset();
-    toast(okMsg);
-    if (depois) await depois();
-    await navigate();
-  }
+    $('#proximos', el).innerHTML = table(['Quando', 'Paciente', 'Dentista', 'Unidade', 'Status'], rows(prox.data || [], (a) =>
+      `<tr><td>${fmtDT(a.data_hora)}</td><td>${esc(a.pacientes?.nome)}</td><td>${esc(a.dentistas?.nome)}</td><td>${esc(a.unidades?.nome)}</td><td>${badge(a.status)}</td></tr>`,
+      'Nenhum atendimento futuro.', 5));
+  }, 10);
 
-  function bindForms() {
-    $('#form-paciente').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const d = formData(e.target);
-      if (!validarCPF(d.cpf)) return toast('CPF inválido.', true);
-      d.cpf = digits(d.cpf);
-      d.telefone = d.telefone.trim();
-      salvar(e.target, $('#dlg-paciente'), 'pacientes', d, 'Paciente cadastrado!', carregarBase);
-    });
-
-    $('#form-dent').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const d = formData(e.target);
-      if (!validarCPF(d.cpf)) return toast('CPF inválido.', true);
-      d.cpf = digits(d.cpf);
-      salvar(e.target, $('#dlg-dent'), 'dentistas', d, 'Dentista cadastrado!', carregarBase);
-    });
-
-    // Exemplo prático: salvar um novo agendamento
-    $('#form-agend').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const d = formData(e.target);
-      d.data_hora = new Date(d.data_hora).toISOString(); // datetime-local -> UTC
-      salvar(e.target, $('#dlg-agend'), 'agendamentos', d, 'Agendamento salvo!');
-    });
-
-    $('#form-assin').addEventListener('submit', (e) => {
-      e.preventDefault();
-      salvar(e.target, $('#dlg-assin'), 'assinaturas', formData(e.target), 'Assinatura criada!');
+  /* ---------- Pacientes ---------- */
+  function novoPaciente() {
+    modal({
+      title: 'Novo paciente',
+      body: `<label>Nome completo<input name="nome" required></label>
+        <div class="form-row">
+          <label>CPF<input name="cpf" required inputmode="numeric" placeholder="000.000.000-00"></label>
+          <label>Telefone<input name="telefone" required inputmode="tel" placeholder="(85) 99999-9999"></label>
+        </div>
+        <div class="form-row">
+          <label>E-mail<input name="email" type="email"></label>
+          <label>Unidade<select name="unidade_id" required>${opts(state.unidades, (u) => u.nome, 'Selecione…', state.unidadeId)}</select></label>
+        </div>
+        <label>Observações<textarea name="observacoes" rows="2"></textarea></label>`,
+      onSubmit: async (v) => {
+        if (!validarCPF(v.cpf)) throw new Error('CPF inválido.');
+        v.cpf = digits(v.cpf);
+        const { error } = await db.from('pacientes').insert(v);
+        if (error) throw new Error(error.code === '23505' ? 'Já existe um paciente com esse CPF.' : error.message);
+        toast('Paciente cadastrado!');
+        await carregarBase();
+        refresh();
+      },
     });
   }
 
-  function bindUI() {
-    const open = (id) => { fillSelects(); $(id).showModal(); };
-    $('#btn-novo-paciente').onclick = () => open('#dlg-paciente');
-    $('#btn-novo-agend').onclick = () => open('#dlg-agend');
-    $('#btn-nova-assin').onclick = () => open('#dlg-assin');
-    $('#btn-novo-dent').onclick = () => open('#dlg-dent');
-    $$('[data-close]').forEach((b) => (b.onclick = () => b.closest('dialog').close()));
+  register('pacientes', 'Pacientes', async (el) => {
+    el.innerHTML = `<div class="actions" style="margin-bottom:1rem">
+        <input type="search" id="busca" placeholder="Buscar por nome ou CPF…" style="min-width:240px">
+        <button class="btn" id="novo">+ Novo paciente</button></div><div id="lista"></div>`;
+    const draw = () => {
+      const t = $('#busca', el).value.trim().toLowerCase();
+      const lista = state.pacientes.filter((p) => (!state.unidadeId || p.unidade_id === state.unidadeId) &&
+        (!t || p.nome.toLowerCase().includes(t) || (digits(t) && p.cpf.includes(digits(t)))));
+      $('#lista', el).innerHTML = table(['Nome', 'CPF', 'Telefone', 'Unidade', ''], rows(lista, (p) =>
+        `<tr><td>${esc(p.nome)}</td><td>${fmtCPF(p.cpf)}</td><td>${esc(p.telefone)}</td><td>${esc(p.unidades?.nome)}</td>
+         <td class="nowrap"><button class="btn ghost sm" data-agendar="${esc(p.id)}">Agendar</button>
+         <button class="btn ghost sm" data-orcar="${esc(p.id)}">Orçamento</button></td></tr>`, 'Nenhum paciente encontrado.', 5));
+    };
+    $('#busca', el).oninput = draw;
+    $('#novo', el).onclick = novoPaciente;
+    draw();
+  }, 20);
 
-    $('#filtro-unidade').onchange = (e) => { state.unidadeId = e.target.value; navigate(); };
-    $('#busca-paciente').oninput = () => views.pacientes();
-    $('#filtro-data').value = today();
-    $('#filtro-data').onchange = () => views.agenda();
+  /* ---------- Agenda ---------- */
+  function novoAgendamento(pacienteId = '') {
+    modal({
+      title: 'Novo agendamento',
+      body: `<label>Paciente<select name="paciente_id" required>${opts(state.pacientes, (p) => p.nome, 'Selecione…', pacienteId)}</select></label>
+        <div class="form-row">
+          <label>Dentista<select name="dentista_id" required>${opts(state.dentistas, (d) => d.nome)}</select></label>
+          <label>Unidade<select name="unidade_id" required>${opts(state.unidades, (u) => u.nome, 'Selecione…', state.unidadeId)}</select></label>
+        </div>
+        <div class="form-row">
+          <label>Data e hora<input name="data_hora" type="datetime-local" required step="900"></label>
+          <label>Procedimento<input name="procedimento" placeholder="Ex.: Avaliação ortodôntica"></label>
+        </div>
+        <label>Observações<textarea name="observacoes" rows="2"></textarea></label>`,
+      submit: 'Agendar',
+      onSubmit: async (v) => {
+        v.data_hora = new Date(v.data_hora).toISOString();
+        const { error } = await db.from('agendamentos').insert(v);   // exemplo prático de INSERT
+        if (error) throw new Error(error.code === '23505' ? 'Esse dentista já tem atendimento neste horário.' : error.message);
+        toast('Agendamento salvo!');
+        refresh();
+      },
+    });
+  }
+
+  register('agenda', 'Agenda', async (el) => {
+    el.innerHTML = `<div class="actions" style="margin-bottom:1rem"><input type="date" id="dia" value="${today()}">
+      <button class="btn" id="novo">+ Novo agendamento</button></div><div id="lista"></div>`;
+    const draw = async () => {
+      const dia = $('#dia', el).value || today();
+      const { data, error } = await porUnidade(db.from('agendamentos').select('*, pacientes(nome), dentistas(nome), unidades(nome)')
+        .gte('data_hora', new Date(dia + 'T00:00:00').toISOString()).lte('data_hora', new Date(dia + 'T23:59:59').toISOString()).order('data_hora'));
+      if (error) return toast(error.message, true);
+      $('#lista', el).innerHTML = table(['Horário', 'Paciente', 'Dentista', 'Procedimento', 'Unidade', 'Status'], rows(data, (a) =>
+        `<tr><td>${new Date(a.data_hora).toLocaleTimeString('pt-BR', { timeStyle: 'short' })}</td><td>${esc(a.pacientes?.nome)}</td><td>${esc(a.dentistas?.nome)}</td>
+         <td>${esc(a.procedimento)}</td><td>${esc(a.unidades?.nome)}</td>
+         <td><select data-status="${esc(a.id)}">${['agendado', 'confirmado', 'em_atendimento', 'realizado', 'faltou', 'cancelado']
+           .map((s) => `<option${s === a.status ? ' selected' : ''}>${s}</option>`).join('')}</select></td></tr>`, 'Sem agendamentos neste dia.', 6));
+    };
+    $('#dia', el).onchange = draw;
+    $('#novo', el).onclick = () => novoAgendamento();
+    await draw();
+  }, 30);
+
+  /* ---------- Planos / assinaturas ---------- */
+  register('planos', 'Planos / Assinaturas', async (el) => {
+    el.innerHTML = `<div class="actions" style="margin-bottom:1rem"><button class="btn" id="novo">+ Nova assinatura</button></div>
+      <div class="grid">${state.planos.map((p) => `<div class="card"><b>${esc(p.nome)}</b>
+        <div style="font-size:1.4rem;margin:.3rem 0">${brl(p.valor_mensal)}<small>/mês</small></div>
+        <span style="color:var(--muted);font-size:.85rem">${esc(p.descricao)}</span></div>`).join('')}</div>
+      <h3>Assinaturas</h3><div id="lista"></div>`;
+    $('#novo', el).onclick = () => modal({
+      title: 'Nova assinatura', submit: 'Assinar',
+      body: `<label>Paciente<select name="paciente_id" required>${opts(state.pacientes, (p) => p.nome)}</select></label>
+        <label>Plano<select name="plano_id" required>${opts(state.planos, (p) => `${p.nome} — ${brl(p.valor_mensal)}`)}</select></label>`,
+      onSubmit: async (v) => { await q(db.from('assinaturas').insert(v)); toast('Assinatura criada!'); refresh(); },
+    });
+    const data = await q(db.from('assinaturas').select('*, pacientes(nome), planos(nome)').order('criado_em', { ascending: false }));
+    $('#lista', el).innerHTML = table(['Paciente', 'Plano', 'Início', 'Status', ''], rows(data, (a) =>
+      `<tr><td>${esc(a.pacientes?.nome)}</td><td>${esc(a.planos?.nome)}</td><td>${fmtD(a.inicio)}</td><td>${badge(a.status)}</td>
+       <td>${a.status === 'ativa' ? `<button class="btn ghost sm" data-cancelar-ass="${esc(a.id)}">Cancelar</button>` : ''}</td></tr>`, 'Nenhuma assinatura.', 5));
+  }, 90);
+
+  /* ---------- eventos globais ---------- */
+  function bindGlobal() {
+    $('#filtro-unidade').onchange = (e) => { state.unidadeId = e.target.value; refresh(); };
     $('#btn-menu').onclick = () => $('#sidebar').classList.toggle('open');
     window.addEventListener('hashchange', navigate);
-
     document.addEventListener('click', async (e) => {
       const ag = e.target.closest('[data-agendar]');
-      if (ag) { open('#dlg-agend'); $('#form-agend [name=paciente_id]').value = ag.dataset.agendar; }
-      const can = e.target.closest('[data-cancelar-ass]');
-      if (can && confirm('Cancelar esta assinatura?')) {
-        const { error } = await db.from('assinaturas').update({ status: 'cancelada' }).eq('id', can.dataset.cancelarAss);
-        error ? toast(error.message, true) : (toast('Assinatura cancelada.'), views.planos());
+      if (ag) novoAgendamento(ag.dataset.agendar);
+      const cn = e.target.closest('[data-cancelar-ass]');
+      if (cn && confirm('Cancelar esta assinatura?')) {
+        const { error } = await db.from('assinaturas').update({ status: 'cancelada' }).eq('id', cn.dataset.cancelarAss);
+        error ? toast(error.message, true) : (toast('Assinatura cancelada.'), refresh());
       }
     });
     document.addEventListener('change', async (e) => {
@@ -238,36 +321,38 @@
   }
 
   /* ---------- autenticação ---------- */
-  function mostrar(logado, user) {
-    $('#login-view').hidden = logado;
-    $('#app-view').hidden = !logado;
-    if (logado) $('#user-email').textContent = user.email;
-  }
+  const mostrar = (logado) => { $('#login-view').hidden = logado; $('#app-view').hidden = !logado; };
+  let iniciado = false, ligado = false;
 
-  let iniciado = false;
-  let bound = false;
   async function aoLogar(user) {
-    mostrar(true, user);
+    state.user = user;
+    mostrar(true);
+    $('#user-email').textContent = user.email;
+    if (!ligado) { ligado = true; bindGlobal(); }
     if (iniciado) return;
     iniciado = true;
-    if (!bound) { bound = true; bindUI(); bindForms(); }
-    await carregarBase();
+    try {
+      await carregarBase();
+    } catch (e) { toast('Erro ao carregar dados: ' + e.message, true); }
+    $('#nav').innerHTML = views.map((v) => `<a href="#${v.id}" data-view="${v.id}">${esc(v.title)}</a>`).join('');
     await navigate();
   }
 
-  $('#login-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    $('#login-err').textContent = '';
-    const { error } = await db.auth.signInWithPassword({ email: $('#login-email').value.trim(), password: $('#login-senha').value });
-    if (error) $('#login-err').textContent = 'E-mail ou senha inválidos.';
-  });
+  function start() {
+    $('#login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      $('#login-err').textContent = '';
+      const { error } = await db.auth.signInWithPassword({ email: $('#login-email').value.trim(), password: $('#login-senha').value });
+      if (error) $('#login-err').textContent = 'E-mail ou senha inválidos.';
+    });
+    $('#btn-logout').addEventListener('click', () => db.auth.signOut());
+    db.auth.onAuthStateChange((_evt, session) => {
+      if (session) aoLogar(session.user);
+      else { iniciado = false; mostrar(false); }
+    });
+    db.auth.getSession().then(({ data }) => { if (!data.session) mostrar(false); });
+  }
 
-  $('#btn-logout').addEventListener('click', () => db.auth.signOut());
-
-  db.auth.onAuthStateChange((_evt, session) => {
-    if (session) aoLogar(session.user);
-    else { iniciado = false; mostrar(false); }
-  });
-
-  db.auth.getSession().then(({ data }) => { if (!data.session) mostrar(false); });
+  window.MD = { db, $, $$, esc, digits, fmtCPF, fmtDT, fmtD, brl, num, today, monthStart, monthEnd, daysTo, toast, state, opts, rows, table, badge,
+    porUnidade, can, nomeUnidade, rpc, q, modal, tabs, register, refresh, carregarBase, formValues, validarCPF, novoPaciente, novoAgendamento, start };
 })();
