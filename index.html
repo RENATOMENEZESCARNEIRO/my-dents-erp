@@ -4,14 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>My Dents</title>
-  <link rel="stylesheet" href="css/styles.css?v=3">
+  <link rel="icon" type="image/png" href="img/favicon.png">
+<link rel="stylesheet" href="css/styles.css?v=4">
 </head>
 <body>
 
 <!-- LOGIN (e-mail + senha) -->
 <section id="login-view" hidden>
   <form class="login-card" id="login-form">
-    <h1>My Dents</h1>
+    <img src="img/logo.png" alt="My Dents Odontologia & Estética">
+<h1>My Dents</h1>
     <p>Acesse o painel da clínica</p>
     <label>E-mail<input type="email" id="login-email" required autocomplete="username"></label>
     <label>Senha<input type="password" id="login-senha" required autocomplete="current-password"></label>
@@ -23,11 +25,11 @@
 <!-- APP: o menu e as telas são registrados pelos módulos em js/ -->
 <div id="app-view" hidden>
   <aside id="sidebar">
-    <div class="logo">My <span>Dents</span></div>
+    <div class="logo"><img src="img/logo.png" alt="My Dents"></div>
     <nav class="nav" id="nav"></nav>
-    <div style="margin-top:auto;font-size:.8rem;color:#9fbac2">
+    <div style="margin-top:auto;font-size:.8rem;color:#5f7680">
       <div id="user-email" style="word-break:break-all;margin-bottom:.5rem"></div>
-      <button class="btn ghost sm" id="btn-logout" style="color:#fff;border-color:#ffffff40">Sair</button>
+      <button class="btn ghost sm" id="btn-logout" >Sair</button>
     </div>
   </aside>
 
@@ -48,14 +50,14 @@
 <div id="toast" role="status"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/config.js?v=3"></script>
-<script src="js/app.js?v=3"></script>
-<script src="js/cadastros.js?v=3"></script>
-<script src="js/orcamentos.js?v=3"></script>
-<script src="js/debitos.js?v=3"></script>
-<script src="js/caixa.js?v=3"></script>
-<script src="js/producao.js?v=3"></script>
-<script src="js/financeiro.js?v=3"></script>
+<script src="js/config.js?v=4"></script>
+<script src="js/app.js?v=4"></script>
+<script src="js/cadastros.js?v=4"></script>
+<script src="js/orcamentos.js?v=4"></script>
+<script src="js/debitos.js?v=4"></script>
+<script src="js/caixa.js?v=4"></script>
+<script src="js/producao.js?v=4"></script>
+<script src="js/financeiro.js?v=4"></script>
 <script>window.MD.start();</script>
 </body>
 </html>
