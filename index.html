@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Dents</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- LOGIN (e-mail + senha) -->
+<section id="login-view" hidden>
+  <form class="login-card" id="login-form">
+    <h1>My Dents</h1>
+    <p>Acesse o painel da clínica</p>
+    <label>E-mail<input type="email" id="login-email" required autocomplete="username"></label>
+    <label>Senha<input type="password" id="login-senha" required autocomplete="current-password"></label>
+    <div class="err" id="login-err"></div>
+    <button class="btn" style="width:100%">Entrar</button>
+  </form>
+</section>
+
+<!-- APP -->
+<div id="app-view" hidden>
+  <aside id="sidebar">
+    <div class="logo">My <span>Dents</span></div>
+    <nav class="nav">
+      <a href="#dashboard" data-view="dashboard">Início</a>
+      <a href="#pacientes" data-view="pacientes">Pacientes</a>
+      <a href="#agenda" data-view="agenda">Agenda</a>
+      <a href="#planos" data-view="planos">Planos / Assinaturas</a>
+      <a href="#dentistas" data-view="dentistas">Dentistas</a>
+    </nav>
+    <div style="margin-top:auto;font-size:.8rem;color:#9fbac2">
+      <div id="user-email" style="word-break:break-all;margin-bottom:.5rem"></div>
+      <button class="btn ghost sm" id="btn-logout" style="color:#fff;border-color:#ffffff40">Sair</button>
+    </div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <div class="actions">
+        <button class="btn ghost sm menu-btn" id="btn-menu">☰</button>
+        <h2 id="view-title">Início</h2>
+      </div>
+      <div class="actions">
+        <select id="filtro-unidade" aria-label="Unidade"></select>
+      </div>
+    </div>
+
+    <!-- Início -->
+    <section class="view" id="view-dashboard">
+      <div class="grid">
+        <div class="card stat"><span>Atendimentos hoje</span><b id="st-hoje">–</b></div>
+        <div class="card stat"><span>Confirmados hoje</span><b id="st-conf">–</b></div>
+        <div class="card stat"><span>Pacientes</span><b id="st-pac">–</b></div>
+        <div class="card stat"><span>Assinaturas ativas</span><b id="st-ass">–</b></div>
+      </div>
+      <div class="card"><h3 style="margin-top:0">Próximos atendimentos</h3>
+        <div class="table-wrap" style="border:0"><table><thead><tr><th>Quando</th><th>Paciente</th><th>Dentista</th><th>Unidade</th><th>Status</th></tr></thead><tbody id="tb-proximos"></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- Pacientes -->
+    <section class="view" id="view-pacientes" hidden>
+      <div class="actions" style="margin-bottom:1rem">
+        <input type="search" id="busca-paciente" placeholder="Buscar por nome ou CPF…" style="min-width:240px">
+        <button class="btn" id="btn-novo-paciente">+ Novo paciente</button>
+      </div>
+      <div class="table-wrap"><table><thead><tr><th>Nome</th><th>CPF</th><th>Telefone</th><th>Unidade</th><th></th></tr></thead><tbody id="tb-pacientes"></tbody></table></div>
+    </section>
+
+    <!-- Agenda -->
+    <section class="view" id="view-agenda" hidden>
+      <div class="actions" style="margin-bottom:1rem">
+        <input type="date" id="filtro-data" aria-label="Data">
+        <button class="btn" id="btn-novo-agend">+ Novo agendamento</button>
+      </div>
+      <div class="table-wrap"><table><thead><tr><th>Horário</th><th>Paciente</th><th>Dentista</th><th>Procedimento</th><th>Unidade</th><th>Status</th></tr></thead><tbody id="tb-agenda"></tbody></table></div>
+    </section>
+
+    <!-- Planos -->
+    <section class="view" id="view-planos" hidden>
+      <div class="actions" style="margin-bottom:1rem"><button class="btn" id="btn-nova-assin">+ Nova assinatura</button></div>
+      <div class="grid" id="lista-planos"></div>
+      <h3>Assinaturas</h3>
+      <div class="table-wrap"><table><thead><tr><th>Paciente</th><th>Plano</th><th>Início</th><th>Status</th><th></th></tr></thead><tbody id="tb-assin"></tbody></table></div>
+    </section>
+
+    <!-- Dentistas -->
+    <section class="view" id="view-dentistas" hidden>
+      <div class="actions" style="margin-bottom:1rem"><button class="btn" id="btn-novo-dent">+ Novo dentista</button></div>
+      <div class="table-wrap"><table><thead><tr><th>Nome</th><th>CPF</th><th>Especialidade</th><th>Unidade</th></tr></thead><tbody id="tb-dentistas"></tbody></table></div>
+    </section>
+  </main>
+</div>
+
+<!-- MODAIS -->
+<dialog id="dlg-paciente"><form id="form-paciente" method="dialog">
+  <h3>Novo paciente</h3>
+  <label>Nome completo<input name="nome" required></label>
+  <div class="form-row">
+    <label>CPF<input name="cpf" required inputmode="numeric" placeholder="000.000.000-00"></label>
+    <label>Telefone<input name="telefone" required inputmode="tel" placeholder="(85) 99999-9999"></label>
+  </div>
+  <div class="form-row">
+    <label>E-mail<input name="email" type="email"></label>
+    <label>Unidade<select name="unidade_id" data-unidades required></select></label>
+  </div>
+  <label>Observações<textarea name="observacoes" rows="2"></textarea></label>
+  <div class="form-actions"><button type="button" class="btn ghost" data-close>Cancelar</button><button class="btn">Salvar</button></div>
+</form></dialog>
+
+<dialog id="dlg-agend"><form id="form-agend" method="dialog">
+  <h3>Novo agendamento</h3>
+  <label>Paciente<select name="paciente_id" data-pacientes required></select></label>
+  <div class="form-row">
+    <label>Dentista<select name="dentista_id" data-dentistas required></select></label>
+    <label>Unidade<select name="unidade_id" data-unidades required></select></label>
+  </div>
+  <div class="form-row">
+    <label>Data e hora<input name="data_hora" type="datetime-local" required step="900"></label>
+    <label>Procedimento<input name="procedimento" placeholder="Ex.: Avaliação ortodôntica"></label>
+  </div>
+  <label>Observações<textarea name="observacoes" rows="2"></textarea></label>
+  <div class="form-actions"><button type="button" class="btn ghost" data-close>Cancelar</button><button class="btn">Agendar</button></div>
+</form></dialog>
+
+<dialog id="dlg-assin"><form id="form-assin" method="dialog">
+  <h3>Nova assinatura</h3>
+  <label>Paciente<select name="paciente_id" data-pacientes required></select></label>
+  <label>Plano<select name="plano_id" data-planos required></select></label>
+  <div class="form-actions"><button type="button" class="btn ghost" data-close>Cancelar</button><button class="btn">Assinar</button></div>
+</form></dialog>
+
+<dialog id="dlg-dent"><form id="form-dent" method="dialog">
+  <h3>Novo dentista</h3>
+  <label>Nome<input name="nome" required></label>
+  <div class="form-row">
+    <label>CPF<input name="cpf" required inputmode="numeric"></label>
+    <label>Especialidade<input name="especialidade" placeholder="Ortodontia, Clínico…"></label>
+  </div>
+  <label>Unidade<select name="unidade_id" data-unidades></select></label>
+  <div class="form-actions"><button type="button" class="btn ghost" data-close>Cancelar</button><button class="btn">Salvar</button></div>
+</form></dialog>
+
+<div id="toast" role="status"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

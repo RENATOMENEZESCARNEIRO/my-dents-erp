@@ -1,0 +1,964 @@
+MANUAL TÉCNICO FUNCIONAL - MY DENTS
+Versão: 02/10/2026
+Ambiente de referência: https://mydents.com.br
+
+======================================================================
+1. OBJETIVO E ORIGEM DAS INFORMAÇÕES
+======================================================================
+
+Este documento descreve como o sistema My Dents deve funcionar, quais
+informações cada tela deve receber, como os dados devem ser tratados e
+para quais módulos devem ser encaminhados.
+
+O relatório técnico de 01/10/2026 foi utilizado como diagnóstico e
+referência. Ele não foi tratado como ordem de execução.
+
+Nenhum arquivo do sistema foi alterado para produzir este documento.
+O relatório original também foi preservado.
+
+Classificação utilizada:
+
+CONFIRMADO
+Comportamento observado em teste funcional ou leitura do sistema.
+
+REGRA ESPERADA
+Comportamento que o sistema deve apresentar para manter a integridade
+operacional e financeira.
+
+PENDENTE
+Comportamento ainda não testado, inconsistente ou que precisa de nova
+validação.
+
+Na verificação mais recente, o módulo Financeiro abriu em sessão
+autenticada e exibiu a indicação de dados carregados. Não foram criados
+novos lançamentos financeiros durante essa verificação.
+
+======================================================================
+2. VISÃO GERAL DO SISTEMA
+======================================================================
+
+O sistema é formado por quatro grandes áreas:
+
+1. Cadastros básicos e controle de acesso.
+2. Recepção e operação clínica.
+3. Produção e remuneração dos dentistas.
+4. Financeiro, caixa e relatórios.
+
+Fluxo principal:
+
+USUÁRIO
+  -> UNIDADE
+  -> PACIENTE
+  -> DENTISTA
+  -> CATÁLOGO DE PROCEDIMENTOS
+  -> AGENDA
+  -> PLANO DE TRATAMENTO / ORÇAMENTO
+  -> APROVAÇÃO
+  -> DÉBITO DO PACIENTE
+  -> RECEBIMENTO
+  -> EVOLUÇÃO CLÍNICA
+  -> PRODUÇÃO DO DENTISTA
+  -> FECHAMENTO DO LOTE
+  -> PREVISÃO DE PAGAMENTO
+  -> PAGAMENTO DO DENTISTA
+  -> LANÇAMENTO FINANCEIRO
+  -> CONTAS, RESULTADO, CAIXA E CONTROLE FINANCEIRO
+
+Cada etapa deve reutilizar os dados da etapa anterior. O operador não
+deve redigitar informações que já existem no sistema.
+
+======================================================================
+3. ENTIDADES PRINCIPAIS E RESPONSABILIDADES
+======================================================================
+
+USUÁRIO
+Define quem acessa o sistema e quais operações pode executar.
+
+UNIDADE
+Define a clínica ou filial responsável pelo atendimento e pelo
+lançamento financeiro.
+
+PACIENTE
+É a pessoa atendida. Possui dados cadastrais, agenda, plano, débito,
+recebimentos e histórico clínico.
+
+DENTISTA
+É o profissional que vende, executa ou recebe por um procedimento.
+Atualmente existem cadastros clínico e financeiro que precisam ficar
+vinculados.
+
+PROCEDIMENTO
+Define o serviço, seu preço de venda e seu valor de execução.
+
+AGENDA
+Relaciona paciente, dentista, unidade, data, horário e procedimento.
+
+PLANO DE TRATAMENTO
+Agrupa os procedimentos negociados com o paciente.
+
+DÉBITO
+Representa o valor devido pelo paciente após aprovação do plano.
+
+RECEBIMENTO
+Representa o pagamento feito pelo paciente.
+
+EVOLUÇÃO
+Registra o atendimento clínico e o status de execução do procedimento.
+
+PRODUÇÃO
+Representa o procedimento realizado pelo dentista para fins de
+comissão e pagamento.
+
+LOTE
+Agrupa a produção de um período e gera previsões de pagamento.
+
+PREVISÃO
+Representa um valor futuro ainda não pago.
+
+LANÇAMENTO
+Representa uma movimentação financeira efetivamente registrada.
+
+TURNO DE CAIXA
+Representa o período de caixa aberto, movimentado e encerrado.
+
+======================================================================
+4. REGRAS GERAIS DE CADASTRO E NORMALIZAÇÃO
+======================================================================
+
+4.1 UNIDADES
+
+As unidades devem ser escolhidas por lista padronizada. Não deve ser
+permitido texto livre.
+
+Unidades oficiais identificadas:
+
+- Aldeota
+- Messejana
+- Maracanaú
+
+O identificador da unidade deve acompanhar:
+
+- paciente;
+- dentista;
+- agenda;
+- plano;
+- débito;
+- recebimento;
+- produção;
+- previsão;
+- lançamento;
+- caixa;
+- relatórios.
+
+4.2 SETORES
+
+Os setores devem utilizar os rótulos oficiais:
+
+- Clínico
+- Ortodontia
+- Administrativo/Geral
+- Convênios
+
+Valores antigos ou internos devem ser convertidos para o rótulo de
+exibição correspondente:
+
+- clinica_geral -> Clínico
+- clinico -> Clínico
+- ortodontia -> Ortodontia
+- administrativo -> Administrativo/Geral
+- convenio -> Convênios
+
+4.3 VALORES MONETÁRIOS
+
+- Guardar valores como números decimais.
+- Exibir sempre duas casas decimais.
+- Separar valor bruto, desconto, taxa, comissão e valor líquido.
+- Nunca somar comissão de venda com valor de execução.
+- Evitar ruído de ponto flutuante, como 3.1499999.
+
+4.4 DATAS
+
+O sistema deve diferenciar:
+
+- data do lançamento;
+- data do pagamento;
+- data de recebimento;
+- data de conciliação;
+- data de vencimento;
+- data de execução;
+- data de fechamento do caixa;
+- data de fechamento do lote.
+
+4.5 IDENTIFICADORES E ORIGENS
+
+Referências como 123 e db-123 devem representar o mesmo lançamento
+quando a origem for compatível.
+
+As origens devem permanecer registradas para auditoria, por exemplo:
+
+- producao_dentistas;
+- producao_dentistas_resultado;
+- recebimento do paciente;
+- PGD-5;
+- previsao vinculada à produção.
+
+======================================================================
+5. CADASTROS E CONTROLE DE ACESSO
+======================================================================
+
+5.1 LOGIN E USUÁRIOS
+
+Informações de entrada:
+
+- nome;
+- e-mail;
+- perfil;
+- status de acesso.
+
+Tratamento:
+
+- validar a sessão no navegador e na API;
+- aplicar o perfil de acesso;
+- exibir somente os módulos autorizados;
+- bloquear ações sensíveis sem permissão.
+
+Destino:
+
+- menu global;
+- permissões;
+- auditoria;
+- telas administrativas e financeiras.
+
+5.2 UNIDADES
+
+Informações de entrada:
+
+- nome da unidade;
+- identificador interno;
+- status ativo ou inativo.
+
+Tratamento:
+
+- impedir duplicidade de unidade;
+- disponibilizar a unidade em listas padronizadas;
+- impedir que registros operacionais utilizem unidade inexistente.
+
+5.3 DENTISTAS
+
+Informações de entrada:
+
+- nome;
+- CPF;
+- telefone;
+- unidade;
+- especialidade;
+- regra de comissão;
+- valor ou percentual de pagamento;
+- procedimentos executados.
+
+Tratamento:
+
+- validar CPF;
+- localizar cadastro existente;
+- relacionar o dentista clínico ao cadastro financeiro;
+- preencher a referência agenda_dentista_id;
+- impedir duplicidade por CPF.
+
+Destino:
+
+- agenda;
+- vendedor do orçamento;
+- executor do procedimento;
+- comissão;
+- produção;
+- pagamento.
+
+REGRA ESPERADA: deve existir um cadastro principal de dentista ou um
+vínculo automático e confiável entre os dois cadastros atuais.
+
+======================================================================
+6. RECEPÇÃO E OPERAÇÃO CLÍNICA
+======================================================================
+
+6.1 PACIENTES
+
+Informações obrigatórias:
+
+- nome;
+- CPF;
+- telefone;
+- unidade.
+
+Informações complementares:
+
+- e-mail;
+- endereço;
+- observações;
+- contatos adicionais.
+
+Tratamento:
+
+- validar CPF;
+- normalizar CPF para comparação;
+- bloquear CPF inválido;
+- bloquear CPF duplicado;
+- gerar identificador único;
+- associar o paciente à unidade.
+
+Destino:
+
+- lista de pacientes;
+- ficha do paciente;
+- agenda;
+- orçamento;
+- débito;
+- recebimento;
+- evolução clínica.
+
+CONFIRMADO: CPF inválido e CPF duplicado são bloqueados; o paciente
+salvo aparece na lista, ficha e agenda.
+
+6.2 AGENDA
+
+Informações:
+
+- paciente;
+- dentista;
+- unidade;
+- data;
+- horário;
+- procedimento;
+- situação do atendimento;
+- observações.
+
+Tratamento:
+
+- conferir disponibilidade do horário;
+- relacionar paciente, dentista e unidade já cadastrados;
+- preservar a referência do procedimento;
+- permitir evolução posterior.
+
+Destino:
+
+- ficha do paciente;
+- plano de tratamento;
+- evolução;
+- produção do dentista.
+
+CONFIRMADO: a agenda apresenta blocos de atendimento entre 08h e 12h
+e entre 13h e 17h.
+
+6.3 CATÁLOGO DE PROCEDIMENTOS
+
+Informações:
+
+- código;
+- nome;
+- valor de venda;
+- custo;
+- valor de execução do dentista;
+- tempo previsto;
+- status ativo ou inativo.
+
+Tratamento:
+
+- preencher automaticamente o orçamento;
+- usar o valor de venda no débito do paciente;
+- usar o valor de execução na produção;
+- impedir que o custo seja confundido com preço ou comissão.
+
+Destino:
+
+- orçamento;
+- débito;
+- comissão;
+- produção;
+- previsão de pagamento.
+
+REGRA ESPERADA: procedimento sem código, valor ou execução não deve
+ficar ativo para uso operacional.
+
+6.4 PLANO DE TRATAMENTO E ORÇAMENTO
+
+Informações:
+
+- paciente;
+- unidade;
+- dentista vendedor;
+- dentista executor;
+- procedimentos;
+- quantidade;
+- valor unitário;
+- desconto;
+- total;
+- condição de pagamento;
+- observações.
+
+Tratamento:
+
+- buscar procedimentos do catálogo;
+- calcular o total;
+- registrar o desconto separadamente;
+- calcular a comissão conforme a regra do vendedor;
+- manter planos independentes em aprovações parciais.
+
+Destino:
+
+- aprovação;
+- débito;
+- recebimento;
+- comissão;
+- produção.
+
+CONFIRMADO: aprovação parcial gera planos independentes.
+
+6.5 APROVAÇÃO
+
+Informações:
+
+- plano aprovado;
+- procedimentos aprovados;
+- dentista vendedor;
+- regra de comissão;
+- desconto;
+- data da aprovação.
+
+Tratamento:
+
+- criar ou atualizar o débito;
+- alterar o status do plano;
+- calcular a comissão prevista;
+- bloquear aprovação sem vendedor ou regra válida.
+
+Destino:
+
+- débito do paciente;
+- comissão;
+- produção futura;
+- relatórios financeiros.
+
+6.6 EVOLUÇÃO CLÍNICA
+
+Informações:
+
+- paciente;
+- procedimento;
+- dentista executor;
+- data;
+- situação clínica;
+- observação;
+- anexos, quando aplicável.
+
+Situações esperadas:
+
+- planejado;
+- em andamento;
+- executado;
+- cancelado.
+
+Tratamento:
+
+- somente o procedimento executado gera produção;
+- usar o valor de execução do catálogo;
+- não gerar nova cobrança ao paciente;
+- manter o histórico clínico.
+
+Destino:
+
+- histórico clínico;
+- produção do dentista;
+- comissão de execução;
+- previsão de pagamento.
+
+======================================================================
+7. DÉBITOS E RECEBIMENTOS
+======================================================================
+
+7.1 DÉBITO DO PACIENTE
+
+Informações:
+
+- paciente;
+- plano;
+- unidade;
+- procedimentos;
+- valor original;
+- desconto;
+- valor pago;
+- saldo;
+- status.
+
+Cálculo:
+
+saldo atual = valor original - desconto - pagamentos confirmados
+
+Status esperados:
+
+- pendente;
+- parcialmente pago;
+- pago;
+- cancelado;
+- estornado.
+
+Quando o saldo chegar a zero, o status deve ser pago.
+
+7.2 PIX, ESPÉCIE E OUTROS PAGAMENTOS IMEDIATOS
+
+Informações:
+
+- débito;
+- paciente;
+- valor;
+- data do pagamento;
+- forma de pagamento;
+- conta ou caixa de destino;
+- unidade;
+- observação.
+
+Tratamento:
+
+- baixar o débito;
+- criar o recebimento;
+- criar o lançamento de receita;
+- atualizar a conta ou caixa;
+- refletir no Resultado.
+
+CONFIRMADO: PIX entra como receita realizada e atualiza o saldo da
+conta.
+
+7.3 CARTÃO
+
+Informações:
+
+- débito;
+- paciente;
+- modalidade;
+- número de parcelas;
+- código de autorização;
+- valor bruto;
+- taxa;
+- valor líquido;
+- data da venda;
+- data prevista;
+- data de conciliação;
+- conta de destino.
+
+Regra esperada:
+
+valor líquido = valor bruto - taxa da operadora
+
+O pagamento do paciente deve quitar o débito imediatamente. O dinheiro
+do cartão pode continuar como previsão até a conciliação da operadora.
+
+Após a conciliação:
+
+- retirar o valor da previsão;
+- registrar a receita realizada;
+- registrar a taxa;
+- atualizar a conta de destino.
+
+======================================================================
+8. PRODUÇÃO E PAGAMENTO DE DENTISTAS
+======================================================================
+
+8.1 PRODUÇÃO
+
+Informações:
+
+- dentista;
+- paciente;
+- procedimento;
+- unidade;
+- data da execução;
+- valor de execução;
+- comissão;
+- lote;
+- status.
+
+Tratamento:
+
+- buscar somente procedimentos executados;
+- separar comissão de venda e execução clínica;
+- agrupar por competência;
+- preparar o lote.
+
+8.2 FECHAMENTO DO LOTE
+
+Informações:
+
+- competência;
+- dentista;
+- unidade;
+- produções incluídas;
+- comissão de venda;
+- valor de execução;
+- vencimento;
+- status.
+
+O fechamento deve gerar duas previsões independentes quando aplicável:
+
+- previsão da comissão ou venda;
+- previsão da execução clínica.
+
+CONFIRMADO: o lote gera previsões separadas e segue o vencimento
+definido para o dentista.
+
+8.3 PAGAMENTO DO DENTISTA
+
+Informações:
+
+- dentista;
+- lote;
+- valor;
+- conta de pagamento;
+- data;
+- unidade;
+- composição por unidade;
+- observação;
+- identificador do pagamento.
+
+Tratamento:
+
+- baixar a previsão correta;
+- criar lançamento agrupado;
+- registrar identificação PGD-n;
+- preservar composição por unidade;
+- atualizar saldo da conta;
+- refletir no Resultado.
+
+REGRA: previsão originada de produção deve ser paga pela tela de
+Produção dos Dentistas, e não pela tela genérica de previsões.
+
+======================================================================
+9. MÓDULO FINANCEIRO
+======================================================================
+
+9.1 LANÇAR MOVIMENTAÇÃO
+
+Informações:
+
+- tipo;
+- data;
+- valor;
+- unidade;
+- setor;
+- banco ou conta;
+- grupo;
+- subgrupo;
+- NF-e;
+- descrição;
+- observação.
+
+Tipos identificados:
+
+- receita;
+- despesa;
+- transferência;
+- aporte de sócio;
+- empréstimo de sócio;
+- devolução de empréstimo.
+
+Tratamento:
+
+- validar campos obrigatórios;
+- normalizar unidade, setor e conta;
+- classificar o lançamento;
+- salvar o registro;
+- atualizar saldos e relatórios.
+
+Transferência não deve ser tratada como receita ou despesa operacional.
+
+9.2 LANÇAMENTOS
+
+Exibe:
+
+- data;
+- tipo;
+- conta;
+- unidade;
+- setor;
+- valor;
+- origem;
+- documento;
+- observação.
+
+Deve permitir identificar se o lançamento veio de:
+
+- recebimento do paciente;
+- pagamento de dentista;
+- previsão paga;
+- operação manual;
+- transferência.
+
+9.3 CONTAS
+
+Calcula automaticamente:
+
+- saldo por banco;
+- saldo por unidade;
+- saldo total;
+- entradas;
+- saídas;
+- transferências.
+
+O saldo não deve ser digitado manualmente.
+
+9.4 RESULTADO / DRE
+
+Filtros:
+
+- período;
+- unidade;
+- setor.
+
+Exibe:
+
+- receitas;
+- despesas;
+- resultado;
+- margem;
+- resultado por unidade;
+- resultado por setor;
+- lançamentos detalhados.
+
+Fórmula:
+
+resultado = receitas operacionais - despesas operacionais
+
+Aportes, empréstimos e transferências devem ser exibidos em área
+separada e não podem distorcer a receita operacional.
+
+9.5 SÓCIOS
+
+Informações:
+
+- sócio;
+- tipo de operação;
+- valor;
+- data;
+- conta;
+- finalidade;
+- status.
+
+Aporte aumenta o caixa, mas não é receita operacional.
+Empréstimo aumenta o caixa e cria obrigação.
+Devolução reduz a obrigação e o saldo financeiro.
+
+9.6 PREVISÕES DE PAGAMENTOS
+
+Informações:
+
+- fornecedor ou dentista;
+- origem;
+- valor;
+- unidade;
+- setor;
+- categoria;
+- subgrupo;
+- vencimento;
+- status;
+- conta de pagamento;
+- data do pagamento.
+
+Previsão representa compromisso futuro. Só deve virar lançamento quando
+for efetivamente paga.
+
+9.7 FLUXO DE CAIXA
+
+Filtros:
+
+- data inicial;
+- data final;
+- conta;
+- unidade.
+
+Exibe:
+
+- saldo inicial;
+- entradas;
+- saídas;
+- saldo final;
+- movimentações do período.
+
+saldo final = saldo inicial + entradas - saídas
+
+======================================================================
+10. CAIXA
+======================================================================
+
+Informações:
+
+- unidade;
+- turno;
+- data de abertura;
+- saldo inicial;
+- recebimentos;
+- sangrias;
+- suprimentos;
+- saldo final;
+- data de fechamento;
+- usuário responsável.
+
+Fluxo esperado:
+
+ABRIR CAIXA
+  -> REGISTRAR RECEBIMENTOS
+  -> CONFERIR SALDO
+  -> FECHAR CAIXA
+  -> REABRIR SOMENTE COM PERMISSÃO
+
+Caixa fechado deve impedir novo recebimento e apresentar mensagem de
+negócio compreensível, sem erro genérico 500.
+
+======================================================================
+11. CONTROLE FINANCEIRO
+======================================================================
+
+Objetivos:
+
+- comparar previsões, pagamentos e lançamentos;
+- identificar previsão sem lançamento;
+- identificar lançamento sem previsão;
+- localizar valores sem unidade;
+- mostrar previsto, pago, a pagar, entradas, saídas e resultado;
+- permitir auditoria por unidade.
+
+Pagamento agrupado pode possuir unidade vazia no registro principal e
+unidades dentro da composição:
+
+PAGAMENTO PRINCIPAL
+  -> COMPOSIÇÃO ALDEOTA
+  -> COMPOSIÇÃO MESSEJANA
+  -> COMPOSIÇÃO MARACANAÚ
+
+O controle deve considerar a unidade da composição quando a unidade do
+registro principal estiver vazia.
+
+======================================================================
+12. PERSISTÊNCIA E CAMADAS DE TRATAMENTO
+======================================================================
+
+Fluxo técnico padrão:
+
+1. A tela coleta os dados.
+2. O JavaScript valida formato e campos básicos.
+3. A API valida sessão, permissão e regra de negócio.
+4. A camada PHP normaliza os valores.
+5. O registro é salvo no estado ou banco correspondente.
+6. O sistema retorna o identificador e o status.
+7. Os módulos dependentes sincronizam os dados.
+8. Relatórios e saldos são recalculados.
+
+Arquivos e responsabilidades identificados:
+
+- fase12.php: operações financeiras da jornada clínica.
+- fase12-lib.php: regras de aprovação, comissão e vínculo.
+- debitos.php e debitos-lib.php: débitos e saldos de pacientes.
+- recebimentos-financeiros.php: recebimentos financeiros.
+- taxas-cartao.php e taxas-cartao-lib.php: taxas e conciliação de cartão.
+- pagamento-dentistas.php: pagamentos e cadastro financeiro de dentistas.
+- caixa-turno.php e caixa-turno-lib.php: abertura, fechamento e reabertura.
+- legacy-state.php: montagem de previsões vinculadas à produção.
+- financeiro-lancamentos-lib.php: criação de lançamentos.
+- controles-financeiros.php: controles e alertas.
+- financeiro-oficial-v2.js: tela principal do Financeiro.
+- previsoes-contas-pagar.js: previsões e pagamentos.
+- recebimentos-previstos.js: valores a receber.
+- layout-modernizacao.js: layout e navegação complementar.
+
+======================================================================
+13. PROBLEMAS IDENTIFICADOS, SEPARADOS DO COMPORTAMENTO ESPERADO
+======================================================================
+
+13.1 CORRIGIDOS E VERIFICADOS EM TESTES ANTERIORES
+
+- P-01: duplicidade visual de previsão de produção após pagamento.
+- P-02: tratamento incorreto do caixa fechado.
+- P-03: comissão pendente após desconto que quitava o débito.
+
+13.2 CORREÇÃO PUBLICADA, COM VALIDAÇÃO FUNCIONAL PENDENTE
+
+- M-02: falso alerta de previsão sem unidade quando a unidade está na
+  composição do pagamento.
+- M-01: normalização do setor clinica_geral para Clínico.
+
+No caso de M-01, ainda é necessário confirmar o comportamento de dados
+históricos já gravados com o setor antigo.
+
+13.3 PENDÊNCIAS CONHECIDAS
+
+- P-04: vínculo pouco claro entre dentista clínico e cadastro financeiro.
+- P-05: cartão sem cálculo completo de taxa, líquido e conciliação.
+- M-03: duplicidade e conflito entre cadastros de dentistas.
+- M-04: dados de teste misturados ao ambiente.
+- M-05: máscaras, mensagens e validações de formulário.
+- B-01: rotas, cache, modais persistentes e layout responsivo.
+
+13.4 FUNCIONALIDADES AINDA NÃO HOMOLOGADAS
+
+- crédito do paciente e devolução;
+- conciliação de cartão;
+- estorno de comissão;
+- edição manual de comissão;
+- convênios;
+- lançamento retroativo em lote fechado;
+- alerta de data divergente;
+- permissões por perfil;
+- NFS-e;
+- importação de Excel;
+- auth-guard.js.
+
+======================================================================
+14. REGRAS OPERACIONAIS IMPORTANTES
+======================================================================
+
+1. Não criar unidade, setor ou conta por texto livre.
+2. Não cadastrar o mesmo dentista novamente para cada módulo.
+3. Não lançar manualmente pagamento de produção pela tela genérica de
+   previsões.
+4. Não considerar cartão como dinheiro realizado antes da conciliação.
+5. O débito do paciente deve ser quitado quando o pagamento for aprovado.
+6. Desconto reduz a base devida e a comissão deve respeitar essa base.
+7. Produção de venda e produção de execução devem permanecer separadas.
+8. Transferências, aportes e empréstimos não devem virar receita
+   operacional.
+9. Toda movimentação financeira precisa possuir origem, data, valor,
+   conta e unidade.
+10. Toda previsão paga deve gerar um lançamento correspondente.
+11. Todo alerta deve apontar a causa e a tela de correção.
+12. Registros de teste devem ser identificados e isolados.
+
+======================================================================
+15. CRITÉRIO DE HOMOLOGAÇÃO
+======================================================================
+
+Uma tela só deve ser considerada homologada quando:
+
+1. Os campos obrigatórios estiverem claros.
+2. A tela e a API validarem os dados.
+3. O registro for gravado uma única vez.
+4. O identificador for preservado.
+5. O dado aparecer corretamente no próximo módulo.
+6. Os valores financeiros fecharem.
+7. O status mudar corretamente.
+8. O histórico puder ser auditado.
+9. O erro de negócio apresentar mensagem compreensível.
+10. A operação puder ser estornada ou revertida quando aplicável.
+
+CONCLUSÃO
+
+O núcleo do My Dents deve operar como uma cadeia única: cadastro,
+atendimento, cobrança, execução, produção, pagamento e contabilidade.
+
+Os principais pontos que precisam permanecer sob controle são:
+
+- vínculo único de dentistas;
+- normalização de unidade e setor;
+- separação entre débito, recebimento e conciliação;
+- separação entre comissão e execução;
+- origem de cada lançamento;
+- composição por unidade;
+- consistência dos saldos;
+- mensagens claras de erro;
+- eliminação de dados de teste antes da produção.
+
