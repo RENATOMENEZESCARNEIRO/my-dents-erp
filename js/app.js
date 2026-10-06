@@ -115,6 +115,19 @@
   /* ---------- registro de telas ---------- */
   const views = [];
   const register = (id, title, render, order = 100) => { views.push({ id, title, render, order }); views.sort((a, b) => a.order - b.order); };
+  const ICONS = {
+    dashboard: '<path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>',
+    pacientes: '<path d="M12 12a4 4 0 100-8 4 4 0 000 8zm0 2c-3.3 0-8 1.7-8 5v1h16v-1c0-3.3-4.7-5-8-5z"/>',
+    agenda: '<path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zm0 16H5V9h14v11z"/>',
+    orcamentos: '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 13h8v2H8v-2zm0 4h8v2H8v-2z"/>',
+    debitos: '<path d="M11.8 10.9c-2.3-.6-3-1.2-3-2.1 0-1.1 1-1.8 2.7-1.8 1.8 0 2.4.9 2.5 2h2.2c-.1-1.7-1.100-3.200-3.200-3.700V3h-3v2.300c-1.900.4-3.400 1.600-3.400 3.500 0 2.200 1.800 3.300 4.500 4 2.400.600 2.900 1.500 2.900 2.300 0 .6-.4 1.900-2.700 1.900-2 0-2.800-.9-2.900-2H6.200c.1 2.100 1.600 3.300 3.300 3.700V21h3v-2.300c1.900-.4 3.400-1.500 3.400-3.400 0-2.700-2.300-3.600-4.100-4.400z"/>',
+    caixa: '<path d="M21 7H3a1 1 0 00-1 1v11a1 1 0 001 1h18a1 1 0 001-1V8a1 1 0 00-1-1zm-3 8a1.500 1.500 0 110-3 1.500 1.500 0 010 3zM19 5V4H5a2 2 0 00-2 2v1h16V5z"/>',
+    producao: '<path d="M3 3v18h18v-2H5V3H3zm4 10h3v5H7v-5zm5-6h3v11h-3V7zm5 3h3v8h-3v-8z"/>',
+    financeiro: '<path d="M4 10h3v7H4v-7zm6.500 0h3v7h-3v-7zM2 19h20v3H2v-3zm15-9h3v7h-3v-7zM12 1L2 6v2h20V6L12 1z"/>',
+    planos: '<path d="M20 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>',
+    cadastros: '<path d="M19.400 13a7.800 7.800 0 000-2l2.100-1.600a.5.500 0 00.100-.6l-2-3.500a.5.500 0 00-.6-.2l-2.500 1a7.300 7.300 0 00-1.700-1l-.4-2.600a.5.500 0 00-.5-.4h-4a.5.500 0 00-.5.400L9.600 5.500a7.300 7.300 0 00-1.700 1l-2.500-1a.5.500 0 00-.6.200l-2 3.500a.5.500 0 00.1.600L4.600 11a7.800 7.800 0 000 2l-2.100 1.600a.5.500 0 00-.1.600l2 3.500c.1.200.4.300.6.200l2.500-1c.5.400 1.100.7 1.700 1l.4 2.600c0 .2.200.4.500.4h4c.3 0 .5-.2.5-.4l.4-2.600c.6-.3 1.200-.6 1.700-1l2.500 1c.2.100.5 0 .6-.2l2-3.500a.5.500 0 00-.1-.6L19.400 13zM12 15.500a3.500 3.500 0 110-7 3.500 3.500 0 010 7z"/>'
+  };
+  const iconeNav = (id) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[id] || '<circle cx="12" cy="12" r="5"/>'}</svg>`;
   let navToken = 0;
 
   async function navigate() {
@@ -335,7 +348,7 @@
       await carregarBase();
     } catch (e) { toast('Erro ao carregar dados: ' + e.message, true); }
     try {
-      $('#nav').innerHTML = views.map((v) => `<a href="#${v.id}" data-view="${v.id}">${esc(v.title)}</a>`).join('');
+      $('#nav').innerHTML = views.map((v) => `<a href="#${v.id}" data-view="${v.id}" title="${esc(v.title)}">${iconeNav(v.id)}<span>${esc(v.title)}</span></a>`).join('');
       await navigate();
     } catch (e) { console.error(e); toast('Erro ao abrir a tela: ' + e.message, true); }
   }
