@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>My Dents</title>
   <link rel="icon" type="image/png" href="img/favicon.png">
-<link rel="stylesheet" href="css/styles.css?v=4">
+<link rel="stylesheet" href="css/styles.css?v=5">
 </head>
 <body>
 
@@ -25,10 +25,10 @@
 <!-- APP: o menu e as telas são registrados pelos módulos em js/ -->
 <div id="app-view" hidden>
   <aside id="sidebar">
-    <div class="logo"><img src="img/logo.png" alt="My Dents"></div>
+    <div class="logo"><img class="logo-full" src="img/logo.png" alt="My Dents"><img class="logo-mini" src="img/favicon.png" alt="My Dents"></div>
     <nav class="nav" id="nav"></nav>
     <div style="margin-top:auto;font-size:.8rem;color:#5f7680">
-      <div id="user-email" style="word-break:break-all;margin-bottom:.5rem"></div>
+      <div id="user-email" class="side-info" style="word-break:break-all;margin-bottom:.5rem"></div>
       <button class="btn ghost sm" id="btn-logout" >Sair</button>
     </div>
   </aside>
@@ -50,14 +50,14 @@
 <div id="toast" role="status"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/config.js?v=4"></script>
-<script src="js/app.js?v=4"></script>
-<script src="js/cadastros.js?v=4"></script>
-<script src="js/orcamentos.js?v=4"></script>
-<script src="js/debitos.js?v=4"></script>
-<script src="js/caixa.js?v=4"></script>
-<script src="js/producao.js?v=4"></script>
-<script src="js/financeiro.js?v=4"></script>
+<script src="js/config.js?v=5"></script>
+<script src="js/app.js?v=5"></script>
+<script src="js/cadastros.js?v=5"></script>
+<script src="js/orcamentos.js?v=5"></script>
+<script src="js/debitos.js?v=5"></script>
+<script src="js/caixa.js?v=5"></script>
+<script src="js/producao.js?v=5"></script>
+<script src="js/financeiro.js?v=5"></script>
 <script>window.MD.start();</script>
 </body>
 </html>
