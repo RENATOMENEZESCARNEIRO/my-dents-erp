@@ -334,8 +334,10 @@
     try {
       await carregarBase();
     } catch (e) { toast('Erro ao carregar dados: ' + e.message, true); }
-    $('#nav').innerHTML = views.map((v) => `<a href="#${v.id}" data-view="${v.id}">${esc(v.title)}</a>`).join('');
-    await navigate();
+    try {
+      $('#nav').innerHTML = views.map((v) => `<a href="#${v.id}" data-view="${v.id}">${esc(v.title)}</a>`).join('');
+      await navigate();
+    } catch (e) { console.error(e); toast('Erro ao abrir a tela: ' + e.message, true); }
   }
 
   function definirSenha() {
@@ -357,8 +359,13 @@
     $('#login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       $('#login-err').textContent = '';
-      const { error } = await db.auth.signInWithPassword({ email: $('#login-email').value.trim(), password: $('#login-senha').value });
-      if (error) $('#login-err').textContent = 'E-mail ou senha inválidos.';
+      const btn = $('#login-form button'); btn.disabled = true; btn.textContent = 'Entrando…';
+      try {
+        const { data, error } = await db.auth.signInWithPassword({ email: $('#login-email').value.trim(), password: $('#login-senha').value });
+        if (error) $('#login-err').textContent = 'E-mail ou senha inválidos.';
+        else await aoLogar(data.user);
+      } catch (err) { console.error(err); $('#login-err').textContent = 'Erro: ' + err.message; }
+      btn.disabled = false; btn.textContent = 'Entrar';
     });
     $('#btn-logout').addEventListener('click', () => db.auth.signOut());
     db.auth.onAuthStateChange((evt, session) => {
@@ -366,7 +373,7 @@
       if (evt === 'PASSWORD_RECOVERY') setTimeout(definirSenha, 800);
       else { iniciado = false; mostrar(false); }
     });
-    db.auth.getSession().then(({ data }) => { if (!data.session) mostrar(false); });
+    db.auth.getSession().then(({ data }) => { if (data.session) aoLogar(data.session.user); else mostrar(false); });
   }
 
   window.MD = { db, $, $$, esc, digits, fmtCPF, fmtDT, fmtD, brl, num, today, monthStart, monthEnd, daysTo, toast, state, opts, rows, table, badge,
