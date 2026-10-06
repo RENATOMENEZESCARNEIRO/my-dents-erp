@@ -338,6 +338,21 @@
     await navigate();
   }
 
+  function definirSenha() {
+    modal({
+      title: 'Definir nova senha', submit: 'Salvar senha',
+      body: `<label>Nova senha<input name="senha" type="password" minlength="8" required autocomplete="new-password"></label>
+        <label>Repita a senha<input name="senha2" type="password" minlength="8" required autocomplete="new-password"></label>`,
+      onSubmit: async (v) => {
+        if (v.senha !== v.senha2) throw new Error('As senhas não conferem.');
+        const { error } = await db.auth.updateUser({ password: v.senha });
+        if (error) throw new Error(error.message);
+        toast('Senha atualizada.');
+        history.replaceState(null, '', location.pathname);
+      },
+    });
+  }
+
   function start() {
     $('#login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -346,8 +361,9 @@
       if (error) $('#login-err').textContent = 'E-mail ou senha inválidos.';
     });
     $('#btn-logout').addEventListener('click', () => db.auth.signOut());
-    db.auth.onAuthStateChange((_evt, session) => {
+    db.auth.onAuthStateChange((evt, session) => {
       if (session) aoLogar(session.user);
+      if (evt === 'PASSWORD_RECOVERY') setTimeout(definirSenha, 800);
       else { iniciado = false; mostrar(false); }
     });
     db.auth.getSession().then(({ data }) => { if (!data.session) mostrar(false); });
