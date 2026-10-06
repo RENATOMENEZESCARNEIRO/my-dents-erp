@@ -22,3 +22,12 @@ docs/               manual técnico funcional e regras de negócio
 5. Supabase > Authentication > URL Configuration: adicione a URL do Pages.
 
 Regras do manual já aplicadas: unidades por lista padronizada, CPF validado e único, bloqueio de horário duplicado por dentista.
+
+## Versão 2 (ERP completo)
+
+Módulos: Orçamentos → Débitos/Recebimentos → Caixa por turno → Produção e comissões (lotes) → Financeiro (lançamentos, previsões, cartões a receber, contas, fluxo, DRE).
+
+**Instalação no Supabase (SQL Editor, nesta ordem):** `supabase/schema.sql` → `supabase/schema_v2.sql`.
+O primeiro usuário criado (Authentication › Users) vira admin; os demais recebem permissões em Cadastros › Usuários.
+Revise as taxas de cartão 2x–11x (interpoladas) em Cadastros › Taxas de cartão.
+Testes de regras de negócio: `supabase/tests/` (rodar com `psql -f` na ordem 00, 10, 11).
