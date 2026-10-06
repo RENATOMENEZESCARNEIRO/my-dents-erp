@@ -21,11 +21,18 @@ label>*{margin-top:.25rem;color:var(--ink)}
 .login-card p{margin:0 0 1.5rem;color:var(--muted);text-align:center}
 .err{color:var(--danger);font-size:.9rem;min-height:1.2em}
 /* shell */
-#app-view{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
-aside{background:#fff;color:var(--ink);border-right:1px solid var(--line);padding:1.25rem 1rem;display:flex;flex-direction:column;gap:.25rem;position:sticky;top:0;height:100vh}
+#app-view{display:grid;grid-template-columns:68px 1fr;min-height:100vh}
+aside{background:#fff;color:var(--ink);border-right:1px solid var(--line);padding:1.25rem .75rem;display:flex;flex-direction:column;gap:.25rem;position:sticky;top:0;height:100vh;width:68px;overflow:hidden;transition:width .2s ease,box-shadow .2s;z-index:30}
 aside .logo{display:block;margin:0 .25rem 1.25rem}
 aside .logo img{width:100%;max-width:170px;height:auto;display:block}
-.nav a{display:block;color:#35566e;font-weight:500;text-decoration:none;padding:.65rem .8rem;border-radius:8px}
+aside .logo{height:52px;display:flex;align-items:center}
+.nav a{display:flex;align-items:center;gap:.9rem;white-space:nowrap;color:#35566e;font-weight:500;text-decoration:none;padding:.65rem .8rem;border-radius:8px}
+.nav a svg{width:22px;height:22px;flex:none;fill:currentColor}
+.nav a span,.side-info,#btn-logout{opacity:0;transition:opacity .15s}
+.logo-mini{width:34px;margin:0 auto}.logo-full{display:none!important}
+aside:hover,aside:focus-within{width:230px;box-shadow:6px 0 24px #12304a22}
+aside:hover .nav a span,aside:hover .side-info,aside:hover #btn-logout,aside:focus-within .nav a span{opacity:1}
+aside:hover .logo-full{display:block!important}aside:hover .logo-mini{display:none}
 .nav a:hover{background:#eaf3fc;color:var(--brand)}
 .nav a.active{background:var(--brand);color:#fff;box-shadow:0 4px 12px #1070cf40}
 main{padding:1.5rem;min-width:0}
@@ -62,8 +69,10 @@ dialog h3{margin-top:0}
 #toast.error{background:var(--danger)}
 @media(max-width:800px){
   #app-view{grid-template-columns:1fr}
-  aside{position:fixed;inset:0 auto 0 0;width:230px;z-index:20;transform:translateX(-100%);transition:.25s}
+  aside{position:fixed;inset:0 auto 0 0;width:230px;z-index:40;transform:translateX(-100%);transition:transform .25s}
   aside.open{transform:none}
+  .nav a span,.side-info,#btn-logout{opacity:1}
+  .logo-full{display:block!important}.logo-mini{display:none}
   .menu-btn{display:inline-block}
   .form-row{grid-template-columns:1fr}
 }
