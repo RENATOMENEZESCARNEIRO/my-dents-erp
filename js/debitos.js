@@ -91,6 +91,7 @@
 
   const vencido = (d) => d.saldo > 0 && d.vencimento < today();
 
+  window.MD.receber = receber;
   register('debitos', 'Débitos', (el) => tabs(el, 'debitos', [
     { id: 'debitos', label: 'Débitos', render: async (b) => {
       b.innerHTML = `<div class="actions" style="margin-bottom:1rem"><select id="st">${opts([{ id: 'aberto', n: 'Em aberto' }, { id: 'pago', n: 'Quitados' }, { id: '', n: 'Todos' }], (x) => x.n, null, 'aberto')}</select></div><div id="l"></div>`;

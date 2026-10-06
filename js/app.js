@@ -114,7 +114,7 @@
 
   /* ---------- registro de telas ---------- */
   const views = [];
-  const register = (id, title, render, order = 100) => { views.push({ id, title, render, order }); views.sort((a, b) => a.order - b.order); };
+  const register = (id, title, render, order = 100, pai) => { views.push({ id, title, render, order, pai }); views.sort((a, b) => a.order - b.order); };
   const ICONS = {
     dashboard: '<path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>',
     pacientes: '<path d="M12 12a4 4 0 100-8 4 4 0 000 8zm0 2c-3.3 0-8 1.7-8 5v1h16v-1c0-3.3-4.7-5-8-5z"/>',
@@ -131,14 +131,15 @@
   let navToken = 0;
 
   async function navigate() {
-    const v = views.find((x) => x.id === location.hash.slice(1)) || views[0];
+    const [vid, arg] = location.hash.slice(1).split('/');
+    const v = views.find((x) => x.id === vid) || views[0];
     const token = ++navToken;
-    $$('.nav a').forEach((a) => a.classList.toggle('active', a.dataset.view === v.id));
+    $$('.nav a').forEach((a) => a.classList.toggle('active', a.dataset.view === (v.pai || v.id)));
     $('#view-title').textContent = v.title;
     $('#sidebar').classList.remove('open');
     const sec = document.createElement('section');
     sec.className = 'view';
-    try { await v.render(sec); } catch (e) { sec.innerHTML = `<div class="card empty">Erro ao carregar: ${esc(e.message)}</div>`; }
+    try { await v.render(sec, arg); } catch (e) { sec.innerHTML = `<div class="card empty">Erro ao carregar: ${esc(e.message)}</div>`; }
     if (token !== navToken) return;
     $('#view-root').replaceChildren(sec);
   }
@@ -239,8 +240,8 @@
       const lista = state.pacientes.filter((p) => (!state.unidadeId || p.unidade_id === state.unidadeId) &&
         (!t || p.nome.toLowerCase().includes(t) || (digits(t) && p.cpf.includes(digits(t)))));
       $('#lista', el).innerHTML = table(['Nome', 'CPF', 'Telefone', 'Unidade', ''], rows(lista, (p) =>
-        `<tr><td>${esc(p.nome)}</td><td>${fmtCPF(p.cpf)}</td><td>${esc(p.telefone)}</td><td>${esc(p.unidades?.nome)}</td>
-         <td class="nowrap"><button class="btn ghost sm" data-agendar="${esc(p.id)}">Agendar</button>
+        `<tr><td><a href="#paciente/${esc(p.id)}"><b>${esc(p.nome)}</b></a></td><td>${fmtCPF(p.cpf)}</td><td>${esc(p.telefone)}</td><td>${esc(p.unidades?.nome)}</td>
+         <td class="nowrap"><a class="btn ghost sm" href="#paciente/${esc(p.id)}">Ficha</a> <button class="btn ghost sm" data-agendar="${esc(p.id)}">Agendar</button>
          <button class="btn ghost sm" data-orcar="${esc(p.id)}">Orçamento</button></td></tr>`, 'Nenhum paciente encontrado.', 5));
     };
     $('#busca', el).oninput = draw;
@@ -348,7 +349,7 @@
       await carregarBase();
     } catch (e) { toast('Erro ao carregar dados: ' + e.message, true); }
     try {
-      $('#nav').innerHTML = views.map((v) => `<a href="#${v.id}" data-view="${v.id}" title="${esc(v.title)}">${iconeNav(v.id)}<span>${esc(v.title)}</span></a>`).join('');
+      $('#nav').innerHTML = views.filter((v) => !v.pai).map((v) => `<a href="#${v.id}" data-view="${v.id}" title="${esc(v.title)}">${iconeNav(v.id)}<span>${esc(v.title)}</span></a>`).join('');
       await navigate();
     } catch (e) { console.error(e); toast('Erro ao abrir a tela: ' + e.message, true); }
   }

@@ -101,6 +101,7 @@
     });
   }
 
+  window.MD.abrirOrcamento = abrirOrcamento; window.MD.novoOrcamento = novoOrcamento;
   register('orcamentos', 'Orçamentos', async (el) => {
     el.innerHTML = `<div class="actions" style="margin-bottom:1rem">
         <select id="st" aria-label="Situação">${opts([{ id: '', n: 'Todos' }, { id: 'pendente', n: 'Pendentes' }, { id: 'aprovado', n: 'Aprovados' }, { id: 'cancelado', n: 'Cancelados' }], (x) => x.n, null, 'pendente')}</select>
