@@ -136,8 +136,8 @@
     const get = (p) => p.then((r) => { if (r.error) throw new Error(r.error.message); return r.data; });
     const [u, d, p, pl, pr, c, pf] = await Promise.all([
       get(db.from('unidades').select('*').eq('ativo', true).order('nome')),
-      get(db.from('dentistas').select('*, unidades(nome)').eq('ativo', true).order('nome')),
-      get(db.from('pacientes').select('*, unidades(nome)').order('nome')),
+      get(db.from('dentistas').select('*, unidades!unidade_id(nome)').eq('ativo', true).order('nome')),
+      get(db.from('pacientes').select('*, unidades!unidade_id(nome)').order('nome')),
       get(db.from('planos').select('*').eq('ativo', true).order('valor_mensal')),
       get(db.from('procedimentos').select('*').order('nome')),
       get(db.from('contas_bancarias').select('*').eq('ativo', true).order('nome')),
@@ -166,8 +166,8 @@
       porUnidade(db.from('pacientes').select('id', { count: 'exact', head: true })),
       porUnidade(db.from('debitos').select('saldo').in('status', ['pendente', 'parcial'])),
       porUnidade(db.from('recebimentos').select('valor_liquido').eq('status', 'previsto')),
-      db.from('previsoes').select('*, dentistas(nome)').eq('status', 'prevista').order('vencimento'),
-      porUnidade(db.from('agendamentos').select('*, pacientes(nome), dentistas(nome), unidades(nome)')
+      db.from('previsoes').select('*, dentistas!dentista_id(nome)').eq('status', 'prevista').order('vencimento'),
+      porUnidade(db.from('agendamentos').select('*, pacientes!paciente_id(nome), dentistas!dentista_id(nome), unidades!unidade_id(nome)')
         .gte('data_hora', new Date().toISOString()).neq('status', 'cancelado').order('data_hora').limit(8)),
     ]);
     const sum = (r, k) => (r.data || []).reduce((s, x) => s + Number(x[k]), 0);
@@ -265,7 +265,7 @@
       <button class="btn" id="novo">+ Novo agendamento</button></div><div id="lista"></div>`;
     const draw = async () => {
       const dia = $('#dia', el).value || today();
-      const { data, error } = await porUnidade(db.from('agendamentos').select('*, pacientes(nome), dentistas(nome), unidades(nome)')
+      const { data, error } = await porUnidade(db.from('agendamentos').select('*, pacientes!paciente_id(nome), dentistas!dentista_id(nome), unidades!unidade_id(nome)')
         .gte('data_hora', new Date(dia + 'T00:00:00').toISOString()).lte('data_hora', new Date(dia + 'T23:59:59').toISOString()).order('data_hora'));
       if (error) return toast(error.message, true);
       $('#lista', el).innerHTML = table(['Horário', 'Paciente', 'Dentista', 'Procedimento', 'Unidade', 'Status'], rows(data, (a) =>
@@ -292,7 +292,7 @@
         <label>Plano<select name="plano_id" required>${opts(state.planos, (p) => `${p.nome} — ${brl(p.valor_mensal)}`)}</select></label>`,
       onSubmit: async (v) => { await q(db.from('assinaturas').insert(v)); toast('Assinatura criada!'); refresh(); },
     });
-    const data = await q(db.from('assinaturas').select('*, pacientes(nome), planos(nome)').order('criado_em', { ascending: false }));
+    const data = await q(db.from('assinaturas').select('*, pacientes!paciente_id(nome), planos(nome)').order('criado_em', { ascending: false }));
     $('#lista', el).innerHTML = table(['Paciente', 'Plano', 'Início', 'Status', ''], rows(data, (a) =>
       `<tr><td>${esc(a.pacientes?.nome)}</td><td>${esc(a.planos?.nome)}</td><td>${fmtD(a.inicio)}</td><td>${badge(a.status)}</td>
        <td>${a.status === 'ativa' ? `<button class="btn ghost sm" data-cancelar-ass="${esc(a.id)}">Cancelar</button>` : ''}</td></tr>`, 'Nenhuma assinatura.', 5));

@@ -69,7 +69,7 @@
   }
 
   async function abrirOrcamento(id) {
-    const o = await q(db.from('orcamentos').select('*, pacientes(nome), dentistas(nome), unidades(nome), orcamento_itens(*, procedimentos(codigo,nome))').eq('id', id).single());
+    const o = await q(db.from('orcamentos').select('*, pacientes!paciente_id(nome), dentistas!dentista_id(nome), unidades!unidade_id(nome), orcamento_itens(*, procedimentos(codigo,nome))').eq('id', id).single());
     const itens = o.orcamento_itens || [];
     const pend = o.status === 'pendente';
     modal({
@@ -107,7 +107,7 @@
         <button class="btn" id="novo">+ Novo orçamento</button></div><div id="lista"></div>`;
     $('#novo', el).onclick = () => novoOrcamento();
     const draw = async () => {
-      let qy = porUnidade(db.from('orcamentos').select('*, pacientes(nome), dentistas(nome), unidades(nome), orcamento_itens(valor_negociado)').order('codigo', { ascending: false }).limit(200));
+      let qy = porUnidade(db.from('orcamentos').select('*, pacientes!paciente_id(nome), dentistas!dentista_id(nome), unidades!unidade_id(nome), orcamento_itens(valor_negociado)').order('codigo', { ascending: false }).limit(200));
       if ($('#st', el).value) qy = qy.eq('status', $('#st', el).value);
       const data = await q(qy);
       $('#lista', el).innerHTML = table(['#', 'Paciente', 'Dentista', 'Unidade', 'Itens', 'Total', 'Situação', ''], rows(data, (o) =>

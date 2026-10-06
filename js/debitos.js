@@ -10,7 +10,7 @@
   };
 
   async function receber(debitoId) {
-    const d = await q(db.from('debitos').select('*, pacientes(nome), unidades(nome), orcamentos(codigo, dentista_id, orcamento_itens(valor_negociado, procedimentos(nome)))').eq('id', debitoId).single());
+    const d = await q(db.from('debitos').select('*, pacientes!paciente_id(nome), unidades!unidade_id(nome), orcamentos(codigo, dentista_id, orcamento_itens(valor_negociado, procedimentos(nome)))').eq('id', debitoId).single());
     const [taxas, cfg, cred] = await Promise.all([
       q(db.from('taxas_cartao').select('*')), q(db.from('config').select('*').eq('chave', 'taxas_cartao_ativas')),
       q(db.from('creditos_paciente').select('saldo').eq('paciente_id', d.paciente_id).eq('unidade_id', d.unidade_id)),
@@ -95,7 +95,7 @@
     { id: 'debitos', label: 'Débitos', render: async (b) => {
       b.innerHTML = `<div class="actions" style="margin-bottom:1rem"><select id="st">${opts([{ id: 'aberto', n: 'Em aberto' }, { id: 'pago', n: 'Quitados' }, { id: '', n: 'Todos' }], (x) => x.n, null, 'aberto')}</select></div><div id="l"></div>`;
       const draw = async () => {
-        let qy = porUnidade(db.from('debitos').select('*, pacientes(nome), unidades(nome), orcamentos(codigo)').order('vencimento').limit(300));
+        let qy = porUnidade(db.from('debitos').select('*, pacientes!paciente_id(nome), unidades!unidade_id(nome), orcamentos(codigo)').order('vencimento').limit(300));
         const st = $('#st', b).value;
         if (st === 'aberto') qy = qy.in('status', ['pendente', 'parcial']); else if (st) qy = qy.eq('status', st);
         const data = await q(qy);
@@ -110,7 +110,7 @@
       await draw();
     } },
     { id: 'recebimentos', label: 'Recebimentos', render: async (b) => {
-      const data = await q(porUnidade(db.from('recebimentos').select('*, pacientes(nome), dentistas(nome), unidades(nome), contas_bancarias(nome)').order('codigo', { ascending: false }).limit(200)));
+      const data = await q(porUnidade(db.from('recebimentos').select('*, pacientes!paciente_id(nome), dentistas!dentista_id(nome), unidades!unidade_id(nome), contas_bancarias!conta_id(nome)').order('codigo', { ascending: false }).limit(200)));
       b.innerHTML = table(['#', 'Paciente', 'Unidade', 'Meio', 'Valor', 'Líquido', 'Lançamento', 'Pagamento', 'Recebimento', 'Conta', 'Dentista', 'Situação', ''], rows(data, (r) =>
         `<tr><td>${r.codigo}</td><td>${esc(r.pacientes?.nome)}</td><td>${esc(r.unidades?.nome)}</td>
          <td>${esc(r.meio.replace('_', ' '))}${r.meio === 'credito' ? ` ${r.parcelas}×` : ''}${r.cv ? `<br><small>CV ${esc(r.cv)}</small>` : ''}</td>
@@ -124,7 +124,7 @@
       }));
     } },
     { id: 'credito', label: 'Crédito de pacientes', render: async (b) => {
-      const data = await q(porUnidade(db.from('creditos_paciente').select('*, pacientes(nome), unidades(nome)').gt('saldo', 0)));
+      const data = await q(porUnidade(db.from('creditos_paciente').select('*, pacientes!paciente_id(nome), unidades!unidade_id(nome)').gt('saldo', 0)));
       b.innerHTML = `<p class="hint">Crédito é receita no momento em que o dinheiro entra. Devolvê-lo é dedução da receita, nunca despesa.</p>` +
         table(['Paciente', 'Unidade', 'Saldo', ''], rows(data, (c) =>
           `<tr><td>${esc(c.pacientes?.nome)}</td><td>${esc(c.unidades?.nome)}</td><td>${brl(c.saldo)}</td>

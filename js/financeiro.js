@@ -49,7 +49,7 @@
 
   /* ----- lista de lançamentos (usada em Lançamentos e Fluxo) ----- */
   async function listaLancamentos(host, { ini, fim, conta, unidade, tipo }) {
-    let qy = db.from('lancamentos').select('*, contas_bancarias(nome), unidades(nome)').gte('data', ini).lte('data', fim).eq('estornado', false)
+    let qy = db.from('lancamentos').select('*, contas_bancarias!conta_id(nome), unidades!unidade_id(nome)').gte('data', ini).lte('data', fim).eq('estornado', false)
       .order('data', { ascending: false }).order('codigo', { ascending: false }).limit(500);
     if (conta) qy = qy.eq('conta_id', conta);
     if (unidade) qy = qy.eq('unidade_id', unidade);
@@ -86,7 +86,7 @@
         onSubmit: async (v) => { await q(db.from('previsoes').insert({ ...v, valor: num(v.valor), origem: 'manual', tipo: 'despesa' })); toast('Previsão criada.'); refresh(); },
       });
       const draw = async () => {
-        let qy = db.from('previsoes').select('*, dentistas(nome), unidades(nome)').order('vencimento').limit(300);
+        let qy = db.from('previsoes').select('*, dentistas!dentista_id(nome), unidades!unidade_id(nome)').order('vencimento').limit(300);
         if ($('#st', b).value) qy = qy.eq('status', $('#st', b).value);
         const data = await q(qy);
         $('#l', b).innerHTML = table(['Vencimento', 'Favorecido', 'Descrição', 'Origem', 'Unidade', 'Valor', 'Situação', ''], rows(data, (p) => {
@@ -105,7 +105,7 @@
       await draw();
     } },
     { id: 'cartoes', label: 'Cartões a receber', render: async (b) => {
-      const data = await q(porUnidade(db.from('recebimentos').select('*, pacientes(nome), contas_bancarias(nome), unidades(nome)').eq('status', 'previsto').in('meio', ['credito', 'debito']).order('data_pagamento')));
+      const data = await q(porUnidade(db.from('recebimentos').select('*, pacientes!paciente_id(nome), contas_bancarias!conta_id(nome), unidades!unidade_id(nome)').eq('status', 'previsto').in('meio', ['credito', 'debito']).order('data_pagamento')));
       b.innerHTML = `<p class="hint">O paciente já quitou. Aqui o dinheiro do cartão entra de fato: ao realizar você pode ajustar o líquido (a taxa varia por bandeira).</p>` +
         table(['Pagamento', 'Paciente', 'Unidade', 'Meio', 'CV', 'Bruto', 'Taxa prevista', 'Líquido previsto', 'Conta', ''], rows(data, (r) =>
           `<tr><td>${fmtD(r.data_pagamento)}</td><td>${esc(r.pacientes?.nome)}</td><td>${esc(r.unidades?.nome)}</td><td>${esc(r.meio)}${r.meio === 'credito' ? ' ' + r.parcelas + '×' : ''}</td><td>${esc(r.cv)}</td>

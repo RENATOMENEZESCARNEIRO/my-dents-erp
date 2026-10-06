@@ -10,9 +10,9 @@
 
   /* ----- detalhe de um dentista dentro da competência ----- */
   async function detalhe(dentistaId, competencia, dentistaNome) {
-    const sel = '*, pacientes(nome), lotes!inner(competencia,status), recebimentos(meio,data_pagamento,valor,valor_aplicado), orcamento_itens(orcamentos(debitos(vencimento,saldo)))';
+    const sel = '*, pacientes!paciente_id(nome), lotes!inner(competencia,status), recebimentos(meio,data_pagamento,valor,valor_aplicado), orcamento_itens(orcamentos(debitos(vencimento,saldo)))';
     let r = await db.from('comissoes').select(sel).eq('dentista_id', dentistaId).eq('lotes.competencia', competencia).order('data_ref');
-    if (r.error) r = await db.from('comissoes').select('*, pacientes(nome), lotes!inner(competencia,status)').eq('dentista_id', dentistaId).eq('lotes.competencia', competencia).order('data_ref');
+    if (r.error) r = await db.from('comissoes').select('*, pacientes!paciente_id(nome), lotes!inner(competencia,status)').eq('dentista_id', dentistaId).eq('lotes.competencia', competencia).order('data_ref');
     if (r.error) return toast(r.error.message, true);
     const list = r.data;
     const debVenc = (c) => { const d = c.orcamento_itens?.orcamentos?.debitos; const x = Array.isArray(d) ? d[0] : d; return x && Number(x.saldo) > 0 && x.vencimento < today(); };
@@ -162,7 +162,7 @@
       $$('[data-lote]', b).forEach((x) => (x.onclick = () => abrirLote(lotes.find((l) => l.id === x.dataset.lote))));
     } },
     { id: 'evolucao', label: 'Evolução clínica', render: async (b) => {
-      const data = await q(porUnidade(db.from('orcamento_itens').select('*, procedimentos(nome), orcamentos!inner(codigo,status,unidade_id,pacientes(nome))')
+      const data = await q(porUnidade(db.from('orcamento_itens').select('*, procedimentos(nome), orcamentos!inner(codigo,status,unidade_id,pacientes!paciente_id(nome))')
         .eq('orcamentos.status', 'aprovado').in('status_exec', ['planejado', 'em_andamento']).order('criado_em').limit(300), 'orcamentos.unidade_id'));
       b.innerHTML = `<p class="hint">Procedimentos aprovados aguardando execução. Marque "executado" informando o dentista: isso libera a comissão de execução.</p>` +
         table(['Paciente', 'Orç.', 'Procedimento', 'Dente', 'Situação', 'Execução', ''], rows(data, (i) =>
@@ -173,7 +173,7 @@
     { id: 'pagamentos', label: 'Pagamento de dentistas', render: async (b) => {
       const [prevs, pagos] = await Promise.all([
         q(db.from('previsoes').select('*').eq('origem', 'producao').eq('status', 'prevista').order('vencimento')),
-        q(db.from('pagamentos_dentista').select('*, dentistas(nome)').order('codigo', { ascending: false }).limit(15)),
+        q(db.from('pagamentos_dentista').select('*, dentistas!dentista_id(nome)').order('codigo', { ascending: false }).limit(15)),
       ]);
       const g = {};
       prevs.forEach((p) => (g[p.dentista_id] ||= []).push(p));

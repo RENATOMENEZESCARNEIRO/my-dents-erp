@@ -27,7 +27,7 @@
         return;
       }
       const r = await rpc('caixa_resumo', { p_turno: t.id });
-      const recs = await q(db.from('recebimentos').select('*, pacientes(nome)').eq('turno_id', t.id).order('codigo'));
+      const recs = await q(db.from('recebimentos').select('*, pacientes!paciente_id(nome)').eq('turno_id', t.id).order('codigo'));
       const movs = await q(db.from('caixa_movs').select('*').eq('turno_id', t.id).order('criado_em'));
       const aberto = t.status === 'aberto';
       corpo.innerHTML = `<div class="card"><div class="actions" style="justify-content:space-between">
