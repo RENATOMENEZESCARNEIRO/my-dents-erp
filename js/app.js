@@ -59,18 +59,19 @@
   const PERMISSOES = [
     ['Pacientes e agenda', [['pacientes_editar', 'Cadastrar/editar pacientes'], ['agenda_editar', 'Agendar e alterar agenda']]],
     ['Orçamentos', [['orcamentos_criar', 'Criar/editar orçamentos'], ['orcamentos_aprovar', 'Aprovar orçamentos (gera débito)']]],
+    ['Prótese e estoque', [['proteses', 'Pedidos de prótese'], ['estoque', 'Estoque (entradas, saídas, itens)']]],
     ['Clínico', [['tratamentos_evoluir', 'Evoluir tratamentos'], ['prontuario', 'Anamnese, anotações e documentos'], ['imagens', 'Imagens do paciente']]],
     ['Recebimentos e caixa', [['debitos_receber', 'Receber débitos'], ['estornar_recebimento', 'Estornar recebimentos'], ['caixa_abrir', 'Abrir caixa e lançar movimentos'], ['fechar_caixa', 'Fechar/reabrir caixa']]],
     ['Financeiro e produção', [['financeiro', 'Financeiro completo (lançamentos, DRE, pagamentos, conferência)'], ['alterar_comissao', 'Alterar comissões'], ['producao_ver', 'Ver produção e comissões']]],
     ['Administração', [['cadastros_editar', 'Cadastros (dentistas, procedimentos, planos)'], ['admin', 'Administrador (tudo, inclusive usuários)']]],
   ];
   const CARGOS = {
-    Gerente: ['pacientes_editar', 'agenda_editar', 'orcamentos_criar', 'orcamentos_aprovar', 'tratamentos_evoluir', 'prontuario', 'imagens', 'debitos_receber', 'estornar_recebimento', 'caixa_abrir', 'fechar_caixa', 'financeiro', 'alterar_comissao', 'producao_ver', 'cadastros_editar'],
-    Dentista: ['agenda_editar', 'orcamentos_criar', 'tratamentos_evoluir', 'prontuario', 'imagens'],
-    'Secretário(a)': ['pacientes_editar', 'agenda_editar', 'orcamentos_criar', 'orcamentos_aprovar', 'prontuario', 'imagens', 'debitos_receber', 'caixa_abrir'],
+    Gerente: ['pacientes_editar', 'agenda_editar', 'orcamentos_criar', 'orcamentos_aprovar', 'tratamentos_evoluir', 'prontuario', 'imagens', 'debitos_receber', 'estornar_recebimento', 'caixa_abrir', 'fechar_caixa', 'financeiro', 'alterar_comissao', 'producao_ver', 'cadastros_editar', 'proteses', 'estoque'],
+    Dentista: ['agenda_editar', 'orcamentos_criar', 'tratamentos_evoluir', 'prontuario', 'imagens', 'proteses'],
+    'Secretário(a)': ['pacientes_editar', 'agenda_editar', 'orcamentos_criar', 'orcamentos_aprovar', 'prontuario', 'imagens', 'debitos_receber', 'caixa_abrir', 'proteses', 'estoque'],
     Financeiro: ['financeiro', 'fechar_caixa', 'alterar_comissao', 'producao_ver', 'estornar_recebimento', 'caixa_abrir', 'debitos_receber'],
   };
-  const VIEW_PERM = { caixa: ['caixa_abrir', 'fechar_caixa'], producao: ['producao_ver', 'financeiro'], financeiro: ['financeiro'], debitos: ['debitos_receber', 'estornar_recebimento', 'financeiro'], cadastros: ['cadastros_editar'] };
+  const VIEW_PERM = { caixa: ['caixa_abrir', 'fechar_caixa'], producao: ['producao_ver', 'financeiro'], financeiro: ['financeiro'], debitos: ['debitos_receber', 'estornar_recebimento', 'financeiro'], cadastros: ['cadastros_editar'], proteses: ['proteses', 'financeiro'], estoque: ['estoque'] };
   const podeVer = (id) => !VIEW_PERM[id] || VIEW_PERM[id].some(can);
   const aplicarPermissoes = (raiz) => $$('[data-perm]', raiz).forEach((e) => { if (!can(e.dataset.perm)) e.remove(); });
   const dentistasDaUnidade = (uid) => (uid ? state.dentistas.filter((d) => d.unidade_id === uid || (d.unidades_ids || []).includes(uid)) : state.dentistas);
@@ -142,6 +143,8 @@
     caixa: '<path d="M21 7H3a1 1 0 00-1 1v11a1 1 0 001 1h18a1 1 0 001-1V8a1 1 0 00-1-1zm-3 8a1.500 1.500 0 110-3 1.500 1.500 0 010 3zM19 5V4H5a2 2 0 00-2 2v1h16V5z"/>',
     producao: '<path d="M3 3v18h18v-2H5V3H3zm4 10h3v5H7v-5zm5-6h3v11h-3V7zm5 3h3v8h-3v-8z"/>',
     financeiro: '<path d="M4 10h3v7H4v-7zm6.500 0h3v7h-3v-7zM2 19h20v3H2v-3zm15-9h3v7h-3v-7zM12 1L2 6v2h20V6L12 1z"/>',
+    proteses: '<path d="M12 2C8.700 2 6 4 6 7c0 2 .8 3.200 1.500 5 .6 1.600.9 4 1.500 8 .1.600.600 1 1.200 1 .6 0 1-.400 1.200-1l.6-4h1l.6 4c.2.600.6 1 1.200 1 .6 0 1.100-.400 1.200-1 .6-4 .9-6.400 1.500-8C17.200 10.200 18 9 18 7c0-3-2.700-5-6-5z"/>',
+    estoque: '<path d="M20 2H4a1 1 0 00-1 1v4a1 1 0 001 1h1v12a1 1 0 001 1h12a1 1 0 001-1V8h1a1 1 0 001-1V3a1 1 0 00-1-1zm-5 11H9v-2h6v2zm4-7H5V4h14v2z"/>',
     planos: '<path d="M20 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>',
     cadastros: '<path d="M19.400 13a7.800 7.800 0 000-2l2.100-1.600a.5.500 0 00.100-.6l-2-3.500a.5.500 0 00-.6-.2l-2.500 1a7.300 7.300 0 00-1.700-1l-.4-2.600a.5.500 0 00-.5-.4h-4a.5.500 0 00-.5.400L9.600 5.500a7.300 7.300 0 00-1.700 1l-2.500-1a.5.500 0 00-.6.200l-2 3.500a.5.500 0 00.1.600L4.600 11a7.800 7.800 0 000 2l-2.100 1.600a.5.500 0 00-.1.600l2 3.500c.1.200.4.300.6.200l2.500-1c.5.400 1.100.7 1.700 1l.4 2.600c0 .2.200.4.500.4h4c.3 0 .5-.2.5-.4l.4-2.600c.6-.3 1.200-.6 1.700-1l2.500 1c.2.100.5 0 .6-.2l2-3.500a.5.500 0 00-.1-.6L19.400 13zM12 15.500a3.500 3.500 0 110-7 3.500 3.500 0 010 7z"/>'
   };
