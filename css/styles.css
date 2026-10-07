@@ -109,3 +109,8 @@ table.dre tr.sub td{font-weight:700;background:#f8fafc}table.dre tr.neg td{color
 .dente.planejado{background:#fff3cd;border-color:#e0b100}.dente.em_andamento{background:#cfe6fb;border-color:var(--brand)}.dente.executado{background:#c9f0e1;border-color:#2e9e72}
 .legenda{font-size:.8rem;color:var(--muted);margin-bottom:.4rem;display:flex;gap:.8rem;flex-wrap:wrap}.legenda .dente{width:auto;height:auto;border:0;background:none;cursor:default}
 .legenda .planejado{color:#e0b100}.legenda .em_andamento{color:var(--brand)}.legenda .executado{color:#2e9e72}
+
+.galeria{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:1rem}
+.thumb{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:.5rem;display:flex;flex-direction:column;gap:.3rem}
+.thumb img{width:100%;height:110px;object-fit:cover;border-radius:6px;display:block}.thumb .pdf{height:110px;display:grid;place-items:center;background:#eaf3fc;border-radius:6px;font-weight:700;color:var(--brand)}
+.thumb .nm{font-size:.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
