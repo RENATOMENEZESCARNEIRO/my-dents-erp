@@ -250,6 +250,39 @@
       'Nenhum atendimento futuro.', 5));
   }, 10);
 
+  /* ---------- Ortodontia (campos na ficha) ---------- */
+  const ORTO_SIT = [{ id: 'ativo', n: 'Ativo' }, { id: 'inativo', n: 'Inativo' }, { id: 'concluido', n: 'Tratamento Concluído' }, { id: 'cancelado', n: 'Cancelado' }];
+  const ortoHtml = (p = {}) => `<div class="card" style="padding:.6rem .8rem;margin:.4rem 0">
+      <label style="display:flex;gap:.5rem;align-items:center"><input type="checkbox" name="orto" ${p.orto ? 'checked' : ''} style="width:auto"> Paciente de Ortodontia?</label>
+      <div class="form-row orto-campos" ${p.orto ? '' : 'hidden'}>
+        <label>Data de adesão do tratamento<input type="date" name="orto_adesao" value="${esc(p.orto_adesao || '')}"></label>
+        <label>Situação do tratamento<select name="orto_situacao">${opts(ORTO_SIT, (x) => x.n, 'Selecione…', p.orto_situacao)}</select></label>
+      </div></div>`;
+  const ortoBind = (form) => {
+    const cb = form.querySelector('[name=orto]'), box = form.querySelector('.orto-campos');
+    cb.onchange = () => { box.hidden = !cb.checked; };
+  };
+  const ortoValores = (v) => {
+    const on = !!v.orto;
+    if (on && (!v.orto_adesao || !v.orto_situacao)) throw new Error('Informe a data de adesão e a situação do tratamento de ortodontia.');
+    return { orto: on, orto_adesao: on ? v.orto_adesao : null, orto_situacao: on ? v.orto_situacao : null };
+  };
+
+  /* ---------- Pergunta Sim/Não ---------- */
+  function pergunta(titulo, msg, sim = 'Sim', nao = 'Não') {
+    return new Promise((res) => {
+      const dlg = document.createElement('dialog');
+      dlg.innerHTML = `<form method="dialog"><h3>${esc(titulo)}</h3><div class="modal-body"><p>${esc(msg)}</p></div>
+        <div class="form-actions"><button type="button" class="btn ghost" data-n>${esc(nao)}</button><button type="button" class="btn" data-s>${esc(sim)}</button></div></form>`;
+      document.body.appendChild(dlg);
+      let r = false;
+      dlg.querySelector('[data-s]').onclick = () => { r = true; dlg.close(); };
+      dlg.querySelector('[data-n]').onclick = () => dlg.close();
+      dlg.addEventListener('close', () => { dlg.remove(); res(r); });
+      dlg.showModal();
+    });
+  }
+
   /* ---------- Pacientes ---------- */
   function novoPaciente() {
     modal({
@@ -265,9 +298,12 @@
         </div>
         <div class="form-row"><label>Como conheceu a clínica?<select name="origem">${opts((window.MD.ORIGENS || []).map((o) => ({ id: o, n: o })), (x) => x.n, 'Não informado')}</select></label>
           <label>Campanha<select name="campanha_id">${opts((state.campanhas || []).filter((c) => c.ativo), (x) => x.nome, 'Nenhuma')}</select></label></div>
+        ${ortoHtml()}
         <label>Observações<textarea name="observacoes" rows="2"></textarea></label>`,
+      onOpen: (form) => ortoBind(form),
       onSubmit: async (v) => {
         v.origem = v.origem || null; v.campanha_id = v.campanha_id || null;
+        Object.assign(v, ortoValores(v));
         if (!validarCPF(v.cpf)) throw new Error('CPF inválido.');
         v.cpf = digits(v.cpf);
         const { error } = await db.from('pacientes').insert(v);
@@ -285,7 +321,7 @@
         <button class="btn" data-perm="pacientes_editar" id="novo">+ Novo paciente</button></div><div id="lista"></div>`;
     const draw = () => {
       const t = $('#busca', el).value.trim().toLowerCase();
-      const lista = state.pacientes.filter((p) => (!state.unidadeId || p.unidade_id === state.unidadeId) &&
+      const lista = state.pacientes.filter((p) =>   // base de pacientes global: não filtra por unidade
         (!t || p.nome.toLowerCase().includes(t) || (digits(t) && p.cpf.includes(digits(t)))));
       $('#lista', el).innerHTML = table(['Nome', 'CPF', 'Telefone', 'Unidade', ''], rows(lista, (p) =>
         `<tr><td><a href="#paciente/${esc(p.id)}"><b>${esc(p.nome)}</b></a></td><td>${fmtCPF(p.cpf)}</td><td>${esc(p.telefone)}</td><td>${esc(p.unidades?.nome)}</td>
@@ -303,7 +339,7 @@
       title: 'Novo agendamento',
       body: `<label>Paciente<select name="paciente_id" required>${opts(state.pacientes, (p) => p.nome, 'Selecione…', pacienteId)}</select></label>
         <div class="form-row">
-          <label>Unidade<select name="unidade_id" required>${opts(state.unidades, (u) => u.nome, 'Selecione…', state.unidadeId)}</select></label>
+          <label>Unidade<select name="unidade_id" required>${opts(state.unidades, (u) => u.nome, 'Selecione…', state.unidadeId || (state.unidades.length === 1 ? state.unidades[0].id : ''))}</select></label>
           <label>Dentista<select name="dentista_id" required>${opts(dentistasDaUnidade(state.unidadeId), (d) => d.nome)}</select></label>
         </div>
         <div class="form-row">
@@ -314,9 +350,22 @@
       submit: 'Agendar',
       onOpen: (form) => { form.unidade_id.onchange = () => { form.dentista_id.innerHTML = opts(dentistasDaUnidade(form.unidade_id.value), (d) => d.nome); }; },
       onSubmit: async (v) => {
+        // Unidade do cadastro é só identificador: cruzar unidades é permitido, mediante confirmação.
+        const pac = state.pacientes.find((x) => x.id === v.paciente_id);
+        let transferir = false;
+        if (pac && pac.unidade_id !== v.unidade_id) {
+          const X = state.unidades.find((u) => u.id === pac.unidade_id)?.nome, Y = state.unidades.find((u) => u.id === v.unidade_id)?.nome;
+          if (!(await pergunta('Paciente de outra unidade', `Este paciente está cadastrado na unidade ${X}. Deseja prosseguir com a marcação para a unidade ${Y}?`))) return false;
+          transferir = await pergunta('Unidade padrão do paciente', `Deseja alterar a unidade de atendimento padrão deste paciente de ${X} para ${Y}?`, 'Sim, transferir', 'Não, só esta consulta');
+        }
         v.data_hora = new Date(v.data_hora).toISOString();
         const { error } = await db.from('agendamentos').insert(v);   // exemplo prático de INSERT
         if (error) throw new Error(error.code === '23505' ? 'Esse dentista já tem atendimento neste horário.' : error.message);
+        if (transferir) {
+          const r = await db.from('pacientes').update({ unidade_id: v.unidade_id }).eq('id', v.paciente_id);
+          if (r.error) toast('Agendado, mas não foi possível transferir o paciente: ' + r.error.message, true);
+          else await carregarBase();
+        }
         toast('Agendamento salvo!');
         refresh();
       },
@@ -474,5 +523,5 @@
   }
 
   window.MD = { db, $, $$, esc, digits, fmtCPF, fmtDT, fmtD, brl, num, today, monthStart, monthEnd, daysTo, toast, state, opts, rows, table, badge,
-    group, porUnidade, can, PERMISSOES, CARGOS, dentistasDaUnidade, aplicarPermissoes, nomeUnidade, rpc, q, modal, tabs, register, refresh, carregarBase, formValues, validarCPF, novoPaciente, novoAgendamento, start };
+    group, porUnidade, can, PERMISSOES, CARGOS, dentistasDaUnidade, aplicarPermissoes, nomeUnidade, rpc, q, modal, tabs, register, refresh, carregarBase, formValues, validarCPF, novoPaciente, novoAgendamento, ortoHtml, ortoBind, ortoValores, pergunta, start };
 })();

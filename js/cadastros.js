@@ -83,9 +83,10 @@
           <label>Tipo<select name="tipo">${opts([{ id: 'banco', n: 'Banco' }, { id: 'caixa', n: 'Caixa (espécie)' }], (x) => x.n, null, c.tipo || 'banco')}</select></label>
           <label>Saldo inicial<input name="saldo_inicial" type="number" step="0.01" value="${esc(c.saldo_inicial ?? 0)}"></label>
         </div>
+        <label>Unidade<select name="unidade_id">${opts(state.unidades, (u) => u.nome, 'Todas as unidades (rede)', c.unidade_id)}</select></label>
         <p class="hint">O saldo das contas é calculado pelos lançamentos. Ajuste o saldo inicial só quando o sistema estiver em operação.</p>`,
       onSubmit: async (v) => {
-        v.saldo_inicial = num(v.saldo_inicial);
+        v.saldo_inicial = num(v.saldo_inicial); v.unidade_id = v.unidade_id || null;
         await q(c.id ? db.from('contas_bancarias').update(v).eq('id', c.id) : db.from('contas_bancarias').insert(v));
         toast('Conta salva.');
         await carregarBase();

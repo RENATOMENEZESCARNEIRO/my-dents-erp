@@ -1,7 +1,7 @@
 /* Ficha do paciente: Sobre, Orçamentos, Tratamentos (odontograma + evoluções), Anamnese e Débitos. Rota: #paciente/<id> */
 (() => {
   'use strict';
-  const { db, $, $$, esc, brl, num, today, fmtD, fmtCPF, digits, toast, state, opts, rows, table, badge, rpc, q, modal, tabs, register, refresh, validarCPF, novoAgendamento } = window.MD;
+  const { db, $, $$, esc, brl, num, today, fmtD, fmtCPF, digits, toast, state, opts, rows, table, badge, rpc, q, modal, tabs, register, refresh, validarCPF, novoAgendamento, ortoHtml, ortoBind, ortoValores } = window.MD;
 
   const SUP = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28];
   const INF = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38];
@@ -28,7 +28,7 @@
       <div class="card"><h4>Dados pessoais</h4>
         ${campo('CPF', fmtCPF(p.cpf))}${campo('Nascimento', p.data_nascimento ? `${fmtD(p.data_nascimento)} (${idade(p.data_nascimento)} anos)` : '')}
         ${campo('Sexo', { F: 'Feminino', M: 'Masculino', O: 'Outro' }[p.sexo])}${campo('Telefone', p.telefone)}${campo('E-mail', p.email)}
-        ${campo('Unidade', p.unidades?.nome)}${campo('Endereço', [p.endereco, p.bairro].filter(Boolean).join(' — '))}${campo('Cidade/UF', [p.cidade, p.uf].filter(Boolean).join('/'))}${campo('CEP', p.cep)}
+        ${campo('Unidade', p.unidades?.nome)}${campo('Endereço', [p.endereco, p.bairro].filter(Boolean).join(' — '))}${campo('Cidade/UF', [p.cidade, p.uf].filter(Boolean).join('/'))}${campo('CEP', p.cep)}${p.orto ? campo('Ortodontia', `${{ ativo: 'Ativo', inativo: 'Inativo', concluido: 'Tratamento Concluído', cancelado: 'Cancelado' }[p.orto_situacao] || ''} · adesão ${fmtD(p.orto_adesao)}`) : ''}
         <h4 style="margin-top:1rem">Responsável e plano</h4>
         ${campo('Responsável', p.responsavel_nome)}${campo('CPF do responsável', p.responsavel_cpf ? fmtCPF(p.responsavel_cpf) : '')}${campo('Plano', plano[0]?.nome)}
         <h4 style="margin-top:1rem">Observações</h4><p>${esc(p.observacoes) || '—'}</p></div>
@@ -51,9 +51,11 @@
         <div class="form-row"><label>Responsável<input name="responsavel_nome" value="${esc(p.responsavel_nome || '')}"></label><label>CPF do responsável<input name="responsavel_cpf" value="${esc(p.responsavel_cpf || '')}"></label></div>
         <div class="form-row"><label>Como conheceu a clínica?<select name="origem">${opts((window.MD.ORIGENS || []).map((o) => ({ id: o, n: o })), (x) => x.n, 'Não informado', p.origem)}</select></label>
           <label>Campanha<select name="campanha_id">${opts(state.campanhas || [], (x) => x.nome, 'Nenhuma', p.campanha_id)}</select></label></div>
+        ${ortoHtml(p)}
         <label>Observações<textarea name="observacoes" rows="2">${esc(p.observacoes || '')}</textarea></label>`,
+      onOpen: (form) => ortoBind(form),
       onSubmit: async (v) => {
-        const o = { ...v, origem: v.origem || null, campanha_id: v.campanha_id || null, data_nascimento: v.data_nascimento || null, sexo: v.sexo || null, plano_id: v.plano_id || null, responsavel_cpf: digits(v.responsavel_cpf) || null };
+        const o = { ...v, ...ortoValores(v), origem: v.origem || null, campanha_id: v.campanha_id || null, data_nascimento: v.data_nascimento || null, sexo: v.sexo || null, plano_id: v.plano_id || null, responsavel_cpf: digits(v.responsavel_cpf) || null };
         if (o.responsavel_cpf && !validarCPF(o.responsavel_cpf)) throw new Error('CPF do responsável inválido.');
         await q(db.from('pacientes').update(o).eq('id', p.id));
         toast('Paciente atualizado.'); await window.MD.carregarBase(); refresh();
