@@ -49,9 +49,11 @@
         <div class="form-row"><label>CEP<input name="cep" value="${esc(p.cep || '')}"></label><label>Endereço<input name="endereco" value="${esc(p.endereco || '')}"></label></div>
         <div class="form-row"><label>Bairro<input name="bairro" value="${esc(p.bairro || '')}"></label><label>Cidade<input name="cidade" value="${esc(p.cidade || '')}"></label><label>UF<input name="uf" maxlength="2" value="${esc(p.uf || '')}"></label></div>
         <div class="form-row"><label>Responsável<input name="responsavel_nome" value="${esc(p.responsavel_nome || '')}"></label><label>CPF do responsável<input name="responsavel_cpf" value="${esc(p.responsavel_cpf || '')}"></label></div>
+        <div class="form-row"><label>Como conheceu a clínica?<select name="origem">${opts((window.MD.ORIGENS || []).map((o) => ({ id: o, n: o })), (x) => x.n, 'Não informado', p.origem)}</select></label>
+          <label>Campanha<select name="campanha_id">${opts(state.campanhas || [], (x) => x.nome, 'Nenhuma', p.campanha_id)}</select></label></div>
         <label>Observações<textarea name="observacoes" rows="2">${esc(p.observacoes || '')}</textarea></label>`,
       onSubmit: async (v) => {
-        const o = { ...v, data_nascimento: v.data_nascimento || null, sexo: v.sexo || null, plano_id: v.plano_id || null, responsavel_cpf: digits(v.responsavel_cpf) || null };
+        const o = { ...v, origem: v.origem || null, campanha_id: v.campanha_id || null, data_nascimento: v.data_nascimento || null, sexo: v.sexo || null, plano_id: v.plano_id || null, responsavel_cpf: digits(v.responsavel_cpf) || null };
         if (o.responsavel_cpf && !validarCPF(o.responsavel_cpf)) throw new Error('CPF do responsável inválido.');
         await q(db.from('pacientes').update(o).eq('id', p.id));
         toast('Paciente atualizado.'); await window.MD.carregarBase(); refresh();

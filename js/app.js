@@ -62,16 +62,16 @@
     ['Prótese e estoque', [['proteses', 'Pedidos de prótese'], ['estoque', 'Estoque (entradas, saídas, itens)']]],
     ['Clínico', [['tratamentos_evoluir', 'Evoluir tratamentos'], ['prontuario', 'Anamnese, anotações e documentos'], ['imagens', 'Imagens do paciente']]],
     ['Recebimentos e caixa', [['debitos_receber', 'Receber débitos'], ['estornar_recebimento', 'Estornar recebimentos'], ['caixa_abrir', 'Abrir caixa e lançar movimentos'], ['fechar_caixa', 'Fechar/reabrir caixa']]],
-    ['Financeiro e produção', [['financeiro', 'Financeiro completo (lançamentos, DRE, pagamentos, conferência)'], ['alterar_comissao', 'Alterar comissões'], ['nfse', 'Notas fiscais (NFS-e)'], ['producao_ver', 'Ver produção e comissões']]],
+    ['Financeiro e produção', [['financeiro', 'Financeiro completo (lançamentos, DRE, pagamentos, conferência)'], ['alterar_comissao', 'Alterar comissões'], ['nfse', 'Notas fiscais (NFS-e)'], ['marketing', 'Marketing e campanhas'], ['producao_ver', 'Ver produção e comissões']]],
     ['Administração', [['cadastros_editar', 'Cadastros (dentistas, procedimentos, planos)'], ['admin', 'Administrador (tudo, inclusive usuários)']]],
   ];
   const CARGOS = {
-    Gerente: ['pacientes_editar', 'agenda_editar', 'orcamentos_criar', 'orcamentos_aprovar', 'tratamentos_evoluir', 'prontuario', 'imagens', 'debitos_receber', 'estornar_recebimento', 'caixa_abrir', 'fechar_caixa', 'financeiro', 'alterar_comissao', 'producao_ver', 'cadastros_editar', 'proteses', 'estoque', 'nfse'],
+    Gerente: ['pacientes_editar', 'agenda_editar', 'orcamentos_criar', 'orcamentos_aprovar', 'tratamentos_evoluir', 'prontuario', 'imagens', 'debitos_receber', 'estornar_recebimento', 'caixa_abrir', 'fechar_caixa', 'financeiro', 'alterar_comissao', 'producao_ver', 'cadastros_editar', 'proteses', 'estoque', 'nfse', 'marketing'],
     Dentista: ['agenda_editar', 'orcamentos_criar', 'tratamentos_evoluir', 'prontuario', 'imagens', 'proteses'],
-    'Secretário(a)': ['pacientes_editar', 'agenda_editar', 'orcamentos_criar', 'orcamentos_aprovar', 'prontuario', 'imagens', 'debitos_receber', 'caixa_abrir', 'proteses', 'estoque'],
+    'Secretário(a)': ['pacientes_editar', 'agenda_editar', 'orcamentos_criar', 'orcamentos_aprovar', 'prontuario', 'imagens', 'debitos_receber', 'caixa_abrir', 'proteses', 'estoque', 'marketing'],
     Financeiro: ['financeiro', 'nfse', 'fechar_caixa', 'alterar_comissao', 'producao_ver', 'estornar_recebimento', 'caixa_abrir', 'debitos_receber'],
   };
-  const VIEW_PERM = { caixa: ['caixa_abrir', 'fechar_caixa'], producao: ['producao_ver', 'financeiro'], financeiro: ['financeiro'], debitos: ['debitos_receber', 'estornar_recebimento', 'financeiro'], cadastros: ['cadastros_editar'], proteses: ['proteses', 'financeiro'], estoque: ['estoque'], nfse: ['nfse'] };
+  const VIEW_PERM = { caixa: ['caixa_abrir', 'fechar_caixa'], producao: ['producao_ver', 'financeiro'], financeiro: ['financeiro'], debitos: ['debitos_receber', 'estornar_recebimento', 'financeiro'], cadastros: ['cadastros_editar'], proteses: ['proteses', 'financeiro'], estoque: ['estoque'], nfse: ['nfse'], marketing: ['marketing'] };
   const podeVer = (id) => !VIEW_PERM[id] || VIEW_PERM[id].some(can);
   const aplicarPermissoes = (raiz) => $$('[data-perm]', raiz).forEach((e) => { if (!can(e.dataset.perm)) e.remove(); });
   const dentistasDaUnidade = (uid) => (uid ? state.dentistas.filter((d) => d.unidade_id === uid || (d.unidades_ids || []).includes(uid)) : state.dentistas);
@@ -146,6 +146,7 @@
     proteses: '<path d="M12 2C8.700 2 6 4 6 7c0 2 .8 3.200 1.500 5 .6 1.600.9 4 1.500 8 .1.600.600 1 1.200 1 .6 0 1-.400 1.200-1l.6-4h1l.6 4c.2.600.6 1 1.200 1 .6 0 1.100-.400 1.200-1 .6-4 .9-6.400 1.500-8C17.200 10.200 18 9 18 7c0-3-2.700-5-6-5z"/>',
     estoque: '<path d="M20 2H4a1 1 0 00-1 1v4a1 1 0 001 1h1v12a1 1 0 001 1h12a1 1 0 001-1V8h1a1 1 0 001-1V3a1 1 0 00-1-1zm-5 11H9v-2h6v2zm4-7H5V4h14v2z"/>',
     nfse: '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 12h8v2H8v-2zm0 4h5v2H8v-2z"/>',
+    marketing: '<path d="M3 10v4a1 1 0 001 1h2l4 4V5L6 9H4a1 1 0 00-1 1zm13.500 2A4.500 4.500 0 0014 7.970v8.050A4.500 4.500 0 0016.500 12zM14 3.230v2.060a7 7 0 010 13.420v2.060a9 9 0 000-17.540z"/>',
     planos: '<path d="M20 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>',
     cadastros: '<path d="M19.400 13a7.800 7.800 0 000-2l2.100-1.600a.5.500 0 00.100-.6l-2-3.500a.5.500 0 00-.6-.2l-2.500 1a7.300 7.300 0 00-1.700-1l-.4-2.600a.5.500 0 00-.5-.4h-4a.5.500 0 00-.5.400L9.600 5.500a7.300 7.300 0 00-1.700 1l-2.500-1a.5.500 0 00-.6.200l-2 3.500a.5.500 0 00.1.600L4.600 11a7.800 7.800 0 000 2l-2.100 1.600a.5.500 0 00-.1.600l2 3.500c.1.200.4.300.6.200l2.500-1c.5.400 1.100.7 1.700 1l.4 2.600c0 .2.200.4.500.4h4c.3 0 .5-.2.5-.4l.4-2.600c.6-.3 1.200-.6 1.700-1l2.500 1c.2.100.5 0 .6-.2l2-3.500a.5.500 0 00-.1-.6L19.400 13zM12 15.500a3.500 3.500 0 110-7 3.500 3.500 0 010 7z"/>'
   };
@@ -171,7 +172,7 @@
   /* ---------- dados-base ---------- */
   async function carregarBase() {
     const get = (p) => p.then((r) => { if (r.error) throw new Error(r.error.message); return r.data; });
-    const [u, d, p, pl, pr, c, pf] = await Promise.all([
+    const [u, d, p, pl, pr, c, pf, cp] = await Promise.all([
       get(db.from('unidades').select('*').eq('ativo', true).order('nome')),
       get(db.from('dentistas').select('*, unidades!unidade_id(nome), dentista_unidades(unidade_id)').eq('ativo', true).order('nome')),
       get(db.from('pacientes').select('*, unidades!unidade_id(nome)').order('nome')),
@@ -179,9 +180,10 @@
       get(db.from('procedimentos').select('*').order('nome')),
       get(db.from('contas_bancarias').select('*').eq('ativo', true).order('nome')),
       get(db.from('perfis_usuario').select('*').eq('user_id', state.user.id)),
+      (async () => get(db.from('campanhas').select('id,nome,ativo').order('nome')))().catch(() => []),
     ]);
     d.forEach((x) => { x.unidades_ids = (x.dentista_unidades || []).map((r) => r.unidade_id); });
-    Object.assign(state, { unidades: u, dentistas: d, pacientes: p, planos: pl, procedimentos: pr, contas: c, perfil: pf[0] || {} });
+    Object.assign(state, { unidades: u, dentistas: d, pacientes: p, planos: pl, procedimentos: pr, contas: c, perfil: pf[0] || {}, campanhas: cp });
     $('#filtro-unidade').innerHTML = opts(state.unidades, (x) => x.nome, 'Todas as unidades', state.unidadeId);
   }
 
@@ -242,8 +244,11 @@
           <label>E-mail<input name="email" type="email"></label>
           <label>Unidade<select name="unidade_id" required>${opts(state.unidades, (u) => u.nome, 'Selecione…', state.unidadeId)}</select></label>
         </div>
+        <div class="form-row"><label>Como conheceu a clínica?<select name="origem">${opts((window.MD.ORIGENS || []).map((o) => ({ id: o, n: o })), (x) => x.n, 'Não informado')}</select></label>
+          <label>Campanha<select name="campanha_id">${opts((state.campanhas || []).filter((c) => c.ativo), (x) => x.nome, 'Nenhuma')}</select></label></div>
         <label>Observações<textarea name="observacoes" rows="2"></textarea></label>`,
       onSubmit: async (v) => {
+        v.origem = v.origem || null; v.campanha_id = v.campanha_id || null;
         if (!validarCPF(v.cpf)) throw new Error('CPF inválido.');
         v.cpf = digits(v.cpf);
         const { error } = await db.from('pacientes').insert(v);
