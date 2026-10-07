@@ -74,6 +74,53 @@
       ['ini', 'fim', 'tp'].forEach((i) => ($('#' + i, b).onchange = draw));
       draw();
     } },
+    { id: 'transacoes', label: 'Transações', render: async (b) => {
+      const hoje = today();
+      b.innerHTML = `<div class="actions" style="margin-bottom:1rem"><label class="inline">De <input type="date" id="ini" value="${hoje}"></label><label class="inline">Até <input type="date" id="fim" value="${hoje}"></label>
+        <label class="inline">Visualizar por <select id="vis">${opts([{ id: 'meio', n: 'Meio de pagamento' }, { id: 'conta', n: 'Conta' }, { id: 'categoria', n: 'Categoria' }], (x) => x.n, null, 'meio')}</select></label>
+        <button class="btn ghost sm" id="hj">Hoje</button><button class="btn ghost sm" id="mes">Mês</button></div><div id="l"></div>`;
+      const MEIO = { dinheiro: 'Dinheiro', pix: 'Pix', credito: 'Cartão de crédito', debito: 'Cartão de débito' };
+      const draw = async () => {
+        const ini = $('#ini', b).value, fim = $('#fim', b).value, vis = $('#vis', b).value;
+        const [rec, lan] = await Promise.all([
+          q(porUnidade(db.from('recebimentos').select('*, pacientes!paciente_id(nome), contas_bancarias!conta_id(nome)').gte('data_pagamento', ini).lte('data_pagamento', fim).neq('status', 'estornado').order('data_pagamento'))),
+          q(porUnidade(db.from('lancamentos').select('*, contas_bancarias!conta_id(nome)').eq('tipo', 'despesa').eq('estornado', false).gte('data', ini).lte('data', fim).order('data'))),
+        ]);
+        const itens = [
+          ...rec.map((r) => ({ tabela: 'recebimentos', id: r.id, tipo: 'receita', data: r.data_pagamento, desc: `${r.pacientes?.nome || ''}${r.meio === 'credito' ? ` · ${r.parcelas}×` : ''}`, valor: Number(r.valor), prev: r.status === 'previsto', conf: r.conferido,
+            grupo: vis === 'meio' ? MEIO[r.meio] || r.meio : vis === 'conta' ? r.contas_bancarias?.nome : 'Recebimentos' })),
+          ...lan.map((l) => ({ tabela: 'lancamentos', id: l.id, tipo: 'despesa', data: l.data, desc: l.descricao || l.subgrupo || '', valor: Number(l.valor), conf: l.conferido,
+            grupo: vis === 'meio' ? 'Despesas' : vis === 'conta' ? l.contas_bancarias?.nome : `${l.grupo || 'Sem categoria'}${l.subgrupo ? ' › ' + l.subgrupo : ''}` })),
+        ];
+        const g = {};
+        itens.forEach((i) => { const o = (g[i.grupo || '—'] ||= { rec: 0, desp: 0, prev: 0, itens: [] }); if (i.tipo === 'receita') { if (i.prev) o.prev += i.valor; else o.rec += i.valor; } else o.desp += i.valor; o.itens.push(i); });
+        const tot = Object.values(g).reduce((s, o) => ({ rec: s.rec + o.rec, desp: s.desp + o.desp, prev: s.prev + o.prev }), { rec: 0, desp: 0, prev: 0 });
+        const pend = itens.filter((i) => !i.conf).length;
+        $('#l', b).innerHTML = `<div class="grid"><div class="card stat"><span>Receitas</span><b class="txt-ok">${brl(tot.rec)}</b><small>A receber (cartão previsto): ${brl(tot.prev)}</small></div>
+          <div class="card stat"><span>Despesas</span><b class="txt-vencido">${brl(tot.desp)}</b></div><div class="card stat"><span>Saldo</span><b>${brl(tot.rec - tot.desp)}</b></div>
+          <div class="card stat"><span>Conferência</span><b>${itens.length - pend}/${itens.length}</b><small>${pend ? pend + ' pendente(s)' : 'tudo conferido'}</small></div></div>` +
+          table([vis === 'meio' ? 'Meio de pagamento' : vis === 'conta' ? 'Conta' : 'Categoria', 'Receitas', 'A receber', 'Despesas', 'Saldo', ''], rows(Object.entries(g).sort(), ([nome, o], k) =>
+            `<tr><td><b>${esc(nome)}</b></td><td class="txt-ok">${brl(o.rec)}</td><td>${brl(o.prev)}</td><td class="txt-vencido">${brl(o.desp)}</td><td><b>${brl(o.rec - o.desp)}</b></td>
+             <td><button class="btn ghost sm" data-ver="${esc(nome)}">Ver</button></td></tr><tr class="det" hidden data-det="${esc(nome)}"><td colspan="6"></td></tr>`, 'Nenhuma transação no período.', 6));
+        $$('[data-ver]', b).forEach((x) => (x.onclick = () => {
+          const nome = x.dataset.ver; const tr = $$('[data-det]', b).find((r) => r.dataset.det === nome); const o = g[nome];
+          if (!tr.hidden) { tr.hidden = true; return; }
+          tr.hidden = false;
+          tr.firstElementChild.innerHTML = `<div class="actions" style="margin:.4rem 0">${can('financeiro') ? `<button class="btn sm" data-conf-todos>Conferir todos</button>` : ''}</div>` +
+            table(['', 'Data', 'Descrição', 'Valor', 'Situação'], rows(o.itens, (i) =>
+              `<tr><td><input type="checkbox" style="width:auto" data-conf="${i.tabela}|${esc(i.id)}" ${i.conf ? 'checked' : ''} ${can('financeiro') ? '' : 'disabled'}></td><td>${fmtD(i.data)}</td><td>${esc(i.desc)}</td>
+               <td class="${i.tipo === 'receita' ? 'txt-ok' : 'txt-vencido'}">${i.tipo === 'receita' ? '+' : '−'}${brl(i.valor)}</td><td>${i.prev ? badge('agendado') + ' previsto' : i.conf ? badge('realizado') + ' conferido' : 'a conferir'}</td></tr>`, '', 5));
+          const salvar = async (tabela, ids, val) => { try { await rpc('conferir_transacoes', { p_tabela: tabela, p_ids: ids, p_valor: val }); await draw(); } catch (e) { toast(e.message, true); } };
+          $$('[data-conf]', tr).forEach((c) => (c.onchange = () => { const [t, id] = c.dataset.conf.split('|'); salvar(t, [id], c.checked); }));
+          const todos = $('[data-conf-todos]', tr);
+          if (todos) todos.onclick = async () => { for (const t of ['recebimentos', 'lancamentos']) { const ids = o.itens.filter((i) => i.tabela === t && !i.conf).map((i) => i.id); if (ids.length) await rpc('conferir_transacoes', { p_tabela: t, p_ids: ids, p_valor: true }); } toast('Conferido.'); draw(); };
+        }));
+      };
+      ['ini', 'fim', 'vis'].forEach((i) => ($('#' + i, b).onchange = () => draw().catch((e) => toast(e.message, true))));
+      $('#hj', b).onclick = () => { $('#ini', b).value = $('#fim', b).value = today(); draw(); };
+      $('#mes', b).onclick = () => { $('#ini', b).value = monthStart(); $('#fim', b).value = monthEnd(); draw(); };
+      await draw();
+    } },
     { id: 'previsoes', label: 'Previsões', render: async (b) => {
       b.innerHTML = `<div class="actions" style="margin-bottom:1rem"><select id="st">${opts([{ id: 'prevista', n: 'Em aberto' }, { id: 'paga', n: 'Pagas' }, { id: '', n: 'Todas' }], (x) => x.n, null, 'prevista')}</select>
         <button class="btn" id="nova" ${needFin()}>+ Nova previsão</button></div><div id="l"></div>`;
