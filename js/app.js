@@ -71,8 +71,12 @@
     'Secretário(a)': ['pacientes_editar', 'agenda_editar', 'orcamentos_criar', 'orcamentos_aprovar', 'prontuario', 'imagens', 'debitos_receber', 'caixa_abrir', 'proteses', 'estoque', 'marketing'],
     Financeiro: ['financeiro', 'nfse', 'fechar_caixa', 'alterar_comissao', 'producao_ver', 'estornar_recebimento', 'caixa_abrir', 'debitos_receber'],
   };
-  const VIEW_PERM = { caixa: ['caixa_abrir', 'fechar_caixa'], producao: ['producao_ver', 'financeiro'], financeiro: ['financeiro'], debitos: ['debitos_receber', 'estornar_recebimento', 'financeiro'], cadastros: ['cadastros_editar'], proteses: ['proteses', 'financeiro'], estoque: ['estoque'], nfse: ['nfse'], marketing: ['marketing'] };
-  const podeVer = (id) => !VIEW_PERM[id] || VIEW_PERM[id].some(can);
+  const VIEW_PERM = { caixa: ['caixa_abrir', 'fechar_caixa'], producao: ['producao_ver', 'financeiro'], financeiro: ['financeiro'], recebimentos: ['debitos_receber', 'estornar_recebimento', 'financeiro'], creditos: ['debitos_receber', 'estornar_recebimento', 'financeiro'], cadastros: ['cadastros_editar'], proteses: ['proteses', 'financeiro'], estoque: ['estoque'], nfse: ['nfse'], marketing: ['marketing'] };
+  const podeVer = (id) => {
+    const g = views.find((x) => x.id === id && x.group);
+    if (g) return g.group.some(podeVer);
+    return !VIEW_PERM[id] || VIEW_PERM[id].some(can);
+  };
   const aplicarPermissoes = (raiz) => $$('[data-perm]', raiz).forEach((e) => { if (!can(e.dataset.perm)) e.remove(); });
   const dentistasDaUnidade = (uid) => (uid ? state.dentistas.filter((d) => d.unidade_id === uid || (d.unidades_ids || []).includes(uid)) : state.dentistas);
   const nomeUnidade = () => state.unidades.find((u) => u.id === state.unidadeId)?.nome || 'Todas as unidades';
@@ -134,10 +138,21 @@
   /* ---------- registro de telas ---------- */
   const views = [];
   const register = (id, title, render, order = 100, pai) => { views.push({ id, title, render, order, pai }); views.sort((a, b) => a.order - b.order); };
+  /* Grupo de telas: vira um item de menu com abas; cada aba é uma tela já registrada. */
+  function group(id, title, order, list) {
+    list.forEach((c) => { const v = views.find((x) => x.id === c.view); if (v) v.pai = id; });
+    views.push({ id, title, order, group: list.map((c) => c.view), render: (el) => {
+      const abas = list.filter((c) => podeVer(c.view)).map((c) => ({ id: c.view, label: c.label, render: (b) => views.find((x) => x.id === c.view).render(b) }));
+      return tabs(el, id, abas);
+    } });
+    views.sort((a, b) => a.order - b.order);
+  }
   const ICONS = {
     dashboard: '<path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>',
     pacientes: '<path d="M12 12a4 4 0 100-8 4 4 0 000 8zm0 2c-3.3 0-8 1.7-8 5v1h16v-1c0-3.3-4.7-5-8-5z"/>',
     agenda: '<path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zm0 16H5V9h14v11z"/>',
+    comercial: '<path d="M16 6l2.3 2.3-4.9 4.900-4-4L2 16.600 3.400 18l6-6 4 4 6.300-6.300L22 12V6h-6z"/>',
+    gestao: '<path d="M19 3h-4.200c-.4-1.200-1.500-2-2.800-2s-2.400.8-2.800 2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zm-7 0a1 1 0 110 2 1 1 0 010-2zm-2 14l-4-4 1.400-1.400L10 14.200l6.600-6.600L18 9l-8 8z"/>',
     orcamentos: '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 13h8v2H8v-2zm0 4h8v2H8v-2z"/>',
     debitos: '<path d="M11.8 10.9c-2.3-.6-3-1.2-3-2.1 0-1.1 1-1.8 2.7-1.8 1.8 0 2.4.9 2.5 2h2.2c-.1-1.7-1.100-3.200-3.200-3.700V3h-3v2.300c-1.900.4-3.400 1.600-3.400 3.500 0 2.200 1.800 3.300 4.500 4 2.400.600 2.900 1.500 2.900 2.300 0 .6-.4 1.900-2.700 1.900-2 0-2.800-.9-2.900-2H6.200c.1 2.100 1.600 3.300 3.300 3.700V21h3v-2.300c1.900-.4 3.400-1.500 3.400-3.400 0-2.700-2.300-3.600-4.100-4.400z"/>',
     caixa: '<path d="M21 7H3a1 1 0 00-1 1v11a1 1 0 001 1h18a1 1 0 001-1V8a1 1 0 00-1-1zm-3 8a1.500 1.500 0 110-3 1.500 1.500 0 010 3zM19 5V4H5a2 2 0 00-2 2v1h16V5z"/>',
@@ -145,17 +160,21 @@
     financeiro: '<path d="M4 10h3v7H4v-7zm6.500 0h3v7h-3v-7zM2 19h20v3H2v-3zm15-9h3v7h-3v-7zM12 1L2 6v2h20V6L12 1z"/>',
     proteses: '<path d="M12 2C8.700 2 6 4 6 7c0 2 .8 3.200 1.500 5 .6 1.600.9 4 1.500 8 .1.600.600 1 1.200 1 .6 0 1-.400 1.200-1l.6-4h1l.6 4c.2.600.6 1 1.200 1 .6 0 1.100-.400 1.200-1 .6-4 .9-6.400 1.500-8C17.200 10.200 18 9 18 7c0-3-2.700-5-6-5z"/>',
     estoque: '<path d="M20 2H4a1 1 0 00-1 1v4a1 1 0 001 1h1v12a1 1 0 001 1h12a1 1 0 001-1V8h1a1 1 0 001-1V3a1 1 0 00-1-1zm-5 11H9v-2h6v2zm4-7H5V4h14v2z"/>',
+    fiscal: '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 12h8v2H8v-2zm0 4h5v2H8v-2z"/>',
     nfse: '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 12h8v2H8v-2zm0 4h5v2H8v-2z"/>',
     marketing: '<path d="M3 10v4a1 1 0 001 1h2l4 4V5L6 9H4a1 1 0 00-1 1zm13.500 2A4.500 4.500 0 0014 7.970v8.050A4.500 4.500 0 0016.500 12zM14 3.230v2.060a7 7 0 010 13.420v2.060a9 9 0 000-17.540z"/>',
     planos: '<path d="M20 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>',
     cadastros: '<path d="M19.400 13a7.800 7.800 0 000-2l2.100-1.600a.5.500 0 00.100-.6l-2-3.500a.5.500 0 00-.6-.2l-2.500 1a7.300 7.300 0 00-1.700-1l-.4-2.600a.5.500 0 00-.5-.4h-4a.5.500 0 00-.5.400L9.600 5.500a7.300 7.300 0 00-1.700 1l-2.500-1a.5.500 0 00-.6.200l-2 3.500a.5.500 0 00.1.600L4.600 11a7.800 7.800 0 000 2l-2.100 1.600a.5.500 0 00-.1.600l2 3.500c.1.200.4.300.6.200l2.500-1c.5.400 1.100.7 1.700 1l.4 2.600c0 .2.200.4.500.4h4c.3 0 .5-.2.5-.4l.4-2.600c.6-.3 1.200-.6 1.700-1l2.500 1c.2.100.5 0 .6-.2l2-3.500a.5.500 0 00-.1-.6L19.400 13zM12 15.500a3.500 3.500 0 110-7 3.500 3.500 0 010 7z"/>'
   };
+  ICONS.configuracoes = ICONS.cadastros;
   const iconeNav = (id) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[id] || '<circle cx="12" cy="12" r="5"/>'}</svg>`;
   let navToken = 0;
 
   async function navigate() {
     const [vid, arg] = location.hash.slice(1).split('/');
     let v = views.find((x) => x.id === vid) || views[0];
+    const g = v.pai && views.find((x) => x.id === v.pai && x.group);
+    if (g) { tabState[g.id] = v.id; v = g; }
     if (!podeVer(v.id)) v = views[0];
     const token = ++navToken;
     $$('.nav a').forEach((a) => a.classList.toggle('active', a.dataset.view === (v.pai || v.id)));
@@ -379,6 +398,7 @@
     try {
       await carregarBase();
     } catch (e) { toast('Erro ao carregar dados: ' + e.message, true); }
+    if (state.perfil.ativo) db.rpc('garantir_caixas_hoje').then(() => {}, () => {});
     if (!state.perfil.ativo) {
       $('#nav').innerHTML = '';
       $('#view-root').innerHTML = '<div class="card empty"><h3>Acesso aguardando liberação</h3><p>Seu usuário foi criado, mas ainda não foi liberado. Peça ao administrador para ativá-lo em Cadastros › Usuários.</p></div>';
@@ -427,5 +447,5 @@
   }
 
   window.MD = { db, $, $$, esc, digits, fmtCPF, fmtDT, fmtD, brl, num, today, monthStart, monthEnd, daysTo, toast, state, opts, rows, table, badge,
-    porUnidade, can, PERMISSOES, CARGOS, dentistasDaUnidade, aplicarPermissoes, nomeUnidade, rpc, q, modal, tabs, register, refresh, carregarBase, formValues, validarCPF, novoPaciente, novoAgendamento, start };
+    group, porUnidade, can, PERMISSOES, CARGOS, dentistasDaUnidade, aplicarPermissoes, nomeUnidade, rpc, q, modal, tabs, register, refresh, carregarBase, formValues, validarCPF, novoPaciente, novoAgendamento, start };
 })();

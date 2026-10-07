@@ -177,7 +177,7 @@
         `<tr><td>${esc(c.nome)}</td><td>${esc(c.tipo)}</td><td>${brl(c.saldo_inicial)}</td><td class="txt-ok">${brl(c.entradas)}</td><td class="txt-vencido">${brl(c.saidas)}</td><td><b>${brl(c.saldo)}</b></td></tr>`, 'Sem contas.', 6)) +
         `<div class="total">Saldo total: <b>${brl(tot)}</b></div><p class="hint">Saldo = saldo inicial + entradas − saídas. Inclui aporte e empréstimo de sócio; a devolução de empréstimo subtrai.</p>`;
     } },
-    { id: 'fluxo', label: 'Fluxo de caixa', render: async (b) => {
+    { id: 'fluxo', label: 'Realizado x Previsto', render: async (b) => {
       b.innerHTML = filtroPeriodo(`<select id="cc">${opts(state.contas, (c) => c.nome, 'Todas as contas')}</select>`) + '<div id="res"></div><div id="l"></div>';
       const draw = async () => {
         const ini = $('#ini', b).value, fim = $('#fim', b).value, conta = $('#cc', b).value || null;

@@ -131,7 +131,7 @@
     $$('[data-ed]', b).forEach((x) => (x.onclick = () => empresaForm(list.find((e) => e.id === x.dataset.ed))));
   }
 
-  register('nfse', 'Notas fiscais', (el) => tabs(el, 'nfse', [
+  register('nfse', 'Gestão fiscal', (el) => tabs(el, 'nfse', [
     { id: 'emitir', label: 'Emitir', render: emitir }, { id: 'lotes', label: 'Lotes', render: lotes }, { id: 'empresas', label: 'Empresas', render: empresas },
   ]), 75);
 })();

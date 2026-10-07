@@ -65,6 +65,7 @@
       },
       onSubmit: async (v) => {
         if (v.data !== today() && !confirm('Tem certeza sobre a data do recebimento? Ela é diferente de hoje.')) throw { cancel: true };
+        if (v.data === today()) await db.rpc('garantir_caixa', { p_unidade: d.unidade_id, p_data: v.data });
         await rpc('receber_debito', {
           p_debito: debitoId, p_valor: num(v.valor), p_desconto: num(v.desconto), p_meio: v.meio, p_conta: v.conta, p_dentista: v.dentista,
           p_data: v.data, p_parcelas: parseInt(v.parcelas || 1, 10), p_cv: v.cv, p_descricao: v.descricao,
@@ -89,28 +90,8 @@
     });
   }
 
-  const vencido = (d) => d.saldo > 0 && d.vencimento < today();
-
   window.MD.receber = receber;
-  register('debitos', 'Débitos', (el) => tabs(el, 'debitos', [
-    { id: 'debitos', label: 'Débitos', render: async (b) => {
-      b.innerHTML = `<div class="actions" style="margin-bottom:1rem"><select id="st">${opts([{ id: 'aberto', n: 'Em aberto' }, { id: 'pago', n: 'Quitados' }, { id: '', n: 'Todos' }], (x) => x.n, null, 'aberto')}</select></div><div id="l"></div>`;
-      const draw = async () => {
-        let qy = porUnidade(db.from('debitos').select('*, pacientes!paciente_id(nome), unidades!unidade_id(nome), orcamentos(codigo)').order('vencimento').limit(300));
-        const st = $('#st', b).value;
-        if (st === 'aberto') qy = qy.in('status', ['pendente', 'parcial']); else if (st) qy = qy.eq('status', st);
-        const data = await q(qy);
-        $('#l', b).innerHTML = table(['Paciente', 'Orç.', 'Unidade', 'Original', 'Desconto', 'Pago', 'Saldo', 'Lançado', 'Vencimento', 'Situação', ''], rows(data, (d) =>
-          `<tr><td>${esc(d.pacientes?.nome)}</td><td>#${esc(d.orcamentos?.codigo)}</td><td>${esc(d.unidades?.nome)}</td><td>${brl(d.valor_original)}</td>
-           <td>${brl(d.desconto)}</td><td>${brl(d.valor_pago)}</td><td><b>${brl(d.saldo)}</b></td><td>${fmtD(d.data_lancamento)}</td>
-           <td class="${vencido(d) ? 'txt-vencido' : ''}">${fmtD(d.vencimento)}${vencido(d) ? ' ⚠' : ''}</td><td>${badge(d.status)}</td>
-           <td>${d.status === 'pago' || d.status === 'cancelado' ? '' : `<button class="btn sm" data-perm="debitos_receber" data-receber="${esc(d.id)}">Receber</button>`}</td></tr>`, 'Nenhum débito.', 11));
-        $$('[data-receber]', b).forEach((x) => (x.onclick = () => receber(x.dataset.receber)));
-      };
-      $('#st', b).onchange = draw;
-      await draw();
-    } },
-    { id: 'recebimentos', label: 'Recebimentos', render: async (b) => {
+  register('recebimentos', 'Recebimentos', async (b) => {
       const data = await q(porUnidade(db.from('recebimentos').select('*, pacientes!paciente_id(nome), dentistas!dentista_id(nome), unidades!unidade_id(nome), contas_bancarias!conta_id(nome)').order('codigo', { ascending: false }).limit(200)));
       b.innerHTML = table(['#', 'Paciente', 'Unidade', 'Meio', 'Valor', 'Líquido', 'Lançamento', 'Pagamento', 'Recebimento', 'Conta', 'Dentista', 'Situação', ''], rows(data, (r) =>
         `<tr><td>${r.codigo}</td><td>${esc(r.pacientes?.nome)}</td><td>${esc(r.unidades?.nome)}</td>
@@ -123,8 +104,9 @@
         if (!confirm('Estornar este recebimento? O débito volta a ficar em aberto.')) return;
         try { await rpc('estornar_recebimento', { p_id: x.dataset.estornar }); toast('Recebimento estornado.'); refresh(); } catch (e) { toast(e.message, true); }
       }));
-    } },
-    { id: 'credito', label: 'Crédito de pacientes', render: async (b) => {
+  }, 50);
+
+  register('creditos', 'Crédito de pacientes', async (b) => {
       const data = await q(porUnidade(db.from('creditos_paciente').select('*, pacientes!paciente_id(nome), unidades!unidade_id(nome)').gt('saldo', 0)));
       b.innerHTML = `<p class="hint">Crédito é receita no momento em que o dinheiro entra. Devolvê-lo é dedução da receita, nunca despesa.</p>` +
         table(['Paciente', 'Unidade', 'Saldo', ''], rows(data, (c) =>
@@ -141,6 +123,5 @@
           onSubmit: async (v) => { await rpc('devolver_credito', { p_paciente: pac, p_unidade: uni, p_valor: num(v.valor), p_conta: v.conta, p_data: v.data, p_desc: v.descricao }); toast('Crédito devolvido.'); refresh(); },
         });
       }));
-    } },
-  ]), 50);
+  }, 51);
 })();
