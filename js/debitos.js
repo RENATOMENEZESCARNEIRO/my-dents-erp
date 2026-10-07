@@ -11,10 +11,12 @@
 
   async function receber(debitoId) {
     const d = await q(db.from('debitos').select('*, pacientes!paciente_id(nome), unidades!unidade_id(nome), orcamentos(codigo, dentista_id, orcamento_itens(valor_negociado, procedimentos(nome)))').eq('id', debitoId).single());
-    const [taxas, cfg, cred] = await Promise.all([
+    const [taxas, cfg, cred, maqs] = await Promise.all([
       q(db.from('taxas_cartao').select('*')), q(db.from('config').select('*').eq('chave', 'taxas_cartao_ativas')),
       q(db.from('creditos_paciente').select('saldo').eq('paciente_id', d.paciente_id).eq('unidade_id', d.unidade_id)),
+      q(db.from('maquininhas').select('*').eq('ativo', true).order('criado_em')).catch(() => []),
     ]);
+    const maqsUn = maqs.filter((m) => !m.unidade_id || m.unidade_id === d.unidade_id);
     const taxasOn = cfg[0] ? String(cfg[0].valor) === 'true' : true;
     const saldo = Number(d.saldo);
     const carteira = cred[0] ? Number(cred[0].saldo) : 0;
@@ -33,6 +35,7 @@
           <label>Banco / conta de destino<select name="conta" required>${opts(state.contas, (c) => c.nome, 'Selecione…', contaPadrao('pix'))}</select></label>
         </div>
         <div class="form-row" id="cartao" hidden>
+          <label>Maquininha<select name="maquininha">${opts(maqsUn, (m) => m.nome, null)}</select></label>
           <label id="l-parc">Parcelas<input name="parcelas" type="number" min="1" max="12" value="1"></label>
           <label>CV (comprovante de venda)<input name="cv"></label>
         </div>
@@ -48,16 +51,21 @@
           const meio = form.meio.value, card = meio === 'credito' || meio === 'debito';
           $('#cartao', form).hidden = !card;
           $('#l-parc', form).hidden = meio !== 'credito';
+          if (card) {
+            const atual = form.maquininha.value;
+            const lista = maqsUn.filter((m) => (meio === 'debito' ? m.aceita_debito : m.aceita_credito));
+            form.maquininha.innerHTML = opts(lista, (m) => m.nome, null, lista.some((m) => m.id === atual) ? atual : '');
+          }
           const r = Math.max(0, saldo - num(form.desconto.value));
           if (num(form.valor.value) > r && card) $('#liq', form).textContent = 'Valor acima do saldo: o excedente só pode virar crédito em dinheiro ou PIX.';
           else if (card) {
-            const t = taxasOn ? taxas.find((x) => x.modalidade === meio && x.parcelas === (meio === 'debito' ? 1 : parseInt(form.parcelas.value || 1, 10))) : null;
+            const t = taxasOn ? taxas.find((x) => x.maquininha_id === form.maquininha.value && x.modalidade === meio && x.parcelas === (meio === 'debito' ? 1 : parseInt(form.parcelas.value || 1, 10))) : null;
             const pc = t ? Number(t.percentual) : 0, tx = Math.round(num(form.valor.value) * pc) / 100;
             $('#liq', form).textContent = `Vai para o PREVISTO. Taxa ${pc.toLocaleString('pt-BR')}% = ${brl(tx)} · líquido previsto ${brl(num(form.valor.value) - tx)} (editável ao realizar).`;
           } else $('#liq', form).textContent = num(form.valor.value) > r ? `Excedente de ${brl(num(form.valor.value) - r)} vira crédito do paciente.` : '';
         };
         form.meio.onchange = () => { form.conta.value = contaPadrao(form.meio.value); calc(); };
-        ['desconto', 'valor', 'parcelas'].forEach((n) => (form[n].oninput = calc));
+        ['desconto', 'valor', 'parcelas', 'maquininha'].forEach((n) => (form[n].oninput = calc));
         form.desconto.oninput = () => { form.valor.value = Math.max(0, saldo - num(form.desconto.value)).toFixed(2); calc(); };
         calc();
         const u = $('#usar-cred', form);
@@ -68,7 +76,7 @@
         if (v.data === today()) await db.rpc('garantir_caixa', { p_unidade: d.unidade_id, p_data: v.data });
         await rpc('receber_debito', {
           p_debito: debitoId, p_valor: num(v.valor), p_desconto: num(v.desconto), p_meio: v.meio, p_conta: v.conta, p_dentista: v.dentista,
-          p_data: v.data, p_parcelas: parseInt(v.parcelas || 1, 10), p_cv: v.cv, p_descricao: v.descricao,
+          p_data: v.data, p_parcelas: parseInt(v.parcelas || 1, 10), p_cv: v.cv, p_descricao: v.descricao, ...((v.meio === 'credito' || v.meio === 'debito') && v.maquininha ? { p_maquininha: v.maquininha } : {}),
         });
         toast(v.meio === 'credito' || v.meio === 'debito' ? 'Recebimento registrado (cartão no previsto).' : 'Recebimento registrado.');
         refresh();

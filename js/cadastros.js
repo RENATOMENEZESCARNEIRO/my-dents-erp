@@ -262,7 +262,7 @@
     } },
     { id: 'checklist', label: 'Checklist de implantação', render: async (b) => {
       const [taxas, perfis, emp, cats] = await Promise.all([
-        q(db.from('taxas_cartao').select('id,revisar')).catch(() => []), q(db.from('perfis_usuario').select('nome,ativo,admin,unidades_acesso,telefone,trocar_senha')).catch(() => []),
+        q(db.from('maquininhas').select('id,ativo')).catch(() => []), q(db.from('perfis_usuario').select('nome,ativo,admin,unidades_acesso,telefone,trocar_senha')).catch(() => []),
         q(db.from('nfse_empresas').select('id').limit(1)).catch(() => []), q(db.from('categorias').select('id').eq('ativo', true)).catch(() => []),
       ]);
       const proc = state.procedimentos.filter((p) => p.ativo);
@@ -275,7 +275,7 @@
       const itens = [
         ['Unidades cadastradas e ativas', state.unidades.length > 0, `${state.unidades.length} unidade(s)`, 'Cadastros › Unidades'],
         ['Contas bancárias e caixa', state.contas.length > 0, `${state.contas.length} conta(s)`, 'Cadastros › Contas'],
-        ['Taxas de cartão conferidas com o contrato', taxas.length > 0 && !taxas.some((t) => t.revisar), `${taxas.filter((t) => t.revisar).length} faixa(s) ainda marcadas "revisar"`, 'Cadastros › Taxas de cartão'],
+        ['Maquininhas cadastradas com as taxas do contrato', taxas.some((t) => t.ativo), `${taxas.filter((t) => t.ativo).length} ativa(s)`, 'Cadastros › Maquininhas'],
         ['Procedimentos ativos', proc.length > 0, `${proc.length} ativo(s)`, 'Cadastros › Procedimentos'],
         ['Procedimentos classificados por especialidade', !proc.some((p) => (p.especialidade || 'Outros') === 'Outros'), `${proc.filter((p) => (p.especialidade || 'Outros') === 'Outros').length} em "Outros"`, 'Cadastros › Procedimentos'],
         ['Dentistas com atuação (dias e horários) em cada unidade', state.dentistas.length > 0 && !semAtu.length, semAtu.length ? `Sem atuação: ${semAtu.map((d) => d.nome).join(', ')}` : `${state.dentistas.length} dentista(s)`, 'Cadastros › Dentistas'],
@@ -299,25 +299,50 @@
          <td>${can('financeiro') ? `<button class="btn ghost sm" data-edit="${esc(c.id)}">Editar</button>` : ''}</td></tr>`, 'Nenhuma conta.', 4));
       $$('[data-edit]', b).forEach((x) => (x.onclick = () => contaForm(state.contas.find((c) => c.id === x.dataset.edit))));
     } },
-    { id: 'taxas', label: 'Taxas de cartão', render: async (b) => {
-      const [taxas, cfg] = await Promise.all([q(db.from('taxas_cartao').select('*').order('modalidade').order('parcelas')), q(db.from('config').select('*').eq('chave', 'taxas_cartao_ativas'))]);
-      const ativo = cfg[0] ? String(cfg[0].valor) === 'true' : true;
+    { id: 'taxas', label: 'Maquininhas', render: async (b) => {
       const edit = can('financeiro');
-      b.innerHTML = `<div class="card" style="margin-bottom:1rem"><label style="margin:0"><input type="checkbox" id="ativo" ${ativo ? 'checked' : ''} ${edit ? '' : 'disabled'} style="width:auto"> Aplicar taxas nos recebimentos de cartão</label>
-        <p class="hint" style="margin:.5rem 0 0">Débito 0,99% e crédito 1× 3,15% / 12× 10,69% vêm do contrato. As parcelas intermediárias foram estimadas (marcadas "revisar"): confira e ajuste.</p></div>
-        <div id="l"></div><div class="form-actions" style="margin-top:1rem"><button class="btn" id="salvar" ${edit ? '' : 'disabled'}>Salvar taxas</button></div>`;
-      $('#l', b).innerHTML = table(['Modalidade', 'Parcelas', 'Taxa (%)', ''], rows(taxas, (t) =>
-        `<tr><td>${esc(t.modalidade)}</td><td>${t.parcelas}×</td>
-         <td><input type="number" step="0.01" min="0" style="width:110px" data-taxa="${esc(t.id)}" value="${esc(t.percentual)}" ${edit ? '' : 'disabled'}></td>
-         <td>${t.revisar ? '<span class="badge em_atendimento">revisar</span>' : ''}</td></tr>`, 'Sem taxas.', 4));
-      $('#salvar', b).onclick = async () => {
-        try {
-          await q(db.from('config').upsert({ chave: 'taxas_cartao_ativas', valor: $('#ativo', b).checked }));
-          for (const i of $$('[data-taxa]', b)) await q(db.from('taxas_cartao').update({ percentual: num(i.value), revisar: false }).eq('id', i.dataset.taxa));
-          toast('Taxas salvas.');
-          refresh();
-        } catch (e) { toast(e.message, true); }
+      const [maqs, taxas, cfg] = await Promise.all([q(db.from('maquininhas').select('*, unidades!unidade_id(nome)').order('criado_em')), q(db.from('taxas_cartao').select('*')), q(db.from('config').select('*').eq('chave', 'taxas_cartao_ativas'))]);
+      const ativo = cfg[0] ? String(cfg[0].valor) === 'true' : true;
+      const tipo = (m) => (m.aceita_debito && m.aceita_credito ? 'Débito e Crédito' : m.aceita_debito ? 'Débito' : 'Crédito');
+      b.innerHTML = `<div class="actions" style="margin-bottom:1rem"><button class="btn" id="n" ${edit ? '' : 'disabled'}>+ Nova maquininha</button>
+        <label class="inline" style="margin:0"><input type="checkbox" id="ativo" ${ativo ? 'checked' : ''} ${edit ? '' : 'disabled'} style="width:auto"> Aplicar taxas nos recebimentos de cartão</label></div>
+        <p class="hint">Cada maquininha tem as suas taxas (débito e crédito de 1× a 12×). Os valores iniciais são uma referência de mercado: ajuste conforme o contrato de cada uma.</p><div id="l"></div>`;
+      $('#l', b).innerHTML = table(['Descrição da maquininha', 'Tipo de pagamento', 'Unidade', 'Situação', ''], rows(maqs, (m) =>
+        `<tr><td>${esc(m.nome)}</td><td>${tipo(m)}</td><td>${esc(m.unidades?.nome || 'Toda a rede')}</td><td>${m.ativo ? 'Ativa' : '<span class="badge cancelado">Maquininha inativa</span>'}</td>
+         <td>${edit ? `<button class="btn ghost sm" data-e="${esc(m.id)}">Editar</button>` : ''}</td></tr>`, 'Nenhuma maquininha cadastrada.', 5));
+      $('#ativo', b).onchange = async (e) => { try { await q(db.from('config').upsert({ chave: 'taxas_cartao_ativas', valor: e.target.checked })); toast('Salvo.'); } catch (er) { toast(er.message, true); } };
+
+      const form = (m = null) => {
+        const mine = m ? taxas.filter((t) => t.maquininha_id === m.id) : [];
+        const val = (mod, n) => mine.find((t) => t.modalidade === mod && t.parcelas === n)?.percentual ?? '';
+        const base = m ? null : taxas.filter((t) => t.maquininha_id === maqs[0]?.id);   // nova: parte da primeira como modelo
+        const pre = (mod, n) => (m ? val(mod, n) : (base?.find((t) => t.modalidade === mod && t.parcelas === n)?.percentual ?? ''));
+        modal({
+          title: m ? 'Editar maquininha' : 'Nova maquininha', wide: true,
+          body: `<div class="form-row"><label>Descrição<input name="nome" required value="${esc(m?.nome || '')}" placeholder="Ex.: REDE (Itaú)"></label>
+              <label>Unidade<select name="unidade_id">${opts(state.unidades, (u) => u.nome, 'Toda a rede', m?.unidade_id || '')}</select></label></div>
+            <div class="form-row"><label style="flex-direction:row;gap:.5rem"><input type="checkbox" name="aceita_debito" ${!m || m.aceita_debito ? 'checked' : ''} style="width:auto"> Débito</label>
+              <label style="flex-direction:row;gap:.5rem"><input type="checkbox" name="aceita_credito" ${!m || m.aceita_credito ? 'checked' : ''} style="width:auto"> Crédito</label>
+              <label style="flex-direction:row;gap:.5rem"><input type="checkbox" name="ativo" ${!m || m.ativo ? 'checked' : ''} style="width:auto"> Maquininha ativa</label></div>
+            <h4 style="margin:.8rem 0 .3rem">Taxas (%)</h4>
+            <div class="form-row"><label>Débito<input type="number" step="0.01" min="0" data-t="debito:1" value="${esc(pre('debito', 1))}"></label></div>
+            <div class="form-row" style="flex-wrap:wrap">${[...Array(12)].map((_, i) => `<label style="min-width:90px">Crédito ${i + 1}×<input type="number" step="0.01" min="0" data-t="credito:${i + 1}" value="${esc(pre('credito', i + 1))}"></label>`).join('')}</div>
+            ${m ? '' : '<p class="hint">Os valores vêm preenchidos com os da primeira maquininha como modelo. Ajuste conforme o contrato.</p>'}`,
+          onSubmit: async (v) => {
+            const dados = { nome: v.nome.trim(), unidade_id: v.unidade_id || null, aceita_debito: !!v.aceita_debito, aceita_credito: !!v.aceita_credito, ativo: !!v.ativo };
+            if (!dados.aceita_debito && !dados.aceita_credito) throw new Error('Marque ao menos Débito ou Crédito.');
+            const r = m ? await q(db.from('maquininhas').update(dados).eq('id', m.id).select().single()) : await q(db.from('maquininhas').insert(dados).select().single());
+            const linhas = [...document.querySelectorAll('dialog [data-t]')].map((i) => { const [mod, par] = i.dataset.t.split(':'); return { maquininha_id: r.id, modalidade: mod, parcelas: +par, percentual: i.value === '' ? null : num(i.value), revisar: false }; })
+              .filter((l) => (l.modalidade === 'debito' ? dados.aceita_debito : dados.aceita_credito));
+            if (linhas.some((l) => l.percentual == null)) throw new Error('Preencha todas as taxas da maquininha.');
+            await q(db.from('taxas_cartao').delete().eq('maquininha_id', r.id));
+            await q(db.from('taxas_cartao').insert(linhas));
+            toast('Maquininha salva.'); refresh();
+          },
+        });
       };
+      $('#n', b).onclick = () => form();
+      $$('[data-e]', b).forEach((x) => (x.onclick = () => form(maqs.find((i) => i.id === x.dataset.e))));
     } },
     { id: 'usuarios', label: 'Funcionários', render: async (b) => {
       const { PERMISSOES, CARGOS } = window.MD;
