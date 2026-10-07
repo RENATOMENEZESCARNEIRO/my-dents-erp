@@ -116,3 +116,5 @@ table.dre tr.sub td{font-weight:700;background:#f8fafc}table.dre tr.neg td{color
 .thumb .nm{font-size:.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .exp-bar{display:flex;gap:.4rem;justify-content:flex-end;margin:.2rem 0 .3rem}
 @media print{.exp-bar,.sidebar,#filtro-unidade{display:none!important}}
+.aviso{background:#fff8e6;border:1px solid #f0d9a0;border-radius:8px;padding:.7rem .9rem;font-size:.9rem}
+.aviso.ok{background:#e8f6ee;border-color:#a8d8bb}
