@@ -465,9 +465,10 @@
     });
     $('#btn-logout').addEventListener('click', () => db.auth.signOut());
     db.auth.onAuthStateChange((evt, session) => {
-      if (session) aoLogar(session.user);
+      // Eventos como TOKEN_REFRESHED/SIGNED_IN disparam ao trocar de aba: só sai da tela quando NÃO há sessão.
+      if (!session) { iniciado = false; mostrar(false); return; }
+      if (!iniciado) setTimeout(() => aoLogar(session.user), 0);
       if (evt === 'PASSWORD_RECOVERY') setTimeout(definirSenha, 800);
-      else { iniciado = false; mostrar(false); }
     });
     db.auth.getSession().then(({ data }) => { if (data.session) aoLogar(data.session.user); else mostrar(false); });
   }
