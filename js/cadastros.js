@@ -145,33 +145,107 @@
       const { PERMISSOES, CARGOS } = window.MD;
       const lista = await q(db.from('perfis_usuario').select('*').order('criado_em'));
       const adm = can('admin');
+      const total = PERMISSOES.flatMap(([, ps]) => ps).length;
       const cont = (u) => PERMISSOES.flatMap(([, ps]) => ps).filter(([k]) => u.admin || u.permissoes?.[k] || u[k]).length;
-      b.innerHTML = `<p class="hint">Crie o login em Supabase › Authentication › Users (e-mail + senha). Novos usuários entram <b>sem acesso</b>: libere e defina as permissões aqui.</p><div id="l"></div>`;
-      $('#l', b).innerHTML = table(['Usuário', 'Cargo', 'Acesso', 'Permissões', ''], rows(lista, (u) =>
-        `<tr><td>${esc(u.nome)}</td><td>${esc(u.cargo || (u.admin ? 'Administrador' : '—'))}</td><td>${badge(u.ativo ? 'ativa' : 'cancelada')} ${u.ativo ? 'liberado' : 'aguardando'}</td>
-         <td>${cont(u)} de ${PERMISSOES.flatMap(([, ps]) => ps).length}</td><td>${adm ? `<button class="btn ghost sm" data-u="${esc(u.user_id)}">Editar</button>` : ''}</td></tr>`, 'Sem usuários.', 5));
+      const fmtTel = (t) => { const d = String(t || '').replace(/\D/g, ''); return d.length === 11 ? `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}` : d.length === 10 ? `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}` : ''; };
+      const nomesUn = (u) => (u.admin ? 'Todas' : (u.unidades_acesso || []).map((id) => state.unidades.find((x) => x.id === id)?.nome).filter(Boolean).join(', ') || '—');
+      const chamar = async (body) => {
+        const { data, error } = await db.functions.invoke('admin-usuarios', { body });
+        if (error) { let m = error.message; try { m = (await error.context.json()).error || m; } catch (_) { /* sem corpo */ } throw new Error(m); }
+        if (data?.error) throw new Error(data.error);
+        return data;
+      };
+      const permBloco = (u) => {
+        const marcado = (k) => !!(u.admin && k === 'admin') || !!u.permissoes?.[k] || !!u[k];
+        return `<div class="form-row"><label>Cargo (modelo de permissões)<select name="cargo" id="cargo">${opts([{ id: '', n: 'Personalizado' }, ...Object.keys(CARGOS).map((c) => ({ id: c, n: c }))], (c) => c.n, null, u.cargo || '')}</select></label></div>
+          ${PERMISSOES.map(([g, ps]) => `<h4 style="margin:.8rem 0 .3rem">${esc(g)}</h4>${ps.map(([k, n]) => `<label class="inline" style="display:flex;gap:.5rem;align-items:center"><input type="checkbox" style="width:auto" data-perm-k="${k}" ${marcado(k) ? 'checked' : ''}> ${esc(n)}</label>`).join('')}`).join('')}`;
+      };
+      const permLigar = (form) => { $('#cargo', form).onchange = (e) => { const set = CARGOS[e.target.value]; if (!set) return; $$('[data-perm-k]', form).forEach((c) => { c.checked = c.dataset.permK === 'admin' ? c.checked : set.includes(c.dataset.permK); }); }; };
+      const permLer = (form) => {
+        const ks = $$('[data-perm-k]', form), permissoes = {};
+        ks.forEach((c) => { if (c.checked && c.dataset.permK !== 'admin') permissoes[c.dataset.permK] = true; });
+        return { permissoes, admin: ks.find((c) => c.dataset.permK === 'admin').checked };
+      };
+      const unBloco = (sel = []) => `<fieldset style="border:1px solid var(--line,#d6dde6);border-radius:8px;padding:.5rem .8rem;margin:.5rem 0"><legend>Unidades que pode acessar *</legend>
+        ${state.unidades.map((u) => `<label class="inline" style="display:flex;gap:.5rem;align-items:center"><input type="checkbox" style="width:auto" data-un="${esc(u.id)}" ${sel.includes(u.id) ? 'checked' : ''}> ${esc(u.nome)}</label>`).join('')}</fieldset>`;
+      const unLer = (form) => $$('[data-un]:checked', form).map((c) => c.dataset.un);
+
+      b.innerHTML = `${adm ? '<div class="actions" style="margin-bottom:1rem"><button class="btn" id="novo-u">+ Novo usuário</button></div>' : ''}
+        <p class="hint">Login = CPF. Todo usuário novo (ou com senha resetada) entra com a senha <b>1234</b> e é obrigado a criar a senha definitiva no primeiro acesso.</p><div id="l"></div>`;
+      $('#l', b).innerHTML = table(['Usuário', 'CPF', 'Telefone', 'Unidades', 'Cargo', 'Acesso', 'Permissões', ''], rows(lista, (u) =>
+        `<tr><td>${esc(u.nome)}</td><td>${u.cpf ? esc(window.MD.fmtCPF(u.cpf)) : '—'}</td><td>${esc(fmtTel(u.telefone)) || '—'}</td><td>${esc(nomesUn(u))}</td><td>${esc(u.cargo || (u.admin ? 'Administrador' : '—'))}</td>
+         <td>${badge(u.ativo ? 'ativa' : 'cancelada')} ${u.ativo ? 'liberado' : 'bloqueado'}${u.trocar_senha ? '<br><small>aguarda 1º acesso</small>' : ''}</td>
+         <td>${cont(u)} de ${total}</td>
+         <td>${adm ? `<button class="btn ghost sm" data-u="${esc(u.user_id)}">Editar</button> ${u.cpf ? `<button class="btn ghost sm" data-reset="${esc(u.user_id)}">Resetar senha</button>` : ''}` : ''}</td></tr>`, 'Sem usuários.', 8));
+
+      const novo = $('#novo-u', b);
+      if (novo) novo.onclick = () => modal({
+        title: 'Novo usuário', wide: true, submit: 'Criar usuário',
+        body: `<div class="form-row"><label>Nome completo *<input name="nome" required></label><label>CPF (será o login) *<input name="cpf" required inputmode="numeric" placeholder="000.000.000-00"></label></div>
+          <label>Telefone com DDD *<input name="telefone" required inputmode="tel" placeholder="(85) 99999-9999"></label>
+          ${unBloco()}${permBloco({})}`,
+        onOpen: (form) => permLigar(form),
+        onSubmit: async (v, form) => {
+          const cpf = String(v.cpf || '').replace(/\D/g, ''), tel = String(v.telefone || '').replace(/\D/g, '');
+          if (!window.MD.validarCPF(cpf)) throw new Error('CPF inválido.');
+          if (tel.length < 10 || tel.length > 11) throw new Error('Informe o telefone com DDD.');
+          const unidades = unLer(form);
+          if (!unidades.length) throw new Error('Selecione ao menos uma unidade.');
+          const { permissoes } = permLer(form);
+          await chamar({ action: 'criar', nome: v.nome, cpf, telefone: tel, unidades, cargo: v.cargo || null, permissoes });
+          toast('Usuário criado. Senha provisória: 1234 (troca obrigatória no 1º acesso).'); refresh();
+        },
+      });
+
+      $$('[data-reset]', b).forEach((x) => (x.onclick = async () => {
+        const u = lista.find((i) => i.user_id === x.dataset.reset);
+        if (!confirm(`Resetar a senha de ${u.nome}? Ela voltará para 1234 e deverá ser trocada no próximo acesso.`)) return;
+        try { await chamar({ action: 'resetar', user_id: u.user_id }); toast('Senha resetada para 1234.'); refresh(); } catch (e) { toast(e.message, true); }
+      }));
+
       $$('[data-u]', b).forEach((x) => (x.onclick = () => {
         const u = lista.find((i) => i.user_id === x.dataset.u);
-        const marcado = (k) => !!(u.admin && k === 'admin') || !!u.permissoes?.[k] || !!u[k];
         modal({
-          title: `Permissões — ${u.nome}`, wide: true, submit: 'Salvar',
-          body: `<div class="form-row"><label>Cargo (modelo de permissões)<select name="cargo" id="cargo">${opts([{ id: '', n: 'Personalizado' }, ...Object.keys(CARGOS).map((c) => ({ id: c, n: c }))], (c) => c.n, null, u.cargo || '')}</select></label>
+          title: `Usuário — ${u.nome}`, wide: true, submit: 'Salvar',
+          body: `<div class="form-row"><label>Nome<input name="nome" required value="${esc(u.nome)}"></label>
+              <label>CPF (login)<input name="cpf" value="${esc(u.cpf || '')}" ${u.cpf ? 'disabled' : 'placeholder="só números"'}></label></div>
+            <div class="form-row"><label>Telefone com DDD<input name="telefone" value="${esc(u.telefone || '')}"></label>
               <label class="inline" style="align-self:end"><input type="checkbox" name="ativo" style="width:auto" ${u.ativo ? 'checked' : ''}> Acesso liberado</label></div>
-            ${PERMISSOES.map(([g, ps]) => `<h4 style="margin:.8rem 0 .3rem">${esc(g)}</h4>${ps.map(([k, n]) => `<label class="inline" style="display:flex;gap:.5rem;align-items:center"><input type="checkbox" style="width:auto" data-perm-k="${k}" ${marcado(k) ? 'checked' : ''}> ${esc(n)}</label>`).join('')}`).join('')}`,
-          onOpen: (form) => {
-            $('#cargo', form).onchange = (e) => { const set = CARGOS[e.target.value]; if (!set) return; $$('[data-perm-k]', form).forEach((c) => { c.checked = c.dataset.permK === 'admin' ? c.checked : set.includes(c.dataset.permK); }); };
-          },
+            ${unBloco(u.unidades_acesso || [])}${permBloco(u)}`,
+          onOpen: (form) => permLigar(form),
           onSubmit: async (v, form) => {
-            const ks = $$('[data-perm-k]', form);
-            const permissoes = {}; ks.forEach((c) => { if (c.checked && c.dataset.permK !== 'admin') permissoes[c.dataset.permK] = true; });
-            const admin = ks.find((c) => c.dataset.permK === 'admin').checked;
+            const { permissoes, admin } = permLer(form), unidades = unLer(form);
+            if (!admin && !unidades.length) throw new Error('Selecione ao menos uma unidade.');
             if (u.user_id === window.MD.state.user.id && (!admin || !form.ativo.checked)) throw new Error('Você não pode remover seu próprio acesso de administrador.');
-            await q(db.from('perfis_usuario').update({ cargo: v.cargo || (admin ? 'Administrador' : null), ativo: form.ativo.checked, admin, permissoes,
-              financeiro: !!permissoes.financeiro, fechar_caixa: !!permissoes.fechar_caixa, alterar_comissao: !!permissoes.alterar_comissao }).eq('user_id', u.user_id));
+            const tel = String(v.telefone || '').replace(/\D/g, '');
+            if (tel && (tel.length < 10 || tel.length > 11)) throw new Error('Telefone inválido (use DDD + número).');
+            const upd = { nome: v.nome, telefone: tel || null, unidades_acesso: unidades, cargo: v.cargo || (admin ? 'Administrador' : null), ativo: form.ativo.checked, admin, permissoes,
+              financeiro: !!permissoes.financeiro, fechar_caixa: !!permissoes.fechar_caixa, alterar_comissao: !!permissoes.alterar_comissao };
+            if (!u.cpf && v.cpf) { const c = String(v.cpf).replace(/\D/g, ''); if (!window.MD.validarCPF(c)) throw new Error('CPF inválido.'); upd.cpf = c; }
+            await q(db.from('perfis_usuario').update(upd).eq('user_id', u.user_id));
             toast('Usuário atualizado.'); refresh();
           },
         });
       }));
+    } },
+    { id: 'unidades', label: 'Unidades', render: async (b) => {
+      const un = await q(db.from('unidades').select('*').order('nome'));
+      const adm = can('admin') || can('cadastros_editar');
+      b.innerHTML = `${adm ? '<div class="actions" style="margin-bottom:1rem"><button class="btn" id="n">+ Nova unidade</button></div>' : ''}<div id="l"></div>`;
+      const form = (u = {}) => modal({
+        title: u.id ? 'Editar unidade' : 'Nova unidade',
+        body: `<label>Nome<input name="nome" required value="${esc(u.nome)}"></label>
+          <label class="inline"><input type="checkbox" name="ativo" style="width:auto" ${u.ativo === false ? '' : 'checked'}> Ativa</label>`,
+        onSubmit: async (v, f) => {
+          const dados = { nome: v.nome, ativo: f.ativo.checked };
+          await q(u.id ? db.from('unidades').update(dados).eq('id', u.id) : db.from('unidades').insert(dados));
+          toast('Unidade salva.'); await carregarBase(); refresh();
+        },
+      });
+      if ($('#n', b)) $('#n', b).onclick = () => form();
+      $('#l', b).innerHTML = table(['Unidade', 'Situação', ''], rows(un, (u) => `<tr><td>${esc(u.nome)}</td><td>${badge(u.ativo ? 'ativa' : 'cancelada')} ${u.ativo ? 'ativa' : 'inativa'}</td>
+        <td>${adm ? `<button class="btn ghost sm" data-e="${esc(u.id)}">Editar</button>` : ''}</td></tr>`, 'Nenhuma unidade.', 3));
+      $$('[data-e]', b).forEach((x) => (x.onclick = () => form(un.find((i) => i.id === x.dataset.e))));
     } },
   ]), 100);
 })();

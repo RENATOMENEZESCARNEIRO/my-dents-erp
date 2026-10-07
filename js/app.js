@@ -388,6 +388,30 @@
   const mostrar = (logado) => { $('#login-view').hidden = logado; $('#app-view').hidden = !logado; };
   let iniciado = false, ligado = false;
 
+  const DOMINIO_LOGIN = 'login.mydents.com.br';
+  const senhaAuth = (x) => (/^\d{4}$/.test(x) ? 'MyD#' + x : x);   // senha provisória de 4 dígitos → exigência de 6+ do Supabase
+  const loginEmail = (x) => (x.includes('@') ? x : digits(x) + '@' + DOMINIO_LOGIN);
+
+  function trocarSenhaObrigatoria() {
+    const dlg = modal({
+      title: 'Crie sua senha definitiva', submit: 'Salvar senha',
+      body: `<p class="hint">Por segurança, troque a senha provisória antes de continuar. Use no mínimo 6 caracteres (letras e números).</p>
+        <label>Nova senha<input name="senha" type="password" minlength="6" required autocomplete="new-password"></label>
+        <label>Repita a nova senha<input name="senha2" type="password" minlength="6" required autocomplete="new-password"></label>`,
+      onSubmit: async (v) => {
+        if (v.senha !== v.senha2) throw new Error('As senhas não conferem.');
+        if (/^\d{4}$/.test(v.senha) || v.senha === '1234') throw new Error('Escolha uma senha diferente da provisória.');
+        const { error } = await db.auth.updateUser({ password: v.senha });
+        if (error) throw new Error(error.message);
+        await db.rpc('senha_trocada');
+        state.perfil.trocar_senha = false;
+        toast('Senha definida. Bem-vindo(a)!');
+      },
+    });
+    dlg.addEventListener('cancel', (e) => e.preventDefault());
+    const c = dlg.querySelector('[data-close]'); if (c) c.hidden = true;
+  }
+
   async function aoLogar(user) {
     state.user = user;
     mostrar(true);
@@ -398,6 +422,7 @@
     try {
       await carregarBase();
     } catch (e) { toast('Erro ao carregar dados: ' + e.message, true); }
+    if (state.perfil.nome) $('#user-email').textContent = state.perfil.nome;
     if (state.perfil.ativo) db.rpc('garantir_caixas_hoje').then(() => {}, () => {});
     if (!state.perfil.ativo) {
       $('#nav').innerHTML = '';
@@ -407,6 +432,7 @@
     try {
       $('#nav').innerHTML = views.filter((v) => !v.pai && podeVer(v.id)).map((v) => `<a href="#${v.id}" data-view="${v.id}" title="${esc(v.title)}">${iconeNav(v.id)}<span>${esc(v.title)}</span></a>`).join('');
       await navigate();
+      if (state.perfil.trocar_senha) trocarSenhaObrigatoria();
     } catch (e) { console.error(e); toast('Erro ao abrir a tela: ' + e.message, true); }
   }
 
@@ -431,8 +457,8 @@
       $('#login-err').textContent = '';
       const btn = $('#login-form button'); btn.disabled = true; btn.textContent = 'Entrando…';
       try {
-        const { data, error } = await db.auth.signInWithPassword({ email: $('#login-email').value.trim(), password: $('#login-senha').value });
-        if (error) $('#login-err').textContent = 'E-mail ou senha inválidos.';
+        const { data, error } = await db.auth.signInWithPassword({ email: loginEmail($('#login-email').value.trim()), password: senhaAuth($('#login-senha').value) });
+        if (error) $('#login-err').textContent = 'CPF/e-mail ou senha inválidos.';
         else await aoLogar(data.user);
       } catch (err) { console.error(err); $('#login-err').textContent = 'Erro: ' + err.message; }
       btn.disabled = false; btn.textContent = 'Entrar';
