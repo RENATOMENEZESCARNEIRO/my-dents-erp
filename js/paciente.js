@@ -62,7 +62,7 @@
   /* ---------- Orçamentos ---------- */
   async function abaOrc(b, p) {
     const data = await q(db.from('orcamentos').select('*, dentistas!dentista_id(nome), orcamento_itens(valor_negociado, procedimentos(nome))').eq('paciente_id', p.id).order('codigo', { ascending: false }));
-    b.innerHTML = `<div class="actions" style="margin-bottom:1rem"><button class="btn" id="novo">+ Novo orçamento</button></div>` +
+    b.innerHTML = `<div class="actions" style="margin-bottom:1rem"><button class="btn" data-perm="orcamentos_criar" id="novo">+ Novo orçamento</button></div>` +
       table(['#', 'Data', 'Descrição', 'Dentista', 'Valor', 'Situação', ''], rows(data, (o) =>
         `<tr><td>${o.codigo}</td><td>${fmtD(o.criado_em?.slice(0, 10))}</td><td>${esc(o.orcamento_itens.map((i) => i.procedimentos?.nome).join(', ').slice(0, 70))}</td><td>${esc(o.dentistas?.nome)}</td>
          <td>${brl(o.orcamento_itens.reduce((s, i) => s + Number(i.valor_negociado), 0))}</td><td>${badge(o.status)}</td>
@@ -105,10 +105,10 @@
     const abertos = itens.filter((i) => i.status_exec !== 'executado' && i.status_exec !== 'cancelado');
     const finais = itens.filter((i) => i.status_exec === 'executado' || i.status_exec === 'cancelado');
     const linha = (i) => `<tr><td>${esc(i.procedimentos?.nome)}</td><td>${esc(i.dente)}</td><td>#${i.orcamentos?.codigo}</td><td>${brl(i.valor_negociado)}</td><td>${badge(i.status_exec)}</td>
-      <td>${i.status_exec === 'executado' || i.status_exec === 'cancelado' ? `<button class="btn ghost sm" data-evo="${esc(i.id)}">Reabrir/alterar</button>` : `<button class="btn sm" data-evo="${esc(i.id)}">Evoluir</button>`}</td></tr>`;
+      <td>${i.status_exec === 'executado' || i.status_exec === 'cancelado' ? `<button class="btn ghost sm" data-perm="tratamentos_evoluir" data-evo="${esc(i.id)}">Reabrir/alterar</button>` : `<button class="btn sm" data-perm="tratamentos_evoluir" data-evo="${esc(i.id)}">Evoluir</button>`}</td></tr>`;
     b.innerHTML = `<div class="card odonto"><div class="legenda"><span class="dente planejado">■</span> Planejado <span class="dente em_andamento">■</span> Em andamento <span class="dente executado">■</span> Executado</div>
         <div class="arcada">${dentes(SUP)}</div><div class="arcada">${dentes(INF)}</div></div>
-      <div class="actions" style="margin:1rem 0"><button class="btn" id="nota">+ Anotação clínica</button><label style="display:flex;gap:.4rem;align-items:center"><input type="checkbox" id="fin" style="width:auto"> Mostrar finalizados</label></div>
+      <div class="actions" style="margin:1rem 0"><button class="btn" data-perm="prontuario" id="nota">+ Anotação clínica</button><label style="display:flex;gap:.4rem;align-items:center"><input type="checkbox" id="fin" style="width:auto"> Mostrar finalizados</label></div>
       <h4>Tratamentos em aberto</h4>${table(['Procedimento', 'Dente', 'Orç.', 'Valor', 'Situação', ''], rows(abertos, linha, 'Nenhum tratamento em aberto. Aprove um orçamento para iniciar.', 6))}
       <div id="finais" hidden><h4 style="margin-top:1rem">Finalizados / cancelados</h4>${table(['Procedimento', 'Dente', 'Orç.', 'Valor', 'Situação', ''], rows(finais, linha, 'Nenhum.', 6))}</div>
       <h4 style="margin-top:1.25rem">Histórico de evoluções</h4>${table(['Data', 'Procedimento', 'Dente', 'Situação', 'Dentista', 'Observação'], rows(evos, (e) =>
@@ -125,7 +125,7 @@
   async function abaAnam(b, p) {
     const data = await q(db.from('anamneses').select('*').eq('paciente_id', p.id).order('data', { ascending: false }).order('criado_em', { ascending: false }));
     const atual = data[0];
-    b.innerHTML = `<div class="actions" style="margin-bottom:1rem"><button class="btn" id="nova">${atual ? '+ Nova anamnese' : '+ Preencher anamnese'}</button></div>` +
+    b.innerHTML = `<div class="actions" style="margin-bottom:1rem"><button class="btn" data-perm="prontuario" id="nova">${atual ? '+ Nova anamnese' : '+ Preencher anamnese'}</button></div>` +
       (atual ? `${atual.alertas ? `<div class="alerta">⚠ ${esc(atual.alertas)}</div>` : ''}` : '<p class="hint">Paciente sem anamnese preenchida.</p>') +
       table(['Data', 'Modelo', 'Resumo', ''], rows(data, (a) =>
         `<tr><td>${fmtD(a.data)}</td><td>${esc(a.modelo)}</td><td>${esc(PERGUNTAS.filter(([k]) => a.respostas[k] && String(a.respostas[k]).trim() && !/^n(ã|a)o$/i.test(a.respostas[k])).length)} resposta(s) a observar</td>
@@ -148,7 +148,7 @@
   /* ---------- Imagens ---------- */
   async function abaImg(b, p) {
     const data = await q(db.from('imagens_paciente').select('*').eq('paciente_id', p.id).order('criado_em', { ascending: false }));
-    b.innerHTML = `<div class="actions" style="margin-bottom:1rem"><label class="btn" style="cursor:pointer">+ Enviar imagens / PDFs<input type="file" id="up" multiple accept="image/*,application/pdf" hidden></label>
+    b.innerHTML = `<div class="actions" style="margin-bottom:1rem"><label class="btn" data-perm="imagens" style="cursor:pointer">+ Enviar imagens / PDFs<input type="file" id="up" multiple accept="image/*,application/pdf" hidden></label>
         <span class="hint">Até 20 MB por arquivo. Fica em armazenamento privado.</span></div><div class="galeria" id="gal"></div>`;
     const gal = $('#gal', b);
     if (!data.length) gal.innerHTML = '<p class="hint">Nenhuma imagem enviada.</p>';
@@ -203,7 +203,7 @@
   }
   async function abaDocs(b, p) {
     const data = await q(db.from('documentos_paciente').select('*, dentistas!dentista_id(nome)').eq('paciente_id', p.id).order('criado_em', { ascending: false }));
-    b.innerHTML = `<div class="actions" style="margin-bottom:1rem">${Object.entries(TIPOS).map(([k, v]) => `<button class="btn ghost sm" data-novo="${k}">+ ${esc(v)}</button>`).join('')}</div>` +
+    b.innerHTML = `<div class="actions" style="margin-bottom:1rem">${Object.entries(TIPOS).map(([k, v]) => `<button class="btn ghost sm" data-perm="prontuario" data-novo="${k}">+ ${esc(v)}</button>`).join('')}</div>` +
       table(['Data', 'Tipo', 'Título', 'Dentista', ''], rows(data, (d) =>
         `<tr><td>${fmtD(d.data)}</td><td>${esc(TIPOS[d.tipo])}</td><td>${esc(d.titulo)}</td><td>${esc(d.dentistas?.nome)}</td>
          <td class="nowrap"><button class="btn ghost sm" data-ver="${esc(d.id)}">Ver / imprimir</button> <button class="btn ghost sm" data-del="${esc(d.id)}">Excluir</button></td></tr>`, 'Nenhum documento emitido.', 5));
@@ -244,7 +244,7 @@
     b.innerHTML = `<div class="grid"><div class="card stat"><span>Total recebido</span><b class="txt-ok">${brl(receb)}</b></div><div class="card stat"><span>Total a receber</span><b class="${areceber > 0 ? 'txt-vencido' : ''}">${brl(areceber)}</b></div></div>
       <h4>Débitos</h4>${table(['Orç.', 'Lançado', 'Vencimento', 'Original', 'Desconto', 'Pago', 'Saldo', 'Situação', ''], rows(deb, (d) =>
         `<tr><td>#${esc(d.orcamentos?.codigo)}</td><td>${fmtD(d.data_lancamento)}</td><td>${fmtD(d.vencimento)}</td><td>${brl(d.valor_original)}</td><td>${brl(d.desconto)}</td><td>${brl(d.valor_pago)}</td><td><b>${brl(d.saldo)}</b></td><td>${badge(d.status)}</td>
-         <td>${d.status === 'pago' || d.status === 'cancelado' ? '' : `<button class="btn sm" data-receber="${esc(d.id)}">Receber</button>`}</td></tr>`, 'Nenhum débito.', 9))}
+         <td>${d.status === 'pago' || d.status === 'cancelado' ? '' : `<button class="btn sm" data-perm="debitos_receber" data-receber="${esc(d.id)}">Receber</button>`}</td></tr>`, 'Nenhum débito.', 9))}
       <h4 style="margin-top:1.25rem">Recebimentos</h4>${table(['#', 'Data', 'Meio', 'Valor', 'Líquido', 'Situação'], rows(rec, (r) =>
         `<tr><td>${r.codigo}</td><td>${fmtD(r.data_lancamento)}</td><td>${esc(r.meio)}${r.meio === 'credito' ? ` ${r.parcelas}×` : ''}</td><td>${brl(r.valor)}</td><td>${brl(r.valor_liquido)}</td><td>${badge(r.status === 'previsto' ? 'agendado' : r.status === 'estornado' ? 'cancelado' : 'realizado')} ${esc(r.status)}</td></tr>`, 'Nenhum recebimento.', 6))}`;
     $$('[data-receber]', b).forEach((x) => (x.onclick = () => window.MD.receber(x.dataset.receber)));
@@ -257,7 +257,7 @@
     const ini = p.nome.split(' ').filter(Boolean).slice(0, 2).map((s) => s[0]).join('').toUpperCase();
     el.innerHTML = `<div class="ficha-head"><a class="btn ghost sm" href="#pacientes">← Pacientes</a>
         <div class="avatar">${esc(ini)}</div><div style="flex:1"><h3 style="margin:0">${esc(p.nome)}</h3><div class="hint">${esc(p.telefone)} · CPF ${fmtCPF(p.cpf)} · ${esc(p.unidades?.nome)}</div></div>
-        <button class="btn ghost sm" id="edit">Editar</button><button class="btn ghost sm" id="agendar">Agendar</button></div>
+        <button class="btn ghost sm" data-perm="pacientes_editar" id="edit">Editar</button><button class="btn ghost sm" data-perm="agenda_editar" id="agendar">Agendar</button></div>
       ${anam[0]?.alertas ? `<div class="alerta">⚠ ${esc(anam[0].alertas)}</div>` : ''}<div id="abas"></div>`;
     $('#edit', el).onclick = () => editarPaciente(p);
     $('#agendar', el).onclick = () => novoAgendamento(p.id);

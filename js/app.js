@@ -55,7 +55,25 @@
 
   const badge = (s) => `<span class="badge ${esc(s)}">${esc(String(s).replace('_', ' '))}</span>`;
   const porUnidade = (q, col = 'unidade_id') => (state.unidadeId ? q.eq(col, state.unidadeId) : q);
-  const can = (p) => !!(state.perfil.admin || state.perfil[p]);
+  const can = (p) => !!(state.perfil.ativo && (state.perfil.admin || state.perfil[p] || state.perfil.permissoes?.[p]));
+  const PERMISSOES = [
+    ['Pacientes e agenda', [['pacientes_editar', 'Cadastrar/editar pacientes'], ['agenda_editar', 'Agendar e alterar agenda']]],
+    ['Orçamentos', [['orcamentos_criar', 'Criar/editar orçamentos'], ['orcamentos_aprovar', 'Aprovar orçamentos (gera débito)']]],
+    ['Clínico', [['tratamentos_evoluir', 'Evoluir tratamentos'], ['prontuario', 'Anamnese, anotações e documentos'], ['imagens', 'Imagens do paciente']]],
+    ['Recebimentos e caixa', [['debitos_receber', 'Receber débitos'], ['estornar_recebimento', 'Estornar recebimentos'], ['caixa_abrir', 'Abrir caixa e lançar movimentos'], ['fechar_caixa', 'Fechar/reabrir caixa']]],
+    ['Financeiro e produção', [['financeiro', 'Financeiro completo (lançamentos, DRE, pagamentos, conferência)'], ['alterar_comissao', 'Alterar comissões'], ['producao_ver', 'Ver produção e comissões']]],
+    ['Administração', [['cadastros_editar', 'Cadastros (dentistas, procedimentos, planos)'], ['admin', 'Administrador (tudo, inclusive usuários)']]],
+  ];
+  const CARGOS = {
+    Gerente: ['pacientes_editar', 'agenda_editar', 'orcamentos_criar', 'orcamentos_aprovar', 'tratamentos_evoluir', 'prontuario', 'imagens', 'debitos_receber', 'estornar_recebimento', 'caixa_abrir', 'fechar_caixa', 'financeiro', 'alterar_comissao', 'producao_ver', 'cadastros_editar'],
+    Dentista: ['agenda_editar', 'orcamentos_criar', 'tratamentos_evoluir', 'prontuario', 'imagens'],
+    'Secretário(a)': ['pacientes_editar', 'agenda_editar', 'orcamentos_criar', 'orcamentos_aprovar', 'prontuario', 'imagens', 'debitos_receber', 'caixa_abrir'],
+    Financeiro: ['financeiro', 'fechar_caixa', 'alterar_comissao', 'producao_ver', 'estornar_recebimento', 'caixa_abrir', 'debitos_receber'],
+  };
+  const VIEW_PERM = { caixa: ['caixa_abrir', 'fechar_caixa'], producao: ['producao_ver', 'financeiro'], financeiro: ['financeiro'], debitos: ['debitos_receber', 'estornar_recebimento', 'financeiro'], cadastros: ['cadastros_editar'] };
+  const podeVer = (id) => !VIEW_PERM[id] || VIEW_PERM[id].some(can);
+  const aplicarPermissoes = (raiz) => $$('[data-perm]', raiz).forEach((e) => { if (!can(e.dataset.perm)) e.remove(); });
+  const dentistasDaUnidade = (uid) => (uid ? state.dentistas.filter((d) => d.unidade_id === uid || (d.unidades_ids || []).includes(uid)) : state.dentistas);
   const nomeUnidade = () => state.unidades.find((u) => u.id === state.unidadeId)?.nome || 'Todas as unidades';
 
   async function rpc(name, args) {
@@ -132,7 +150,8 @@
 
   async function navigate() {
     const [vid, arg] = location.hash.slice(1).split('/');
-    const v = views.find((x) => x.id === vid) || views[0];
+    let v = views.find((x) => x.id === vid) || views[0];
+    if (!podeVer(v.id)) v = views[0];
     const token = ++navToken;
     $$('.nav a').forEach((a) => a.classList.toggle('active', a.dataset.view === (v.pai || v.id)));
     $('#view-title').textContent = v.title;
@@ -150,13 +169,14 @@
     const get = (p) => p.then((r) => { if (r.error) throw new Error(r.error.message); return r.data; });
     const [u, d, p, pl, pr, c, pf] = await Promise.all([
       get(db.from('unidades').select('*').eq('ativo', true).order('nome')),
-      get(db.from('dentistas').select('*, unidades!unidade_id(nome)').eq('ativo', true).order('nome')),
+      get(db.from('dentistas').select('*, unidades!unidade_id(nome), dentista_unidades(unidade_id)').eq('ativo', true).order('nome')),
       get(db.from('pacientes').select('*, unidades!unidade_id(nome)').order('nome')),
       get(db.from('planos').select('*').eq('ativo', true).order('valor_mensal')),
       get(db.from('procedimentos').select('*').order('nome')),
       get(db.from('contas_bancarias').select('*').eq('ativo', true).order('nome')),
       get(db.from('perfis_usuario').select('*').eq('user_id', state.user.id)),
     ]);
+    d.forEach((x) => { x.unidades_ids = (x.dentista_unidades || []).map((r) => r.unidade_id); });
     Object.assign(state, { unidades: u, dentistas: d, pacientes: p, planos: pl, procedimentos: pr, contas: c, perfil: pf[0] || {} });
     $('#filtro-unidade').innerHTML = opts(state.unidades, (x) => x.nome, 'Todas as unidades', state.unidadeId);
   }
@@ -234,15 +254,15 @@
   register('pacientes', 'Pacientes', async (el) => {
     el.innerHTML = `<div class="actions" style="margin-bottom:1rem">
         <input type="search" id="busca" placeholder="Buscar por nome ou CPF…" style="min-width:240px">
-        <button class="btn" id="novo">+ Novo paciente</button></div><div id="lista"></div>`;
+        <button class="btn" data-perm="pacientes_editar" id="novo">+ Novo paciente</button></div><div id="lista"></div>`;
     const draw = () => {
       const t = $('#busca', el).value.trim().toLowerCase();
       const lista = state.pacientes.filter((p) => (!state.unidadeId || p.unidade_id === state.unidadeId) &&
         (!t || p.nome.toLowerCase().includes(t) || (digits(t) && p.cpf.includes(digits(t)))));
       $('#lista', el).innerHTML = table(['Nome', 'CPF', 'Telefone', 'Unidade', ''], rows(lista, (p) =>
         `<tr><td><a href="#paciente/${esc(p.id)}"><b>${esc(p.nome)}</b></a></td><td>${fmtCPF(p.cpf)}</td><td>${esc(p.telefone)}</td><td>${esc(p.unidades?.nome)}</td>
-         <td class="nowrap"><a class="btn ghost sm" href="#paciente/${esc(p.id)}">Ficha</a> <button class="btn ghost sm" data-agendar="${esc(p.id)}">Agendar</button>
-         <button class="btn ghost sm" data-orcar="${esc(p.id)}">Orçamento</button></td></tr>`, 'Nenhum paciente encontrado.', 5));
+         <td class="nowrap"><a class="btn ghost sm" href="#paciente/${esc(p.id)}">Ficha</a> <button class="btn ghost sm" data-perm="agenda_editar" data-agendar="${esc(p.id)}">Agendar</button>
+         <button class="btn ghost sm" data-perm="orcamentos_criar" data-orcar="${esc(p.id)}">Orçamento</button></td></tr>`, 'Nenhum paciente encontrado.', 5));
     };
     $('#busca', el).oninput = draw;
     $('#novo', el).onclick = novoPaciente;
@@ -255,8 +275,8 @@
       title: 'Novo agendamento',
       body: `<label>Paciente<select name="paciente_id" required>${opts(state.pacientes, (p) => p.nome, 'Selecione…', pacienteId)}</select></label>
         <div class="form-row">
-          <label>Dentista<select name="dentista_id" required>${opts(state.dentistas, (d) => d.nome)}</select></label>
           <label>Unidade<select name="unidade_id" required>${opts(state.unidades, (u) => u.nome, 'Selecione…', state.unidadeId)}</select></label>
+          <label>Dentista<select name="dentista_id" required>${opts(dentistasDaUnidade(state.unidadeId), (d) => d.nome)}</select></label>
         </div>
         <div class="form-row">
           <label>Data e hora<input name="data_hora" type="datetime-local" required step="900"></label>
@@ -264,6 +284,7 @@
         </div>
         <label>Observações<textarea name="observacoes" rows="2"></textarea></label>`,
       submit: 'Agendar',
+      onOpen: (form) => { form.unidade_id.onchange = () => { form.dentista_id.innerHTML = opts(dentistasDaUnidade(form.unidade_id.value), (d) => d.nome); }; },
       onSubmit: async (v) => {
         v.data_hora = new Date(v.data_hora).toISOString();
         const { error } = await db.from('agendamentos').insert(v);   // exemplo prático de INSERT
@@ -276,7 +297,7 @@
 
   register('agenda', 'Agenda', async (el) => {
     el.innerHTML = `<div class="actions" style="margin-bottom:1rem"><input type="date" id="dia" value="${today()}">
-      <button class="btn" id="novo">+ Novo agendamento</button></div><div id="lista"></div>`;
+      <button class="btn" data-perm="agenda_editar" id="novo">+ Novo agendamento</button></div><div id="lista"></div>`;
     const draw = async () => {
       const dia = $('#dia', el).value || today();
       const { data, error } = await porUnidade(db.from('agendamentos').select('*, pacientes!paciente_id(nome), dentistas!dentista_id(nome), unidades!unidade_id(nome)')
@@ -326,6 +347,7 @@
         error ? toast(error.message, true) : (toast('Assinatura cancelada.'), refresh());
       }
     });
+    new MutationObserver(() => aplicarPermissoes(document.body)).observe(document.body, { childList: true, subtree: true });
     document.addEventListener('change', async (e) => {
       const st = e.target.closest('[data-status]');
       if (!st) return;
@@ -348,8 +370,13 @@
     try {
       await carregarBase();
     } catch (e) { toast('Erro ao carregar dados: ' + e.message, true); }
+    if (!state.perfil.ativo) {
+      $('#nav').innerHTML = '';
+      $('#view-root').innerHTML = '<div class="card empty"><h3>Acesso aguardando liberação</h3><p>Seu usuário foi criado, mas ainda não foi liberado. Peça ao administrador para ativá-lo em Cadastros › Usuários.</p></div>';
+      return;
+    }
     try {
-      $('#nav').innerHTML = views.filter((v) => !v.pai).map((v) => `<a href="#${v.id}" data-view="${v.id}" title="${esc(v.title)}">${iconeNav(v.id)}<span>${esc(v.title)}</span></a>`).join('');
+      $('#nav').innerHTML = views.filter((v) => !v.pai && podeVer(v.id)).map((v) => `<a href="#${v.id}" data-view="${v.id}" title="${esc(v.title)}">${iconeNav(v.id)}<span>${esc(v.title)}</span></a>`).join('');
       await navigate();
     } catch (e) { console.error(e); toast('Erro ao abrir a tela: ' + e.message, true); }
   }
@@ -391,5 +418,5 @@
   }
 
   window.MD = { db, $, $$, esc, digits, fmtCPF, fmtDT, fmtD, brl, num, today, monthStart, monthEnd, daysTo, toast, state, opts, rows, table, badge,
-    porUnidade, can, nomeUnidade, rpc, q, modal, tabs, register, refresh, carregarBase, formValues, validarCPF, novoPaciente, novoAgendamento, start };
+    porUnidade, can, PERMISSOES, CARGOS, dentistasDaUnidade, aplicarPermissoes, nomeUnidade, rpc, q, modal, tabs, register, refresh, carregarBase, formValues, validarCPF, novoPaciente, novoAgendamento, start };
 })();

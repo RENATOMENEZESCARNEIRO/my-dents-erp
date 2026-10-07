@@ -17,15 +17,21 @@
           <label>Unidade principal<select name="unidade_id">${opts(state.unidades, (u) => u.nome, 'Selecione…', d.unidade_id)}</select></label>
           <label>% comissão de venda<input name="percentual_comissao_venda" type="number" step="0.01" min="0" max="100" value="${esc(d.percentual_comissao_venda ?? 0)}"></label>
         </div>
+        <div><span class="hint">Unidades em que atende</span><div class="actions">${state.unidades.map((u) => `<label class="inline"><input type="checkbox" style="width:auto" name="unid" value="${esc(u.id)}" ${(d.unidades_ids || []).includes(u.id) || (!d.id && u.id === state.unidadeId) ? 'checked' : ''}> ${esc(u.nome)}</label>`).join('')}</div></div>
         <label>Dia do pagamento (mês seguinte)<input name="dia_pagamento" type="number" min="1" max="31" value="${esc(d.dia_pagamento)}" placeholder="vazio = último dia do mês"></label>
         <p class="hint">Mudar o % não altera orçamentos já aprovados: o percentual fica congelado na aprovação.</p>`,
-      onSubmit: async (v) => {
+      onSubmit: async (v, form) => {
         if (!validarCPF(v.cpf)) throw new Error('CPF inválido.');
+        const unis = $$('[name=unid]:checked', form).map((c) => c.value);
+        delete v.unid;
         v.cpf = digits(v.cpf);
         v.percentual_comissao_venda = num(v.percentual_comissao_venda);
         v.dia_pagamento = v.dia_pagamento ? parseInt(v.dia_pagamento, 10) : null;
-        const { error } = d.id ? await db.from('dentistas').update(v).eq('id', d.id) : await db.from('dentistas').insert(v);
-        if (error) throw new Error(error.code === '23505' ? 'Já existe um dentista com esse CPF.' : error.message);
+        if (v.unidade_id && !unis.includes(v.unidade_id)) unis.push(v.unidade_id);
+        const r = d.id ? await db.from('dentistas').update(v).eq('id', d.id).select('id').single() : await db.from('dentistas').insert(v).select('id').single();
+        if (r.error) throw new Error(r.error.code === '23505' ? 'Já existe um dentista com esse CPF.' : r.error.message);
+        await q(db.from('dentista_unidades').delete().eq('dentista_id', r.data.id));
+        if (unis.length) await q(db.from('dentista_unidades').insert(unis.map((u) => ({ dentista_id: r.data.id, unidade_id: u }))));
         toast('Dentista salvo.');
         await carregarBase();
         refresh();
@@ -92,8 +98,8 @@
     { id: 'dentistas', label: 'Dentistas', render: async (b) => {
       b.innerHTML = `<div class="actions" style="margin-bottom:1rem"><button class="btn" id="n">+ Novo dentista</button></div><div id="l"></div>`;
       $('#n', b).onclick = () => dentistaForm();
-      $('#l', b).innerHTML = table(['Nome', 'CPF', 'Especialidade', 'Unidade', '% venda', 'Dia pgto', ''], rows(state.dentistas, (d) =>
-        `<tr><td>${esc(d.nome)}</td><td>${fmtCPF(d.cpf)}</td><td>${esc(d.especialidade)}</td><td>${esc(d.unidades?.nome)}</td>
+      $('#l', b).innerHTML = table(['Nome', 'CPF', 'Especialidade', 'Unidades', '% venda', 'Dia pgto', ''], rows(state.dentistas, (d) =>
+        `<tr><td>${esc(d.nome)}</td><td>${fmtCPF(d.cpf)}</td><td>${esc(d.especialidade)}</td><td>${esc((d.unidades_ids?.length ? state.unidades.filter((u) => d.unidades_ids.includes(u.id)).map((u) => u.nome) : [d.unidades?.nome]).join(', '))}</td>
          <td>${esc(d.percentual_comissao_venda)}%</td><td>${esc(d.dia_pagamento ?? 'último')}</td>
          <td><button class="btn ghost sm" data-edit="${esc(d.id)}">Editar</button></td></tr>`, 'Nenhum dentista.', 7));
       $$('[data-edit]', b).forEach((x) => (x.onclick = () => dentistaForm(state.dentistas.find((d) => d.id === x.dataset.edit))));
@@ -136,16 +142,35 @@
       };
     } },
     { id: 'usuarios', label: 'Usuários', render: async (b) => {
+      const { PERMISSOES, CARGOS } = window.MD;
       const lista = await q(db.from('perfis_usuario').select('*').order('criado_em'));
       const adm = can('admin');
-      const cols = [['admin', 'Administrador'], ['financeiro', 'Financeiro'], ['fechar_caixa', 'Fechar caixa'], ['alterar_comissao', 'Alterar comissão']];
-      b.innerHTML = `<p class="hint">Crie os usuários em Supabase › Authentication › Users (e-mail + senha). O primeiro usuário vira administrador; aqui você define as permissões dos demais.</p><div id="l"></div>`;
-      $('#l', b).innerHTML = table(['Usuário', ...cols.map((c) => c[1])], rows(lista, (u) =>
-        `<tr><td>${esc(u.nome)}</td>${cols.map(([k]) => `<td><input type="checkbox" style="width:auto" data-u="${esc(u.user_id)}" data-k="${k}" ${u[k] ? 'checked' : ''} ${adm ? '' : 'disabled'}></td>`).join('')}</tr>`,
-        'Sem usuários.', 5));
-      $$('[data-u]', b).forEach((c) => (c.onchange = async () => {
-        const { error } = await db.from('perfis_usuario').update({ [c.dataset.k]: c.checked }).eq('user_id', c.dataset.u);
-        error ? (toast(error.message, true), (c.checked = !c.checked)) : toast('Permissão atualizada.');
+      const cont = (u) => PERMISSOES.flatMap(([, ps]) => ps).filter(([k]) => u.admin || u.permissoes?.[k] || u[k]).length;
+      b.innerHTML = `<p class="hint">Crie o login em Supabase › Authentication › Users (e-mail + senha). Novos usuários entram <b>sem acesso</b>: libere e defina as permissões aqui.</p><div id="l"></div>`;
+      $('#l', b).innerHTML = table(['Usuário', 'Cargo', 'Acesso', 'Permissões', ''], rows(lista, (u) =>
+        `<tr><td>${esc(u.nome)}</td><td>${esc(u.cargo || (u.admin ? 'Administrador' : '—'))}</td><td>${badge(u.ativo ? 'ativa' : 'cancelada')} ${u.ativo ? 'liberado' : 'aguardando'}</td>
+         <td>${cont(u)} de ${PERMISSOES.flatMap(([, ps]) => ps).length}</td><td>${adm ? `<button class="btn ghost sm" data-u="${esc(u.user_id)}">Editar</button>` : ''}</td></tr>`, 'Sem usuários.', 5));
+      $$('[data-u]', b).forEach((x) => (x.onclick = () => {
+        const u = lista.find((i) => i.user_id === x.dataset.u);
+        const marcado = (k) => !!(u.admin && k === 'admin') || !!u.permissoes?.[k] || !!u[k];
+        modal({
+          title: `Permissões — ${u.nome}`, wide: true, submit: 'Salvar',
+          body: `<div class="form-row"><label>Cargo (modelo de permissões)<select name="cargo" id="cargo">${opts([{ id: '', n: 'Personalizado' }, ...Object.keys(CARGOS).map((c) => ({ id: c, n: c }))], (c) => c.n, null, u.cargo || '')}</select></label>
+              <label class="inline" style="align-self:end"><input type="checkbox" name="ativo" style="width:auto" ${u.ativo ? 'checked' : ''}> Acesso liberado</label></div>
+            ${PERMISSOES.map(([g, ps]) => `<h4 style="margin:.8rem 0 .3rem">${esc(g)}</h4>${ps.map(([k, n]) => `<label class="inline" style="display:flex;gap:.5rem;align-items:center"><input type="checkbox" style="width:auto" data-perm-k="${k}" ${marcado(k) ? 'checked' : ''}> ${esc(n)}</label>`).join('')}`).join('')}`,
+          onOpen: (form) => {
+            $('#cargo', form).onchange = (e) => { const set = CARGOS[e.target.value]; if (!set) return; $$('[data-perm-k]', form).forEach((c) => { c.checked = c.dataset.permK === 'admin' ? c.checked : set.includes(c.dataset.permK); }); };
+          },
+          onSubmit: async (v, form) => {
+            const ks = $$('[data-perm-k]', form);
+            const permissoes = {}; ks.forEach((c) => { if (c.checked && c.dataset.permK !== 'admin') permissoes[c.dataset.permK] = true; });
+            const admin = ks.find((c) => c.dataset.permK === 'admin').checked;
+            if (u.user_id === window.MD.state.user.id && (!admin || !form.ativo.checked)) throw new Error('Você não pode remover seu próprio acesso de administrador.');
+            await q(db.from('perfis_usuario').update({ cargo: v.cargo || (admin ? 'Administrador' : null), ativo: form.ativo.checked, admin, permissoes,
+              financeiro: !!permissoes.financeiro, fechar_caixa: !!permissoes.fechar_caixa, alterar_comissao: !!permissoes.alterar_comissao }).eq('user_id', u.user_id));
+            toast('Usuário atualizado.'); refresh();
+          },
+        });
       }));
     } },
   ]), 100);

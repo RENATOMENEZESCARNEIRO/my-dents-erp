@@ -104,7 +104,7 @@
           `<tr><td>${esc(d.pacientes?.nome)}</td><td>#${esc(d.orcamentos?.codigo)}</td><td>${esc(d.unidades?.nome)}</td><td>${brl(d.valor_original)}</td>
            <td>${brl(d.desconto)}</td><td>${brl(d.valor_pago)}</td><td><b>${brl(d.saldo)}</b></td><td>${fmtD(d.data_lancamento)}</td>
            <td class="${vencido(d) ? 'txt-vencido' : ''}">${fmtD(d.vencimento)}${vencido(d) ? ' ⚠' : ''}</td><td>${badge(d.status)}</td>
-           <td>${d.status === 'pago' || d.status === 'cancelado' ? '' : `<button class="btn sm" data-receber="${esc(d.id)}">Receber</button>`}</td></tr>`, 'Nenhum débito.', 11));
+           <td>${d.status === 'pago' || d.status === 'cancelado' ? '' : `<button class="btn sm" data-perm="debitos_receber" data-receber="${esc(d.id)}">Receber</button>`}</td></tr>`, 'Nenhum débito.', 11));
         $$('[data-receber]', b).forEach((x) => (x.onclick = () => receber(x.dataset.receber)));
       };
       $('#st', b).onchange = draw;
@@ -118,7 +118,7 @@
          <td>${brl(r.valor)}${Number(r.desconto) > 0 ? `<br><small>desc. ${brl(r.desconto)}</small>` : ''}</td><td>${brl(r.valor_liquido)}</td>
          <td>${fmtD(r.data_lancamento)}</td><td>${fmtD(r.data_pagamento)}</td><td>${fmtD(r.data_recebimento)}</td>
          <td>${esc(r.contas_bancarias?.nome)}</td><td>${esc(r.dentistas?.nome)}</td><td>${badge(r.status === 'previsto' ? 'agendado' : r.status === 'estornado' ? 'cancelado' : 'realizado')} ${esc(r.status)}</td>
-         <td>${r.status === 'estornado' ? '' : `<button class="btn ghost sm" data-estornar="${esc(r.id)}">Estornar</button>`}</td></tr>`, 'Nenhum recebimento.', 13));
+         <td>${r.status === 'estornado' ? '' : `<button class="btn ghost sm" data-perm="estornar_recebimento" data-estornar="${esc(r.id)}">Estornar</button>`}</td></tr>`, 'Nenhum recebimento.', 13));
       $$('[data-estornar]', b).forEach((x) => (x.onclick = async () => {
         if (!confirm('Estornar este recebimento? O débito volta a ficar em aberto.')) return;
         try { await rpc('estornar_recebimento', { p_id: x.dataset.estornar }); toast('Recebimento estornado.'); refresh(); } catch (e) { toast(e.message, true); }

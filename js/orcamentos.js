@@ -2,7 +2,7 @@
    Aprovação parcial = dois orçamentos independentes (o pendente fica na ficha). */
 (() => {
   'use strict';
-  const { db, $, $$, esc, brl, num, today, toast, state, opts, rows, table, badge, rpc, q, modal, register, refresh, porUnidade } = window.MD;
+  const { dentistasDaUnidade, db, $, $$, esc, brl, num, today, toast, state, opts, rows, table, badge, rpc, q, modal, register, refresh, porUnidade } = window.MD;
 
   const preco = (p, condicao) => (condicao === 'parcelado' && p.valor_parcelado != null ? p.valor_parcelado : p.valor_venda);
   const ativos = () => state.procedimentos.filter((p) => p.ativo);
@@ -12,10 +12,10 @@
       title: 'Novo orçamento', wide: true,
       body: `<div class="form-row">
           <label>Paciente<select name="paciente_id" required>${opts(state.pacientes, (p) => p.nome, 'Selecione…', pacienteId)}</select></label>
-          <label>Dentista responsável (vendedor)<select name="dentista_id" required>${opts(state.dentistas, (d) => d.nome)}</select></label>
+          <label>Unidade<select name="unidade_id" required>${opts(state.unidades, (u) => u.nome, 'Selecione…', state.unidadeId)}</select></label>
         </div>
         <div class="form-row">
-          <label>Unidade<select name="unidade_id" required>${opts(state.unidades, (u) => u.nome, 'Selecione…', state.unidadeId)}</select></label>
+          <label>Dentista responsável (vendedor)<select name="dentista_id" required>${opts(dentistasDaUnidade(state.unidadeId), (d) => d.nome)}</select></label>
           <label>Condição de venda<select name="condicao">${opts([{ id: 'avista', n: 'À vista' }, { id: 'parcelado', n: 'Parcelado' }], (x) => x.n, null, 'avista')}</select></label>
         </div>
         <h4 style="margin:.5rem 0">Procedimentos planejados</h4>
@@ -24,6 +24,7 @@
         <div class="total">Total: <b id="tot">R$ 0,00</b></div>
         <label>Observações<textarea name="observacoes" rows="2"></textarea></label>`,
       onOpen: (form) => {
+        form.unidade_id.onchange = () => { form.dentista_id.innerHTML = opts(dentistasDaUnidade(form.unidade_id.value), (d) => d.nome); };
         const box = $('#itens', form);
         const cond = () => form.condicao.value;
         const total = () => { $('#tot', form).textContent = brl($$('[data-valor]', form).reduce((s, i) => s + num(i.value), 0)); };
@@ -105,7 +106,7 @@
   register('orcamentos', 'Orçamentos', async (el) => {
     el.innerHTML = `<div class="actions" style="margin-bottom:1rem">
         <select id="st" aria-label="Situação">${opts([{ id: '', n: 'Todos' }, { id: 'pendente', n: 'Pendentes' }, { id: 'aprovado', n: 'Aprovados' }, { id: 'cancelado', n: 'Cancelados' }], (x) => x.n, null, 'pendente')}</select>
-        <button class="btn" id="novo">+ Novo orçamento</button></div><div id="lista"></div>`;
+        <button class="btn" data-perm="orcamentos_criar" id="novo">+ Novo orçamento</button></div><div id="lista"></div>`;
     $('#novo', el).onclick = () => novoOrcamento();
     const draw = async () => {
       let qy = porUnidade(db.from('orcamentos').select('*, pacientes!paciente_id(nome), dentistas!dentista_id(nome), unidades!unidade_id(nome), orcamento_itens(valor_negociado)').order('codigo', { ascending: false }).limit(200));
