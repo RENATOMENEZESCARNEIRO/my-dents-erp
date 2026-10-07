@@ -221,7 +221,7 @@
       <div class="card"><h3 style="margin-top:0">Próximos atendimentos</h3><div id="proximos"></div></div>`;
     const ini = new Date(today() + 'T00:00:00').toISOString();
     const fim = new Date(today() + 'T23:59:59').toISOString();
-    const [hoje, pac, deb, cart, prev, prox] = await Promise.all([
+    const [hoje, pac, deb, cart, prev, prox, aberta] = await Promise.all([
       porUnidade(db.from('agendamentos').select('status').gte('data_hora', ini).lte('data_hora', fim).neq('status', 'cancelado')),
       porUnidade(db.from('pacientes').select('id', { count: 'exact', head: true })),
       porUnidade(db.from('debitos').select('saldo').in('status', ['pendente', 'parcial'])),
@@ -229,6 +229,7 @@
       db.from('previsoes').select('*, dentistas!dentista_id(nome)').eq('status', 'prevista').order('vencimento'),
       porUnidade(db.from('agendamentos').select('*, pacientes!paciente_id(nome), dentistas!dentista_id(nome), unidades!unidade_id(nome)')
         .gte('data_hora', new Date().toISOString()).neq('status', 'cancelado').order('data_hora').limit(8)),
+      db.from('comissoes').select('valor').eq('status', 'aberta').eq('estornada', false).then((r) => r, () => ({ data: [] })),
     ]);
     const sum = (r, k) => (r.data || []).reduce((s, x) => s + Number(x[k]), 0);
     $('#st-hoje', el).textContent = hoje.data?.length ?? '–';
@@ -236,7 +237,8 @@
     $('#st-pac', el).textContent = pac.count ?? '–';
     $('#st-deb', el).textContent = brl(sum(deb, 'saldo'));
     $('#st-cart', el).textContent = brl(sum(cart, 'valor_liquido'));
-    $('#st-com', el).textContent = brl((prev.data || []).filter((p) => p.origem === 'producao').reduce((s, p) => s + Number(p.valor), 0));
+    $('#st-com', el).textContent = brl((prev.data || []).filter((p) => p.origem === 'producao').reduce((s, p) => s + Number(p.valor), 0) + sum(aberta, 'valor'));
+    $('#st-com', el).title = 'Comissões já fechadas em lote (previstas) + produção do mês ainda em aberto';
     const urgentes = (prev.data || []).filter((p) => daysTo(p.vencimento) <= 5);
     if (urgentes.length) {
       const box = $('#alertas', el);
@@ -402,9 +404,32 @@
 
   register('agenda', 'Agenda', async (el) => {
     el.innerHTML = `<div class="actions" style="margin-bottom:1rem"><input type="date" id="dia" value="${today()}">
+      <select id="modo"><option value="dia">Dia</option><option value="semana">Semana</option></select>
+      <select id="dent" hidden>${opts(dentistasAgenda(state.unidadeId), (d) => d.nome, null)}</select>
       <button class="btn" data-perm="agenda_editar" id="novo">+ Novo agendamento</button></div><div id="atuacao"></div><div id="lista"></div>`;
+    const semana = async (dia) => {
+      const dentId = $('#dent', el).value;
+      if (!dentId) { $('#lista', el).innerHTML = '<p class="empty">Nenhum dentista disponível.</p>'; $('#atuacao', el).innerHTML = ''; return; }
+      const base = new Date(dia + 'T12:00:00'); const wd0 = (base.getDay() + 6) % 7; base.setDate(base.getDate() - wd0);   // segunda
+      const dias = [...Array(7)].map((_, i) => { const d = new Date(base); d.setDate(base.getDate() + i); return d.toISOString().slice(0, 10); });
+      const { data, error } = await porUnidade(db.from('agendamentos').select('*, pacientes!paciente_id(nome), unidades!unidade_id(nome)').eq('dentista_id', dentId)
+        .gte('data_hora', new Date(dias[0] + 'T00:00:00').toISOString()).lte('data_hora', new Date(dias[6] + 'T23:59:59').toISOString()).neq('status', 'cancelado').order('data_hora'));
+      if (error) return toast(error.message, true);
+      const unis = state.unidades.filter((u) => !state.unidadeId || u.id === state.unidadeId);
+      const aberto = (d, hh) => unis.some((u) => { const a = atuacao(dentId, u.id, d); return a && hh >= a.ini && hh < a.fim && !(a.almIni && hh >= a.almIni && hh < a.almFim); });
+      const horas = [...Array(14)].map((_, i) => String(7 + i).padStart(2, '0') + ':00');
+      $('#atuacao', el).innerHTML = '<p class="hint">Cinza = fora da atuação cadastrada (ou almoço). Atendimentos fora desses horários aparecem como encaixe.</p>';
+      $('#lista', el).innerHTML = `<div class="table-wrap"><table><thead><tr><th></th>${dias.map((d) => `<th>${DIAS[new Date(d + 'T12:00:00').getDay()]} ${fmtD(d).slice(0, 5)}</th>`).join('')}</tr></thead><tbody>` +
+        horas.map((hh) => `<tr><th>${hh}</th>${dias.map((d) => {
+          const ags = (data || []).filter((a) => { const dt = new Date(a.data_hora); return dt.toLocaleDateString('en-CA') === d && String(dt.getHours()).padStart(2, '0') === hh.slice(0, 2); });
+          const cel = ags.map((a) => `<div class="badge ${esc(a.status)}" title="${esc(a.unidades?.nome)}">${new Date(a.data_hora).toLocaleTimeString('pt-BR', { timeStyle: 'short' })} ${esc(a.pacientes?.nome)}</div>`).join('');
+          return `<td style="${aberto(d, hh) ? '' : 'background:#e9edf2'}">${cel}</td>`;
+        }).join('')}</tr>`).join('') + '</tbody></table></div>';
+    };
     const draw = async () => {
       const dia = $('#dia', el).value || today();
+      $('#dent', el).hidden = $('#modo', el).value !== 'semana';
+      if ($('#modo', el).value === 'semana') return semana(dia);
       // quem atende no dia (espelho da atuação cadastrada no dentista)
       const quem = [];
       state.dentistas.forEach((d) => state.unidades.filter((u) => !state.unidadeId || u.id === state.unidadeId).forEach((u) => {
@@ -421,7 +446,7 @@
          <td><select data-status="${esc(a.id)}">${['agendado', 'confirmado', 'em_atendimento', 'realizado', 'faltou', 'cancelado']
            .map((s) => `<option${s === a.status ? ' selected' : ''}>${s}</option>`).join('')}</select></td></tr>`, 'Sem agendamentos neste dia.', 6));
     };
-    $('#dia', el).onchange = draw;
+    $('#dia', el).onchange = draw; $('#modo', el).onchange = draw; $('#dent', el).onchange = draw;
     $('#novo', el).onclick = () => novoAgendamento();
     await draw();
   }, 30);
@@ -554,7 +579,8 @@
       if (!iniciado) setTimeout(() => aoLogar(session.user), 0);
       if (evt === 'PASSWORD_RECOVERY') setTimeout(definirSenha, 800);
     });
-    db.auth.getSession().then(({ data }) => { if (data.session) aoLogar(data.session.user); else mostrar(false); });
+    const demora = setTimeout(() => toast('Carregando devagar? Feche outras abas do sistema abertas e recarregue a página (Ctrl+F5).', true), 8000);
+    db.auth.getSession().then(({ data }) => { clearTimeout(demora); if (data.session) aoLogar(data.session.user); else mostrar(false); });
   }
 
   window.MD = { db, $, $$, esc, digits, fmtCPF, fmtDT, fmtD, brl, num, today, monthStart, monthEnd, daysTo, toast, state, opts, rows, table, badge,

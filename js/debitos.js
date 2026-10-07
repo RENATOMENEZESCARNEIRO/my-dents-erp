@@ -91,15 +91,24 @@
   }
 
   window.MD.receber = receber;
+  let recLimite = 200, recBusca = '';
   register('recebimentos', 'Recebimentos', async (b) => {
-      const data = await q(porUnidade(db.from('recebimentos').select('*, pacientes!paciente_id(nome), dentistas!dentista_id(nome), unidades!unidade_id(nome), contas_bancarias!conta_id(nome)').order('codigo', { ascending: false }).limit(200)));
-      b.innerHTML = table(['#', 'Paciente', 'Unidade', 'Meio', 'Valor', 'Líquido', 'Lançamento', 'Pagamento', 'Recebimento', 'Conta', 'Dentista', 'Situação', ''], rows(data, (r) =>
+      const busca = recBusca.trim();
+      let qy = porUnidade(db.from('recebimentos').select(`*, ${recBusca.trim() ? 'pacientes!paciente_id!inner(nome)' : 'pacientes!paciente_id(nome)'}, dentistas!dentista_id(nome), unidades!unidade_id(nome), contas_bancarias!conta_id(nome)`).order('codigo', { ascending: false }).limit(recLimite));
+      if (busca) qy = qy.ilike('pacientes.nome', `%${busca}%`);
+      const data = await q(qy);
+      b.innerHTML = `<div class="actions" style="margin-bottom:1rem"><input type="search" id="rbusca" placeholder="Buscar paciente…" value="${esc(busca)}"></div>` + table(['#', 'Paciente', 'Unidade', 'Meio', 'Valor', 'Líquido', 'Lançamento', 'Pagamento', 'Recebimento', 'Conta', 'Dentista', 'Situação', ''], rows(data, (r) =>
         `<tr><td>${r.codigo}</td><td>${esc(r.pacientes?.nome)}</td><td>${esc(r.unidades?.nome)}</td>
          <td>${esc(r.meio.replace('_', ' '))}${r.meio === 'credito' ? ` ${r.parcelas}×` : ''}${r.cv ? `<br><small>CV ${esc(r.cv)}</small>` : ''}</td>
          <td>${brl(r.valor)}${Number(r.desconto) > 0 ? `<br><small>desc. ${brl(r.desconto)}</small>` : ''}</td><td>${brl(r.valor_liquido)}</td>
          <td>${fmtD(r.data_lancamento)}</td><td>${fmtD(r.data_pagamento)}</td><td>${fmtD(r.data_recebimento)}</td>
          <td>${esc(r.contas_bancarias?.nome)}</td><td>${esc(r.dentistas?.nome)}</td><td>${badge(r.status === 'previsto' ? 'agendado' : r.status === 'estornado' ? 'cancelado' : 'realizado')} ${esc(r.status)}</td>
-         <td>${r.status === 'estornado' ? '' : `<button class="btn ghost sm" data-perm="estornar_recebimento" data-estornar="${esc(r.id)}">Estornar</button>`}</td></tr>`, 'Nenhum recebimento.', 13));
+         <td>${r.status === 'estornado' ? '' : `<button class="btn ghost sm" data-perm="estornar_recebimento" data-estornar="${esc(r.id)}">Estornar</button>`}</td></tr>`, 'Nenhum recebimento.', 13))
+        + (data.length >= recLimite ? '<p><button class="btn ghost" id="rmais">Mostrar mais</button></p>' : '');
+      const bs = $('#rbusca', b);
+      bs.onchange = () => { recBusca = bs.value; recLimite = 200; refresh(); };
+      const mais = $('#rmais', b);
+      if (mais) mais.onclick = () => { recLimite += 200; refresh(); };
       $$('[data-estornar]', b).forEach((x) => (x.onclick = async () => {
         if (!confirm('Estornar este recebimento? O débito volta a ficar em aberto.')) return;
         try { await rpc('estornar_recebimento', { p_id: x.dataset.estornar }); toast('Recebimento estornado.'); refresh(); } catch (e) { toast(e.message, true); }

@@ -68,7 +68,8 @@
     host.innerHTML = table(['#', 'Data', 'Tipo', 'Conta', 'Unidade', 'Setor', 'Valor', 'Origem', 'Descrição'], rows(data, (l) =>
       `<tr><td>${l.codigo}</td><td>${fmtD(l.data)}</td><td>${esc(TIPO_LABEL[l.tipo])}</td><td>${esc(l.contas_bancarias?.nome)}</td><td>${esc(l.unidades?.nome || 'Grupo')}</td><td>${esc(l.setor)}</td>
        <td class="${ENTRADA.includes(l.tipo) ? 'txt-ok' : 'txt-vencido'}">${ENTRADA.includes(l.tipo) ? '+' : '−'}${brl(l.valor)}</td>
-       <td>${esc(l.origem)}${l.pagamento_codigo ? ` · ${esc(l.pagamento_codigo)}` : ''}</td><td>${esc(l.descricao)}</td></tr>`, 'Nenhum lançamento no período.', 9));
+       <td>${esc(l.origem)}${l.pagamento_codigo ? ` · ${esc(l.pagamento_codigo)}` : ''}</td><td>${esc(l.descricao)}</td></tr>`, 'Nenhum lançamento no período.', 9))
+      + (data.length >= 500 ? '<p class="hint">Mostrando os 500 lançamentos mais recentes do período. Reduza o período ou filtre por conta/tipo para ver os demais.</p>' : '');
   }
 
   const filtroPeriodo = (extra = '') => `<div class="actions" style="margin-bottom:1rem"><label class="inline">De <input type="date" id="ini" value="${monthStart()}"></label>
