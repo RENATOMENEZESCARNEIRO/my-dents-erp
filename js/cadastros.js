@@ -5,33 +5,90 @@
   const SETORES = ['Clínico', 'Ortodontia', 'Administrativo/Geral', 'Convênios'];
 
   /* ----- Dentistas ----- */
-  function dentistaForm(d = {}) {
+  const ESPECIALIDADES = ['Cirurgia', 'Dentística', 'Disfunção Temporomandibular (DTM)', 'Endodontia', 'Estética', 'Harmonização facial', 'Implantodontia', 'Odontopediatria', 'Ortodontia', 'Ortopedia Funcional', 'Outros', 'Periodontia', 'Prevenção', 'Prótese', 'Radiologia', 'Testes e exames laboratoriais', 'Urgência'];
+
+  async function dentistaForm(d = {}) {
+    const { DIAS, hhmm } = window.MD;
+    const perfis = await q(db.from('perfis_usuario').select('user_id,nome').eq('ativo', true).order('nome')).catch(() => []);
+    // atuação em memória: { unidade_id: { min, almIni, almFim, dias: { 0..6: {on, ini, fim} } } }
+    const atu = {};
+    (d.dentista_unidades || []).forEach((du) => {
+      const dias = {};
+      for (let i = 0; i < 7; i++) dias[i] = { on: false, ini: '08:00', fim: '18:00' };
+      (state.horarios || []).filter((h) => h.dentista_id === d.id && h.unidade_id === du.unidade_id).forEach((h) => { dias[h.dia_semana] = { on: true, ini: hhmm(h.hora_ini), fim: hhmm(h.hora_fim) }; });
+      atu[du.unidade_id] = { min: du.minutos_consulta || 15, almIni: hhmm(du.almoco_ini), almFim: hhmm(du.almoco_fim), dias };
+    });
+    const nomeU = (id) => state.unidades.find((u) => u.id === id)?.nome || '';
+    const cartoes = () => Object.keys(atu).map((uid) => {
+      const a = atu[uid];
+      return `<div class="card" data-card="${esc(uid)}" style="margin:.6rem 0">
+        <div class="actions" style="justify-content:space-between"><b>${esc(nomeU(uid))}</b><button type="button" class="btn ghost sm" data-rem="${esc(uid)}">Remover unidade</button></div>
+        <div class="form-row">
+          <label>Tempo padrão da consulta (min)<input type="number" min="5" max="240" step="5" data-f="min" value="${esc(a.min)}"></label>
+          <label>Almoço — início<input type="time" data-f="almIni" value="${esc(a.almIni)}"></label>
+          <label>Almoço — fim<input type="time" data-f="almFim" value="${esc(a.almFim)}"></label>
+        </div>
+        <table class="tabela"><thead><tr><th>Dia</th><th>Atende</th><th>Hora inicial</th><th>Hora final</th></tr></thead><tbody>
+        ${[1, 2, 3, 4, 5, 6, 0].map((i) => `<tr><td>${DIAS[i]}</td><td><input type="checkbox" style="width:auto" data-dia="${i}" data-f="on" ${a.dias[i].on ? 'checked' : ''}></td>
+          <td><input type="time" data-dia="${i}" data-f="ini" value="${esc(a.dias[i].ini)}"></td><td><input type="time" data-dia="${i}" data-f="fim" value="${esc(a.dias[i].fim)}"></td></tr>`).join('')}
+        </tbody></table></div>`;
+    }).join('');
+    const livres = () => state.unidades.filter((u) => !atu[u.id]);
+
     modal({
-      title: d.id ? 'Editar dentista' : 'Novo dentista',
+      title: d.id ? 'Editar dentista' : 'Novo dentista', wide: true,
       body: `<label>Nome<input name="nome" required value="${esc(d.nome)}"></label>
         <div class="form-row">
           <label>CPF<input name="cpf" required inputmode="numeric" value="${esc(d.cpf ? fmtCPF(d.cpf) : '')}"></label>
           <label>Especialidade<input name="especialidade" value="${esc(d.especialidade)}" placeholder="Ortodontia, Clínico…"></label>
         </div>
         <div class="form-row">
-          <label>Unidade principal<select name="unidade_id">${opts(state.unidades, (u) => u.nome, 'Selecione…', d.unidade_id)}</select></label>
+          <label>Acesso ao sistema (usuário)<select name="user_id">${opts(perfis.map((x) => ({ id: x.user_id, n: x.nome })), (x) => x.n, 'Sem acesso ao sistema', d.user_id)}</select></label>
           <label>% comissão de venda<input name="percentual_comissao_venda" type="number" step="0.01" min="0" max="100" value="${esc(d.percentual_comissao_venda ?? 0)}"></label>
+          <label>Dia do pagamento (mês seguinte)<input name="dia_pagamento" type="number" min="1" max="31" value="${esc(d.dia_pagamento)}" placeholder="vazio = último dia"></label>
         </div>
-        <div><span class="hint">Unidades em que atende</span><div class="actions">${state.unidades.map((u) => `<label class="inline"><input type="checkbox" style="width:auto" name="unid" value="${esc(u.id)}" ${(d.unidades_ids || []).includes(u.id) || (!d.id && u.id === state.unidadeId) ? 'checked' : ''}> ${esc(u.nome)}</label>`).join('')}</div></div>
-        <label>Dia do pagamento (mês seguinte)<input name="dia_pagamento" type="number" min="1" max="31" value="${esc(d.dia_pagamento)}" placeholder="vazio = último dia do mês"></label>
-        <p class="hint">Mudar o % não altera orçamentos já aprovados: o percentual fica congelado na aprovação.</p>`,
-      onSubmit: async (v, form) => {
+        <p class="hint">A comissão de execução é um valor fixo por procedimento, cadastrado em <b>Procedimentos</b>. Mudar o % não altera orçamentos já aprovados.</p>
+        <h4 style="margin:.8rem 0 .3rem">Unidades de atuação</h4>
+        <div class="actions"><select id="un-sel"></select><button type="button" class="btn" id="un-inc">Incluir</button></div>
+        <div id="cartoes"></div>`,
+      onOpen: (form) => {
+        const pintar = () => {
+          $('#cartoes', form).innerHTML = cartoes() || '<p class="hint">Nenhuma unidade incluída. Escolha a unidade e clique em Incluir.</p>';
+          $('#un-sel', form).innerHTML = opts(livres(), (u) => u.nome, 'Selecione a unidade…');
+        };
+        pintar();
+        $('#un-inc', form).onclick = () => {
+          const id = $('#un-sel', form).value; if (!id) return;
+          const dias = {}; for (let i = 0; i < 7; i++) dias[i] = { on: i >= 1 && i <= 5, ini: '08:00', fim: '18:00' };
+          atu[id] = { min: 15, almIni: '12:00', almFim: '14:00', dias }; pintar();
+        };
+        form.addEventListener('click', (e) => { const r = e.target.closest('[data-rem]'); if (r) { delete atu[r.dataset.rem]; pintar(); } });
+        form.addEventListener('input', (e) => {
+          const el = e.target, card = el.closest('[data-card]'); if (!card || !el.dataset.f) return;
+          const a = atu[card.dataset.card], v = el.type === 'checkbox' ? el.checked : el.value;
+          if (el.dataset.dia !== undefined) a.dias[el.dataset.dia][el.dataset.f] = v; else a[el.dataset.f] = el.dataset.f === 'min' ? parseInt(v, 10) || 15 : v;
+        });
+      },
+      onSubmit: async (v) => {
         if (!validarCPF(v.cpf)) throw new Error('CPF inválido.');
-        const unis = $$('[name=unid]:checked', form).map((c) => c.value);
-        delete v.unid;
-        v.cpf = digits(v.cpf);
-        v.percentual_comissao_venda = num(v.percentual_comissao_venda);
-        v.dia_pagamento = v.dia_pagamento ? parseInt(v.dia_pagamento, 10) : null;
-        if (v.unidade_id && !unis.includes(v.unidade_id)) unis.push(v.unidade_id);
-        const r = d.id ? await db.from('dentistas').update(v).eq('id', d.id).select('id').single() : await db.from('dentistas').insert(v).select('id').single();
-        if (r.error) throw new Error(r.error.code === '23505' ? 'Já existe um dentista com esse CPF.' : r.error.message);
-        await q(db.from('dentista_unidades').delete().eq('dentista_id', r.data.id));
-        if (unis.length) await q(db.from('dentista_unidades').insert(unis.map((u) => ({ dentista_id: r.data.id, unidade_id: u }))));
+        const unis = Object.keys(atu);
+        if (!unis.length) throw new Error('Inclua ao menos uma unidade de atuação.');
+        for (const uid of unis) {
+          const a = atu[uid], on = Object.entries(a.dias).filter(([, x]) => x.on);
+          if (!on.length) throw new Error(`Marque ao menos um dia de atendimento em ${nomeU(uid)}.`);
+          if (on.some(([, x]) => !x.ini || !x.fim || x.fim <= x.ini)) throw new Error(`Horários inválidos em ${nomeU(uid)}: a hora final deve ser maior que a inicial.`);
+          if (!!a.almIni !== !!a.almFim || (a.almIni && a.almFim <= a.almIni)) throw new Error(`Almoço inválido em ${nomeU(uid)}.`);
+        }
+        const o = { nome: v.nome, cpf: digits(v.cpf), especialidade: v.especialidade, user_id: v.user_id || null, unidade_id: unis[0],
+          percentual_comissao_venda: num(v.percentual_comissao_venda), dia_pagamento: v.dia_pagamento ? parseInt(v.dia_pagamento, 10) : null };
+        const r = d.id ? await db.from('dentistas').update(o).eq('id', d.id).select('id').single() : await db.from('dentistas').insert(o).select('id').single();
+        if (r.error) throw new Error(r.error.code === '23505' ? (/user_id|user_uq/.test(r.error.message) ? 'Esse usuário já está vinculado a outro dentista.' : 'Já existe um dentista com esse CPF.') : r.error.message);
+        const id = r.data.id;
+        await q(db.from('dentista_horarios').delete().eq('dentista_id', id));
+        await q(db.from('dentista_unidades').delete().eq('dentista_id', id));
+        await q(db.from('dentista_unidades').insert(unis.map((uid) => ({ dentista_id: id, unidade_id: uid, minutos_consulta: atu[uid].min || 15, almoco_ini: atu[uid].almIni || null, almoco_fim: atu[uid].almFim || null }))));
+        const hs = unis.flatMap((uid) => Object.entries(atu[uid].dias).filter(([, x]) => x.on).map(([wd, x]) => ({ dentista_id: id, unidade_id: uid, dia_semana: +wd, hora_ini: x.ini, hora_fim: x.fim })));
+        await q(db.from('dentista_horarios').insert(hs));
         toast('Dentista salvo.');
         await carregarBase();
         refresh();
@@ -47,13 +104,14 @@
           <label>Código<input name="codigo" required value="${esc(p.codigo)}"></label>
           <label>Setor<select name="setor">${opts(SETORES.map((s) => ({ id: s, nome: s })), (x) => x.nome, null, p.setor || 'Clínico')}</select></label>
         </div>
+        <label>Especialidade<select name="especialidade">${opts(ESPECIALIDADES.map((s) => ({ id: s, nome: s })), (x) => x.nome, null, p.especialidade || window.MD.espAtual || 'Outros')}</select></label>
         <label>Nome<input name="nome" required value="${esc(p.nome)}"></label>
         <div class="form-row">
           <label>Valor de venda (à vista)<input name="valor_venda" type="number" step="0.01" min="0" required value="${esc(p.valor_venda)}"></label>
           <label>Valor parcelado<input name="valor_parcelado" type="number" step="0.01" min="0" value="${esc(p.valor_parcelado)}" placeholder="vazio = igual à vista"></label>
         </div>
         <div class="form-row">
-          <label>Valor de execução (pago ao dentista)<input name="valor_execucao" type="number" step="0.01" min="0" required value="${esc(p.valor_execucao)}"></label>
+          <label>Comissão de execução (valor fixo pago ao dentista)<input name="valor_execucao" type="number" step="0.01" min="0" required value="${esc(p.valor_execucao)}"></label>
           <label>Custo<input name="custo" type="number" step="0.01" min="0" value="${esc(p.custo ?? 0)}"></label>
         </div>
         <div class="form-row">
@@ -95,24 +153,86 @@
     });
   }
 
-  register('cadastros', 'Cadastros', (el) => tabs(el, 'cadastros', [
+  const ordenar = (l) => [...l.filter((t) => t.id === 'usuarios'), ...l.filter((t) => t.id !== 'usuarios')];
+  register('cadastros', 'Cadastros', (el) => tabs(el, 'cadastros', ordenar([
     { id: 'dentistas', label: 'Dentistas', render: async (b) => {
+      const { DIAS } = window.MD;
       b.innerHTML = `<div class="actions" style="margin-bottom:1rem"><button class="btn" id="n">+ Novo dentista</button></div><div id="l"></div>`;
       $('#n', b).onclick = () => dentistaForm();
-      $('#l', b).innerHTML = table(['Nome', 'CPF', 'Especialidade', 'Unidades', '% venda', 'Dia pgto', ''], rows(state.dentistas, (d) =>
-        `<tr><td>${esc(d.nome)}</td><td>${fmtCPF(d.cpf)}</td><td>${esc(d.especialidade)}</td><td>${esc((d.unidades_ids?.length ? state.unidades.filter((u) => d.unidades_ids.includes(u.id)).map((u) => u.nome) : [d.unidades?.nome]).join(', '))}</td>
+      const resumo = (d) => (d.dentista_unidades || []).map((du) => {
+        const nome = state.unidades.find((u) => u.id === du.unidade_id)?.nome || '';
+        const dias = (state.horarios || []).filter((h) => h.dentista_id === d.id && h.unidade_id === du.unidade_id).sort((x, y) => ((x.dia_semana + 6) % 7) - ((y.dia_semana + 6) % 7)).map((h) => DIAS[h.dia_semana]).join('/');
+        return `${esc(nome)}: ${esc(dias || 'sem dias')}`;
+      }).join('<br>');
+      $('#l', b).innerHTML = table(['Nome', 'CPF', 'Especialidade', 'Atuação (unidade: dias)', 'Acesso', '% venda', 'Dia pgto', ''], rows(state.dentistas, (d) =>
+        `<tr><td>${esc(d.nome)}</td><td>${fmtCPF(d.cpf)}</td><td>${esc(d.especialidade)}</td><td>${resumo(d) || '—'}</td><td>${d.user_id ? 'Sim' : '—'}</td>
          <td>${esc(d.percentual_comissao_venda)}%</td><td>${esc(d.dia_pagamento ?? 'último')}</td>
-         <td><button class="btn ghost sm" data-edit="${esc(d.id)}">Editar</button></td></tr>`, 'Nenhum dentista.', 7));
+         <td><button class="btn ghost sm" data-edit="${esc(d.id)}">Editar</button></td></tr>`, 'Nenhum dentista.', 8));
       $$('[data-edit]', b).forEach((x) => (x.onclick = () => dentistaForm(state.dentistas.find((d) => d.id === x.dataset.edit))));
     } },
     { id: 'procedimentos', label: 'Procedimentos', render: async (b) => {
-      b.innerHTML = `<div class="actions" style="margin-bottom:1rem"><button class="btn" id="n">+ Novo procedimento</button></div><div id="l"></div>`;
-      $('#n', b).onclick = () => procedimentoForm();
-      $('#l', b).innerHTML = table(['Código', 'Nome', 'Setor', 'Venda', 'Parcelado', 'Execução', 'Custo', 'Situação', ''], rows(state.procedimentos, (p) =>
-        `<tr><td>${esc(p.codigo)}</td><td>${esc(p.nome)}</td><td>${esc(p.setor)}</td><td>${brl(p.valor_venda)}</td>
-         <td>${p.valor_parcelado != null ? brl(p.valor_parcelado) : '–'}</td><td>${brl(p.valor_execucao)}</td><td>${brl(p.custo)}</td>
-         <td>${badge(p.ativo ? 'ativa' : 'cancelada')}</td><td><button class="btn ghost sm" data-edit="${esc(p.id)}">Editar</button></td></tr>`, 'Nenhum procedimento cadastrado.', 9));
-      $$('[data-edit]', b).forEach((x) => (x.onclick = () => procedimentoForm(state.procedimentos.find((p) => p.id === x.dataset.edit))));
+      let esp = window.MD.espAtual || ESPECIALIDADES[0], busca = '';
+      const edit = can('cadastros_editar');
+      const draw = () => {
+        window.MD.espAtual = esp;
+        const cont = (e) => state.procedimentos.filter((p) => (p.especialidade || 'Outros') === e).length;
+        const lista = state.procedimentos.filter((p) => (p.especialidade || 'Outros') === esp && (!busca || (p.nome + p.codigo).toLowerCase().includes(busca.toLowerCase())));
+        b.innerHTML = `<div class="actions" style="margin-bottom:1rem"><input type="search" id="busca" placeholder="Buscar procedimento…" value="${esc(busca)}" style="min-width:220px">
+            <button class="btn" id="n">+ Novo procedimento</button><button class="btn ghost" id="reaj">Reajustar valores</button></div>
+          <div style="display:grid;grid-template-columns:240px 1fr;gap:1rem;align-items:start">
+            <div class="card" style="padding:.4rem">${ESPECIALIDADES.map((e) => `<button class="btn ${e === esp ? '' : 'ghost'} sm" style="display:flex;width:100%;justify-content:space-between;margin:2px 0" data-esp="${esc(e)}"><span>${esc(e)}</span><span>${cont(e)}</span></button>`).join('')}</div>
+            <div><h4 style="margin:0 0 .5rem">${esc(esp)}</h4><div id="l"></div>
+              <div class="form-actions" style="margin-top:.8rem"><button class="btn" id="salvar" ${edit ? '' : 'disabled'}>Salvar alterações</button></div>
+              <p class="hint">Comissão de execução = valor fixo pago ao dentista quando o tratamento é evoluído e finalizado.</p></div></div>`;
+        const inp = (p, f, v) => `<input type="number" step="0.01" min="0" style="width:105px" data-p="${esc(p.id)}" data-f="${f}" value="${esc(v ?? '')}" ${edit ? '' : 'disabled'}>`;
+        $('#l', b).innerHTML = table(['Código', 'Procedimento', 'Venda à vista', 'Parcelado', 'Custo', 'Comissão de execução', 'Usar', ''], rows(lista, (p) =>
+          `<tr><td>${esc(p.codigo)}</td><td>${esc(p.nome)}</td><td>${inp(p, 'valor_venda', p.valor_venda)}</td><td>${inp(p, 'valor_parcelado', p.valor_parcelado)}</td>
+           <td>${inp(p, 'custo', p.custo)}</td><td>${inp(p, 'valor_execucao', p.valor_execucao)}</td>
+           <td><input type="checkbox" style="width:auto" data-p="${esc(p.id)}" data-f="ativo" ${p.ativo ? 'checked' : ''} ${edit ? '' : 'disabled'}></td>
+           <td><button class="btn ghost sm" data-edit="${esc(p.id)}">Editar</button></td></tr>`, 'Nenhum procedimento nesta especialidade.', 8));
+        $$('[data-esp]', b).forEach((x) => (x.onclick = () => { esp = x.dataset.esp; draw(); }));
+        $('#busca', b).oninput = (e) => { busca = e.target.value; const pos = e.target.selectionStart; draw(); const n = $('#busca', b); n.focus(); n.setSelectionRange(pos, pos); };
+        $('#n', b).onclick = () => procedimentoForm();
+        $$('[data-edit]', b).forEach((x) => (x.onclick = () => procedimentoForm(state.procedimentos.find((p) => p.id === x.dataset.edit))));
+        $('#reaj', b).onclick = () => modal({
+          title: 'Reajustar valores', submit: 'Aplicar',
+          body: `<label>Percentual de reajuste (%)<input name="pct" type="number" step="0.01" required placeholder="ex.: 5 aumenta 5%; -3 reduz 3%"></label>
+            <label>Aplicar em<select name="esc"><option value="esp">Somente ${esc(esp)}</option><option value="todas">Todas as especialidades</option></select></label>
+            <label>Campos<select name="campos"><option value="venda">Venda (à vista e parcelado)</option><option value="venda_exec">Venda e comissão de execução</option></select></label>`,
+          onSubmit: async (v) => {
+            const f = 1 + num(v.pct) / 100; if (!(f > 0)) throw new Error('Percentual inválido.');
+            const alvo = state.procedimentos.filter((p) => p.ativo && (v.esc === 'todas' || (p.especialidade || 'Outros') === esp));
+            if (!alvo.length) throw new Error('Nenhum procedimento ativo para reajustar.');
+            if (!confirm(`Reajustar ${alvo.length} procedimento(s) em ${v.pct}%?`)) return false;
+            const r2 = (x) => Math.round(x * 100) / 100;
+            for (const p of alvo) {
+              const o = { valor_venda: r2(p.valor_venda * f), valor_parcelado: p.valor_parcelado == null ? null : r2(p.valor_parcelado * f) };
+              if (v.campos === 'venda_exec') o.valor_execucao = r2(p.valor_execucao * f);
+              await q(db.from('procedimentos').update(o).eq('id', p.id));
+            }
+            toast('Valores reajustados.'); await carregarBase(); draw();
+          },
+        });
+        $('#salvar', b).onclick = async () => {
+          try {
+            const mud = {};
+            $$('[data-p]', b).forEach((i) => {
+              const p = state.procedimentos.find((x) => x.id === i.dataset.p), f = i.dataset.f;
+              const val = f === 'ativo' ? i.checked : (i.value === '' ? (f === 'valor_parcelado' ? null : 0) : num(i.value));
+              if (val !== (p[f] ?? (f === 'valor_parcelado' ? null : 0))) (mud[p.id] ||= {})[f] = val;
+            });
+            const ids = Object.keys(mud);
+            if (!ids.length) return toast('Nada para salvar.');
+            for (const id of ids) {
+              const p = { ...state.procedimentos.find((x) => x.id === id), ...mud[id] };
+              if (p.ativo && (p.valor_venda <= 0 || p.valor_execucao <= 0)) throw new Error(`"${p.nome}": para ficar ativo, informe valor de venda e comissão de execução.`);
+              await q(db.from('procedimentos').update(mud[id]).eq('id', id));
+            }
+            toast(`${ids.length} procedimento(s) salvo(s).`); await carregarBase(); draw();
+          } catch (e) { toast(e.message, true); }
+        };
+      };
+      draw();
     } },
     { id: 'contas', label: 'Contas', render: async (b) => {
       b.innerHTML = `<div class="actions" style="margin-bottom:1rem"><button class="btn" id="n" ${can('financeiro') ? '' : 'disabled'}>+ Nova conta</button></div><div id="l"></div>`;
@@ -142,7 +262,7 @@
         } catch (e) { toast(e.message, true); }
       };
     } },
-    { id: 'usuarios', label: 'Usuários', render: async (b) => {
+    { id: 'usuarios', label: 'Funcionários', render: async (b) => {
       const { PERMISSOES, CARGOS } = window.MD;
       const lista = await q(db.from('perfis_usuario').select('*').order('criado_em'));
       const adm = can('admin');
@@ -248,5 +368,5 @@
         <td>${adm ? `<button class="btn ghost sm" data-e="${esc(u.id)}">Editar</button>` : ''}</td></tr>`, 'Nenhuma unidade.', 3));
       $$('[data-e]', b).forEach((x) => (x.onclick = () => form(un.find((i) => i.id === x.dataset.e))));
     } },
-  ]), 100);
+  ])), 100);
 })();

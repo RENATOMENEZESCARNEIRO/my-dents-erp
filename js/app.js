@@ -191,18 +191,19 @@
   /* ---------- dados-base ---------- */
   async function carregarBase() {
     const get = (p) => p.then((r) => { if (r.error) throw new Error(r.error.message); return r.data; });
-    const [u, d, p, pl, pr, c, pf, cp] = await Promise.all([
+    const [u, d, p, pl, pr, c, pf, cp, hr] = await Promise.all([
       get(db.from('unidades').select('*').eq('ativo', true).order('nome')),
-      get(db.from('dentistas').select('*, unidades!unidade_id(nome), dentista_unidades(unidade_id)').eq('ativo', true).order('nome')),
+      get(db.from('dentistas').select('*, unidades!unidade_id(nome), dentista_unidades(unidade_id, minutos_consulta, almoco_ini, almoco_fim)').eq('ativo', true).order('nome')),
       get(db.from('pacientes').select('*, unidades!unidade_id(nome)').order('nome')),
       get(db.from('planos').select('*').eq('ativo', true).order('valor_mensal')),
       get(db.from('procedimentos').select('*').order('nome')),
       get(db.from('contas_bancarias').select('*').eq('ativo', true).order('nome')),
       get(db.from('perfis_usuario').select('*').eq('user_id', state.user.id)),
       (async () => get(db.from('campanhas').select('id,nome,ativo').order('nome')))().catch(() => []),
+      (async () => get(db.from('dentista_horarios').select('*')))().catch(() => []),
     ]);
     d.forEach((x) => { x.unidades_ids = (x.dentista_unidades || []).map((r) => r.unidade_id); });
-    Object.assign(state, { unidades: u, dentistas: d, pacientes: p, planos: pl, procedimentos: pr, contas: c, perfil: pf[0] || {}, campanhas: cp });
+    Object.assign(state, { unidades: u, dentistas: d, pacientes: p, planos: pl, procedimentos: pr, contas: c, perfil: pf[0] || {}, campanhas: cp, horarios: hr });
     $('#filtro-unidade').innerHTML = opts(state.unidades, (x) => x.nome, 'Todas as unidades', state.unidadeId);
   }
 
@@ -333,6 +334,29 @@
     draw();
   }, 20);
 
+  /* ---------- Atuação do dentista (dias/horários por unidade) ---------- */
+  const hhmm = (t) => String(t || '').slice(0, 5);
+  const DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  function atuacao(dentistaId, unidadeId, dia /* 'YYYY-MM-DD' */) {
+    const wd = new Date(dia + 'T12:00:00').getDay();
+    const h = (state.horarios || []).find((x) => x.dentista_id === dentistaId && x.unidade_id === unidadeId && x.dia_semana === wd);
+    if (!h) return null;
+    const d = state.dentistas.find((x) => x.id === dentistaId);
+    const du = (d?.dentista_unidades || []).find((x) => x.unidade_id === unidadeId) || {};
+    return { ini: hhmm(h.hora_ini), fim: hhmm(h.hora_fim), almIni: hhmm(du.almoco_ini), almFim: hhmm(du.almoco_fim), min: du.minutos_consulta || 15 };
+  }
+  // devolve texto do problema (ou '' se o horário está dentro da atuação)
+  function foraDaAtuacao(dentistaId, unidadeId, dataHoraLocal /* 'YYYY-MM-DDTHH:MM' */) {
+    const [dia, hora] = dataHoraLocal.split('T');
+    const a = atuacao(dentistaId, unidadeId, dia);
+    const nomeD = state.dentistas.find((x) => x.id === dentistaId)?.nome || 'O dentista';
+    const nomeU = state.unidades.find((x) => x.id === unidadeId)?.nome || 'esta unidade';
+    if (!a) return `${nomeD} não atende nesse dia da semana em ${nomeU}.`;
+    if (hora < a.ini || hora >= a.fim) return `${nomeD} atende em ${nomeU} das ${a.ini} às ${a.fim} nesse dia.`;
+    if (a.almIni && a.almFim && hora >= a.almIni && hora < a.almFim) return `${hora} cai no horário de almoço de ${nomeD} (${a.almIni}–${a.almFim}).`;
+    return '';
+  }
+
   /* ---------- Agenda ---------- */
   function novoAgendamento(pacienteId = '') {
     modal({
@@ -358,6 +382,8 @@
           if (!(await pergunta('Paciente de outra unidade', `Este paciente está cadastrado na unidade ${X}. Deseja prosseguir com a marcação para a unidade ${Y}?`))) return false;
           transferir = await pergunta('Unidade padrão do paciente', `Deseja alterar a unidade de atendimento padrão deste paciente de ${X} para ${Y}?`, 'Sim, transferir', 'Não, só esta consulta');
         }
+        const fora = foraDaAtuacao(v.dentista_id, v.unidade_id, v.data_hora);
+        if (fora && !(await pergunta('Fora da atuação do dentista', fora + ' Deseja agendar mesmo assim (encaixe)?', 'Sim, agendar', 'Não'))) return false;
         v.data_hora = new Date(v.data_hora).toISOString();
         const { error } = await db.from('agendamentos').insert(v);   // exemplo prático de INSERT
         if (error) throw new Error(error.code === '23505' ? 'Esse dentista já tem atendimento neste horário.' : error.message);
@@ -374,9 +400,16 @@
 
   register('agenda', 'Agenda', async (el) => {
     el.innerHTML = `<div class="actions" style="margin-bottom:1rem"><input type="date" id="dia" value="${today()}">
-      <button class="btn" data-perm="agenda_editar" id="novo">+ Novo agendamento</button></div><div id="lista"></div>`;
+      <button class="btn" data-perm="agenda_editar" id="novo">+ Novo agendamento</button></div><div id="atuacao"></div><div id="lista"></div>`;
     const draw = async () => {
       const dia = $('#dia', el).value || today();
+      // quem atende no dia (espelho da atuação cadastrada no dentista)
+      const quem = [];
+      state.dentistas.forEach((d) => state.unidades.filter((u) => !state.unidadeId || u.id === state.unidadeId).forEach((u) => {
+        const a = atuacao(d.id, u.id, dia);
+        if (a) quem.push(`<span class="badge confirmado" title="${esc(u.nome)}">${esc(d.nome)} · ${esc(u.nome)} · ${a.ini}–${a.fim}${a.almIni ? ` (almoço ${a.almIni}–${a.almFim})` : ''}</span>`);
+      }));
+      $('#atuacao', el).innerHTML = `<div class="card" style="margin-bottom:1rem"><b>Atendem em ${DIAS[new Date(dia + 'T12:00:00').getDay()]}, ${fmtD(dia)}</b><div class="actions" style="margin-top:.5rem;flex-wrap:wrap;gap:.4rem">${quem.join('') || '<span class="hint">Nenhum dentista com atuação cadastrada para este dia.</span>'}</div></div>`;
       const { data, error } = await porUnidade(db.from('agendamentos').select('*, pacientes!paciente_id(nome), dentistas!dentista_id(nome), unidades!unidade_id(nome)')
         .gte('data_hora', new Date(dia + 'T00:00:00').toISOString()).lte('data_hora', new Date(dia + 'T23:59:59').toISOString()).order('data_hora'));
       if (error) return toast(error.message, true);
@@ -523,5 +556,5 @@
   }
 
   window.MD = { db, $, $$, esc, digits, fmtCPF, fmtDT, fmtD, brl, num, today, monthStart, monthEnd, daysTo, toast, state, opts, rows, table, badge,
-    group, porUnidade, can, PERMISSOES, CARGOS, dentistasDaUnidade, aplicarPermissoes, nomeUnidade, rpc, q, modal, tabs, register, refresh, carregarBase, formValues, validarCPF, novoPaciente, novoAgendamento, ortoHtml, ortoBind, ortoValores, pergunta, start };
+    group, porUnidade, can, PERMISSOES, CARGOS, dentistasDaUnidade, aplicarPermissoes, nomeUnidade, rpc, q, modal, tabs, register, refresh, carregarBase, formValues, validarCPF, novoPaciente, novoAgendamento, atuacao, DIAS, hhmm, ortoHtml, ortoBind, ortoValores, pergunta, start };
 })();
