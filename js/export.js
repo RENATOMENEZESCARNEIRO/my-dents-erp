@@ -50,6 +50,7 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:5p
 
   function injetar() {
     const r = root(); if (!r) return;
+    if (window.MD?.can && !window.MD.can('exportar')) return;
     r.querySelectorAll('.table-wrap:not([data-exp])').forEach((wrap) => {
       wrap.dataset.exp = '1';
       if (!wrap.querySelector('table')) return;

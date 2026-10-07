@@ -38,7 +38,7 @@
         </div>
         <div class="hint" id="liq"></div>
         <div class="form-row">
-          <label>Data do recebimento<input name="data" type="date" required value="${today()}"></label>
+          <label>Data do recebimento<input name="data" type="date" required value="${today()}" ${can('receber_data_livre') ? '' : 'readonly title="Sem permissão para alterar a data"'}></label>
           <label>Dentista responsável pela venda<select name="dentista" required>${opts(state.dentistas, (x) => x.nome, 'Selecione…', d.orcamentos?.dentista_id)}</select></label>
         </div>
         <label>Descrição<input name="descricao"></label>`,

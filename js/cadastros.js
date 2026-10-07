@@ -112,7 +112,7 @@
         </div>
         <div class="form-row">
           <label>Comissão de execução (valor fixo pago ao dentista)<input name="valor_execucao" type="number" step="0.01" min="0" required value="${esc(p.valor_execucao)}"></label>
-          <label>Custo<input name="custo" type="number" step="0.01" min="0" value="${esc(p.custo ?? 0)}"></label>
+          ${can('ver_custos') ? `<label>Custo<input name="custo" type="number" step="0.01" min="0" value="${esc(p.custo ?? 0)}"></label>` : '<span></span>'}
         </div>
         <div class="form-row">
           <label>Tempo previsto (min)<input name="tempo_min" type="number" min="0" value="${esc(p.tempo_min)}"></label>
@@ -120,7 +120,7 @@
         </div>
         <p class="hint">Procedimento ativo precisa de código, valor de venda e valor de execução maiores que zero.</p>`,
       onSubmit: async (v) => {
-        const o = { ...v, valor_venda: num(v.valor_venda), valor_execucao: num(v.valor_execucao), custo: num(v.custo), ativo: v.ativo === 'true',
+        const o = { ...v, valor_venda: num(v.valor_venda), valor_execucao: num(v.valor_execucao), custo: can('ver_custos') ? num(v.custo) : (p.custo ?? 0), ativo: v.ativo === 'true',
           valor_parcelado: v.valor_parcelado == null ? null : num(v.valor_parcelado), tempo_min: v.tempo_min ? parseInt(v.tempo_min, 10) : null };
         if (o.ativo && (o.valor_venda <= 0 || o.valor_execucao <= 0)) throw new Error('Para ficar ativo, informe valor de venda e de execução.');
         const { error } = p.id ? await db.from('procedimentos').update(o).eq('id', p.id) : await db.from('procedimentos').insert(o);
@@ -153,7 +153,7 @@
     });
   }
 
-  const ordenar = (l) => [...l.filter((t) => t.id === 'usuarios'), ...l.filter((t) => t.id !== 'usuarios')];
+  const ordenar = (l) => ['checklist', 'usuarios'].flatMap((k) => l.filter((t) => t.id === k)).concat(l.filter((t) => !['checklist', 'usuarios'].includes(t.id)));
   register('cadastros', 'Cadastros', (el) => tabs(el, 'cadastros', ordenar([
     { id: 'dentistas', label: 'Dentistas', render: async (b) => {
       const { DIAS } = window.MD;
@@ -185,11 +185,12 @@
               <div class="form-actions" style="margin-top:.8rem"><button class="btn" id="salvar" ${edit ? '' : 'disabled'}>Salvar alterações</button></div>
               <p class="hint">Comissão de execução = valor fixo pago ao dentista quando o tratamento é evoluído e finalizado.</p></div></div>`;
         const inp = (p, f, v) => `<input type="number" step="0.01" min="0" style="width:105px" data-p="${esc(p.id)}" data-f="${f}" value="${esc(v ?? '')}" ${edit ? '' : 'disabled'}>`;
-        $('#l', b).innerHTML = table(['Código', 'Procedimento', 'Venda à vista', 'Parcelado', 'Custo', 'Comissão de execução', 'Usar', ''], rows(lista, (p) =>
+        const vc = can('ver_custos');
+        $('#l', b).innerHTML = table(['Código', 'Procedimento', 'Venda à vista', 'Parcelado', ...(vc ? ['Custo'] : []), 'Comissão de execução', 'Usar', ''], rows(lista, (p) =>
           `<tr><td>${esc(p.codigo)}</td><td>${esc(p.nome)}</td><td>${inp(p, 'valor_venda', p.valor_venda)}</td><td>${inp(p, 'valor_parcelado', p.valor_parcelado)}</td>
-           <td>${inp(p, 'custo', p.custo)}</td><td>${inp(p, 'valor_execucao', p.valor_execucao)}</td>
+           ${vc ? `<td>${inp(p, 'custo', p.custo)}</td>` : ''}<td>${inp(p, 'valor_execucao', p.valor_execucao)}</td>
            <td><input type="checkbox" style="width:auto" data-p="${esc(p.id)}" data-f="ativo" ${p.ativo ? 'checked' : ''} ${edit ? '' : 'disabled'}></td>
-           <td><button class="btn ghost sm" data-edit="${esc(p.id)}">Editar</button></td></tr>`, 'Nenhum procedimento nesta especialidade.', 8));
+           <td><button class="btn ghost sm" data-edit="${esc(p.id)}">Editar</button></td></tr>`, 'Nenhum procedimento nesta especialidade.', vc ? 8 : 7));
         $$('[data-esp]', b).forEach((x) => (x.onclick = () => { esp = x.dataset.esp; draw(); }));
         $('#busca', b).oninput = (e) => { busca = e.target.value; const pos = e.target.selectionStart; draw(); const n = $('#busca', b); n.focus(); n.setSelectionRange(pos, pos); };
         $('#n', b).onclick = () => procedimentoForm();
@@ -233,6 +234,62 @@
         };
       };
       draw();
+    } },
+    { id: 'categorias', label: 'Categorias', render: async (b) => {
+      const lista = await q(db.from('categorias').select('*').order('tipo').order('grupo').order('nome'));
+      const adm = can('cadastros_editar');
+      const form = (c = {}) => modal({
+        title: c.id ? 'Editar categoria' : 'Nova categoria',
+        body: `<div class="form-row"><label>Tipo<select name="tipo">${opts([{ id: 'despesa', n: 'Despesa' }, { id: 'receita', n: 'Receita' }], (x) => x.n, null, c.tipo || 'despesa')}</select></label>
+            <label>Grupo<input name="grupo" required value="${esc(c.grupo)}" placeholder="Ex.: Pessoal, Custos fixos, Impostos" list="grupos-cat"></label></div>
+          <datalist id="grupos-cat">${[...new Set(lista.map((x) => x.grupo))].map((g) => `<option value="${esc(g)}">`).join('')}</datalist>
+          <label>Nome da categoria<input name="nome" required value="${esc(c.nome)}"></label>
+          <label>Situação<select name="ativo">${opts([{ id: 'true', n: 'Ativa' }, { id: 'false', n: 'Inativa' }], (x) => x.n, null, String(c.ativo ?? true))}</select></label>`,
+        onSubmit: async (v) => {
+          const o = { tipo: v.tipo, grupo: v.grupo.trim(), nome: v.nome.trim(), ativo: v.ativo === 'true' };
+          const { error } = c.id ? await db.from('categorias').update(o).eq('id', c.id) : await db.from('categorias').insert(o);
+          if (error) throw new Error(error.code === '23505' ? 'Essa categoria já existe.' : error.message);
+          toast('Categoria salva.'); refresh();
+        },
+      });
+      b.innerHTML = `${adm ? '<div class="actions" style="margin-bottom:1rem"><button class="btn" id="n">+ Nova categoria</button></div>' : ''}
+        <p class="hint">As categorias aparecem ao lançar receitas e despesas e organizam o resultado (DRE).</p><div id="l"></div>`;
+      if ($('#n', b)) $('#n', b).onclick = () => form();
+      $('#l', b).innerHTML = table(['Tipo', 'Grupo', 'Categoria', 'Situação', ''], rows(lista, (c) =>
+        `<tr><td>${c.tipo === 'despesa' ? 'Despesa' : 'Receita'}</td><td>${esc(c.grupo)}</td><td>${esc(c.nome)}</td><td>${c.ativo ? 'Ativa' : 'Inativa'}</td>
+         <td>${adm ? `<button class="btn ghost sm" data-e="${esc(c.id)}">Editar</button>` : ''}</td></tr>`, 'Nenhuma categoria.', 5));
+      $$('[data-e]', b).forEach((x) => (x.onclick = () => form(lista.find((i) => i.id === x.dataset.e))));
+    } },
+    { id: 'checklist', label: 'Checklist de implantação', render: async (b) => {
+      const [taxas, perfis, emp, cats] = await Promise.all([
+        q(db.from('taxas_cartao').select('id,revisar')).catch(() => []), q(db.from('perfis_usuario').select('nome,ativo,admin,unidades_acesso,telefone,trocar_senha')).catch(() => []),
+        q(db.from('nfse_empresas').select('id').limit(1)).catch(() => []), q(db.from('categorias').select('id').eq('ativo', true)).catch(() => []),
+      ]);
+      const proc = state.procedimentos.filter((p) => p.ativo);
+      const semAtu = state.dentistas.filter((d) => !(state.horarios || []).some((h) => h.dentista_id === d.id));
+      const semPct = state.dentistas.filter((d) => !Number(d.percentual_comissao_venda));
+      const semDia = state.dentistas.filter((d) => d.dia_pagamento == null);
+      const ativos = perfis.filter((p) => p.ativo);
+      const semUn = ativos.filter((p) => !p.admin && !(p.unidades_acesso || []).length);
+      const provis = ativos.filter((p) => p.trocar_senha);
+      const itens = [
+        ['Unidades cadastradas e ativas', state.unidades.length > 0, `${state.unidades.length} unidade(s)`, 'Cadastros › Unidades'],
+        ['Contas bancárias e caixa', state.contas.length > 0, `${state.contas.length} conta(s)`, 'Cadastros › Contas'],
+        ['Taxas de cartão conferidas com o contrato', taxas.length > 0 && !taxas.some((t) => t.revisar), `${taxas.filter((t) => t.revisar).length} faixa(s) ainda marcadas "revisar"`, 'Cadastros › Taxas de cartão'],
+        ['Procedimentos ativos', proc.length > 0, `${proc.length} ativo(s)`, 'Cadastros › Procedimentos'],
+        ['Procedimentos classificados por especialidade', !proc.some((p) => (p.especialidade || 'Outros') === 'Outros'), `${proc.filter((p) => (p.especialidade || 'Outros') === 'Outros').length} em "Outros"`, 'Cadastros › Procedimentos'],
+        ['Dentistas com atuação (dias e horários) em cada unidade', state.dentistas.length > 0 && !semAtu.length, semAtu.length ? `Sem atuação: ${semAtu.map((d) => d.nome).join(', ')}` : `${state.dentistas.length} dentista(s)`, 'Cadastros › Dentistas'],
+        ['Dentistas com % de comissão de venda', state.dentistas.length > 0 && !semPct.length, semPct.length ? `Sem %: ${semPct.map((d) => d.nome).join(', ')}` : 'ok', 'Cadastros › Dentistas'],
+        ['Dentistas com dia de pagamento', state.dentistas.length > 0 && !semDia.length, semDia.length ? `Sem dia (usa o último do mês): ${semDia.map((d) => d.nome).join(', ')}` : 'ok', 'Cadastros › Dentistas'],
+        ['Funcionários com unidade de acesso', ativos.length > 0 && !semUn.length, semUn.length ? `Sem unidade: ${semUn.map((p) => p.nome).join(', ')}` : `${ativos.length} ativo(s)`, 'Cadastros › Funcionários'],
+        ['Senhas provisórias trocadas', !provis.length, provis.length ? `Ainda com senha provisória: ${provis.map((p) => p.nome).join(', ')}` : 'ok', 'Cadastros › Funcionários'],
+        ['Categorias de receita e despesa', cats.length > 0, `${cats.length} ativa(s)`, 'Cadastros › Categorias'],
+        ['Empresa emissora de NFS-e cadastrada', emp.length > 0, emp.length ? 'ok' : 'Cadastre a empresa em Gestão fiscal', 'Gestão fiscal'],
+      ];
+      const pend = itens.filter((i) => !i[1]).length;
+      b.innerHTML = `<div class="card" style="margin-bottom:1rem"><b>${pend ? `${pend} pendência(s) para o sistema operar normalmente` : 'Tudo certo: o sistema está pronto para operar.'}</b>
+        <p class="hint" style="margin:.3rem 0 0">Saldos iniciais das contas só se ajustam quando o sistema estiver totalmente testado.</p></div>
+        ${table(['', 'Item', 'Situação', 'Onde ajustar'], rows(itens, (i) => `<tr><td>${i[1] ? '✔' : '⚠'}</td><td>${esc(i[0])}</td><td>${esc(i[2])}</td><td>${esc(i[3])}</td></tr>`, '', 4))}`;
     } },
     { id: 'contas', label: 'Contas', render: async (b) => {
       b.innerHTML = `<div class="actions" style="margin-bottom:1rem"><button class="btn" id="n" ${can('financeiro') ? '' : 'disabled'}>+ Nova conta</button></div><div id="l"></div>`;

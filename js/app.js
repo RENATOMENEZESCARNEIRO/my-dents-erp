@@ -57,21 +57,21 @@
   const porUnidade = (q, col = 'unidade_id') => (state.unidadeId ? q.eq(col, state.unidadeId) : q);
   const can = (p) => !!(state.perfil.ativo && (state.perfil.admin || state.perfil[p] || state.perfil.permissoes?.[p]));
   const PERMISSOES = [
-    ['Pacientes e agenda', [['pacientes_editar', 'Cadastrar/editar pacientes'], ['agenda_editar', 'Agendar e alterar agenda']]],
+    ['Pacientes e agenda', [['pacientes_editar', 'Cadastrar/editar pacientes'], ['agenda_editar', 'Agendar e alterar agenda'], ['agenda_todos', 'Ver a agenda de todos os dentistas (sem isso, só a própria)']]],
     ['Orçamentos', [['orcamentos_criar', 'Criar/editar orçamentos'], ['orcamentos_aprovar', 'Aprovar orçamentos (gera débito)']]],
     ['Prótese e estoque', [['proteses', 'Pedidos de prótese'], ['estoque', 'Estoque (entradas, saídas, itens)']]],
     ['Clínico', [['tratamentos_evoluir', 'Evoluir tratamentos'], ['prontuario', 'Anamnese, anotações e documentos'], ['imagens', 'Imagens do paciente']]],
-    ['Recebimentos e caixa', [['debitos_receber', 'Receber débitos'], ['estornar_recebimento', 'Estornar recebimentos'], ['caixa_abrir', 'Abrir caixa e lançar movimentos'], ['fechar_caixa', 'Fechar/reabrir caixa']]],
-    ['Financeiro e produção', [['financeiro', 'Financeiro completo (lançamentos, DRE, pagamentos, conferência)'], ['alterar_comissao', 'Alterar comissões'], ['nfse', 'Notas fiscais (NFS-e)'], ['marketing', 'Marketing e campanhas'], ['producao_ver', 'Ver produção e comissões']]],
+    ['Recebimentos e caixa', [['debitos_receber', 'Receber débitos'], ['receber_data_livre', 'Receber com data diferente de hoje'], ['estornar_recebimento', 'Estornar recebimentos'], ['caixa_abrir', 'Abrir caixa e lançar movimentos'], ['fechar_caixa', 'Fechar/reabrir caixa']]],
+    ['Financeiro e produção', [['financeiro', 'Financeiro completo (lançamentos, DRE, pagamentos, conferência)'], ['alterar_comissao', 'Alterar comissões'], ['nfse', 'Notas fiscais (NFS-e)'], ['marketing', 'Marketing e campanhas'], ['producao_ver', 'Ver produção e comissões de todos'], ['ver_propria_comissao', 'Ver só a própria produção e comissão (dentista)'], ['ver_custos', 'Ver custos dos procedimentos'], ['exportar', 'Exportar dados (Excel/PDF)']]],
     ['Administração', [['cadastros_editar', 'Cadastros (dentistas, procedimentos, planos)'], ['admin', 'Administrador (tudo, inclusive usuários)']]],
   ];
   const CARGOS = {
-    Gerente: ['pacientes_editar', 'agenda_editar', 'orcamentos_criar', 'orcamentos_aprovar', 'tratamentos_evoluir', 'prontuario', 'imagens', 'debitos_receber', 'estornar_recebimento', 'caixa_abrir', 'fechar_caixa', 'financeiro', 'alterar_comissao', 'producao_ver', 'cadastros_editar', 'proteses', 'estoque', 'nfse', 'marketing'],
-    Dentista: ['agenda_editar', 'orcamentos_criar', 'tratamentos_evoluir', 'prontuario', 'imagens', 'proteses'],
-    'Secretário(a)': ['pacientes_editar', 'agenda_editar', 'orcamentos_criar', 'orcamentos_aprovar', 'prontuario', 'imagens', 'debitos_receber', 'caixa_abrir', 'proteses', 'estoque', 'marketing'],
-    Financeiro: ['financeiro', 'nfse', 'fechar_caixa', 'alterar_comissao', 'producao_ver', 'estornar_recebimento', 'caixa_abrir', 'debitos_receber'],
+    Gerente: ['agenda_todos', 'receber_data_livre', 'ver_custos', 'exportar', 'pacientes_editar', 'agenda_editar', 'orcamentos_criar', 'orcamentos_aprovar', 'tratamentos_evoluir', 'prontuario', 'imagens', 'debitos_receber', 'estornar_recebimento', 'caixa_abrir', 'fechar_caixa', 'financeiro', 'alterar_comissao', 'producao_ver', 'cadastros_editar', 'proteses', 'estoque', 'nfse', 'marketing'],
+    Dentista: ['ver_propria_comissao', 'agenda_editar', 'orcamentos_criar', 'tratamentos_evoluir', 'prontuario', 'imagens', 'proteses'],
+    'Secretário(a)': ['agenda_todos', 'pacientes_editar', 'agenda_editar', 'orcamentos_criar', 'orcamentos_aprovar', 'prontuario', 'imagens', 'debitos_receber', 'caixa_abrir', 'proteses', 'estoque', 'marketing'],
+    Financeiro: ['agenda_todos', 'receber_data_livre', 'ver_custos', 'exportar', 'financeiro', 'nfse', 'fechar_caixa', 'alterar_comissao', 'producao_ver', 'estornar_recebimento', 'caixa_abrir', 'debitos_receber'],
   };
-  const VIEW_PERM = { caixa: ['caixa_abrir', 'fechar_caixa'], producao: ['producao_ver', 'financeiro'], financeiro: ['financeiro'], recebimentos: ['debitos_receber', 'estornar_recebimento', 'financeiro'], creditos: ['debitos_receber', 'estornar_recebimento', 'financeiro'], cadastros: ['cadastros_editar'], proteses: ['proteses', 'financeiro'], estoque: ['estoque'], nfse: ['nfse'], marketing: ['marketing'] };
+  const VIEW_PERM = { caixa: ['caixa_abrir', 'fechar_caixa'], producao: ['producao_ver', 'ver_propria_comissao', 'financeiro'], financeiro: ['financeiro'], recebimentos: ['debitos_receber', 'estornar_recebimento', 'financeiro'], creditos: ['debitos_receber', 'estornar_recebimento', 'financeiro'], cadastros: ['cadastros_editar'], proteses: ['proteses', 'financeiro'], estoque: ['estoque'], nfse: ['nfse'], marketing: ['marketing'] };
   const podeVer = (id) => {
     const g = views.find((x) => x.id === id && x.group);
     if (g) return g.group.some(podeVer);
@@ -334,6 +334,8 @@
     draw();
   }, 20);
 
+  const dentistasAgenda = (uid) => dentistasDaUnidade(uid).filter((d) => can('agenda_todos') || d.user_id === state.user?.id);
+
   /* ---------- Atuação do dentista (dias/horários por unidade) ---------- */
   const hhmm = (t) => String(t || '').slice(0, 5);
   const DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -372,7 +374,7 @@
         </div>
         <label>Observações<textarea name="observacoes" rows="2"></textarea></label>`,
       submit: 'Agendar',
-      onOpen: (form) => { form.unidade_id.onchange = () => { form.dentista_id.innerHTML = opts(dentistasDaUnidade(form.unidade_id.value), (d) => d.nome); }; },
+      onOpen: (form) => { form.unidade_id.onchange = () => { form.dentista_id.innerHTML = opts(dentistasAgenda(form.unidade_id.value), (d) => d.nome); }; },
       onSubmit: async (v) => {
         // Unidade do cadastro é só identificador: cruzar unidades é permitido, mediante confirmação.
         const pac = state.pacientes.find((x) => x.id === v.paciente_id);

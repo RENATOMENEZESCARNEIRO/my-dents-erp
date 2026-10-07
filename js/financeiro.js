@@ -23,13 +23,23 @@
         <div class="form-row" id="escopo"><label>Unidade<select name="unidade">${opts(state.unidades, (u) => u.nome, 'Selecione…', state.unidadeId)}</select></label>
           <label>Setor<select name="setor">${setoresOpts('')}</select></label></div>
         <p class="hint" id="grupo-hint" hidden>Aporte, empréstimo e devolução ficam no escopo "Grupo" (sem unidade). Aporte não é receita, mas aparece no resultado.</p>
-        <div class="form-row"><label>Grupo<input name="grupo" placeholder="Ex.: Pessoal, Fixas, Convênios"></label><label>Subgrupo<input name="subgrupo"></label></div>
+        <label>Categoria<select name="categoria"><option value="">Sem categoria</option></select></label>
         <div class="form-row"><label>NF-e<input name="nfe"></label><label>Descrição<input name="descricao"></label></div>
         <label>Observação<textarea name="obs" rows="2"></textarea></label>`,
-      onOpen: (form) => { form.tipo.onchange = () => { const g = GRUPO.includes(form.tipo.value); $('#escopo', form).hidden = g; $('#grupo-hint', form).hidden = !g; }; },
-      onSubmit: async (v) => {
+      onOpen: async (form) => {
+        const cats = await q(db.from('categorias').select('*').eq('ativo', true).order('grupo').order('nome')).catch(() => []);
+        const pintar = () => {
+          const t = form.tipo.value === 'receita' ? 'receita' : form.tipo.value === 'despesa' ? 'despesa' : null;
+          const l = cats.filter((c) => !t || c.tipo === t);
+          form.categoria.innerHTML = '<option value="">Sem categoria</option>' + l.map((c) => `<option value="${esc(c.id)}">${esc(c.grupo)} › ${esc(c.nome)}</option>`).join('');
+        };
+        form.tipo.onchange = () => { const g = GRUPO.includes(form.tipo.value); $('#escopo', form).hidden = g; $('#grupo-hint', form).hidden = !g; pintar(); };
+        form._cats = cats; pintar();
+      },
+      onSubmit: async (v, form) => {
+        const cat = (form._cats || []).find((c) => c.id === v.categoria);
         await rpc('lancar_movimentacao', { p_tipo: v.tipo, p_data: v.data, p_valor: num(v.valor), p_conta: v.conta, p_unidade: v.unidade, p_setor: v.setor,
-          p_grupo: v.grupo, p_subgrupo: v.subgrupo, p_nfe: v.nfe, p_desc: v.descricao, p_obs: v.obs });
+          p_grupo: cat?.grupo ?? null, p_subgrupo: cat?.nome ?? null, p_nfe: v.nfe, p_desc: v.descricao, p_obs: v.obs });
         toast('Movimentação lançada.');
         refresh();
       },
