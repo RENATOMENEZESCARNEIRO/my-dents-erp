@@ -144,6 +144,95 @@
     $$('[data-ver]', b).forEach((x) => (x.onclick = () => { const a = data.find((d) => d.id === x.dataset.ver); modal({ title: `${a.modelo} — ${fmtD(a.data)}`, wide: true, body: form(a) + (a.alertas ? `<div class="alerta">⚠ ${esc(a.alertas)}</div>` : '') }); }));
   }
 
+
+  /* ---------- Imagens ---------- */
+  async function abaImg(b, p) {
+    const data = await q(db.from('imagens_paciente').select('*').eq('paciente_id', p.id).order('criado_em', { ascending: false }));
+    b.innerHTML = `<div class="actions" style="margin-bottom:1rem"><label class="btn" style="cursor:pointer">+ Enviar imagens / PDFs<input type="file" id="up" multiple accept="image/*,application/pdf" hidden></label>
+        <span class="hint">Até 20 MB por arquivo. Fica em armazenamento privado.</span></div><div class="galeria" id="gal"></div>`;
+    const gal = $('#gal', b);
+    if (!data.length) gal.innerHTML = '<p class="hint">Nenhuma imagem enviada.</p>';
+    for (const im of data) {
+      const { data: sg } = await db.storage.from('pacientes').createSignedUrl(im.caminho, 3600);
+      const url = sg?.signedUrl || '';
+      const isImg = (im.mime || '').startsWith('image/');
+      const el = document.createElement('div'); el.className = 'thumb';
+      el.innerHTML = `<a href="${esc(url)}" target="_blank" rel="noopener">${isImg ? `<img src="${esc(url)}" alt="${esc(im.nome)}">` : '<div class="pdf">PDF</div>'}</a>
+        <div class="nm" title="${esc(im.nome)}">${esc(im.nome)}</div><div class="hint">${fmtD(im.criado_em.slice(0, 10))}</div>
+        <button class="btn ghost sm" data-del="${esc(im.id)}">Excluir</button>`;
+      gal.appendChild(el);
+    }
+    $('#up', b).onchange = async (e) => {
+      for (const f of e.target.files) {
+        if (f.size > 20 * 1024 * 1024) { toast(`${f.name} passa de 20 MB.`, true); continue; }
+        const caminho = `${p.id}/${Date.now()}_${f.name.replace(/[^\w.\-]+/g, '_')}`;
+        const up = await db.storage.from('pacientes').upload(caminho, f, { contentType: f.type });
+        if (up.error) { toast(up.error.message, true); continue; }
+        const r = await db.from('imagens_paciente').insert({ paciente_id: p.id, nome: f.name, caminho, mime: f.type, tamanho: f.size });
+        if (r.error) { await db.storage.from('pacientes').remove([caminho]); toast(r.error.message, true); }
+      }
+      toast('Envio concluído.'); refresh();
+    };
+    $$('[data-del]', b).forEach((x) => (x.onclick = async () => {
+      if (!confirm('Excluir este arquivo?')) return;
+      const im = data.find((d) => d.id === x.dataset.del);
+      await db.storage.from('pacientes').remove([im.caminho]);
+      await q(db.from('imagens_paciente').delete().eq('id', im.id));
+      toast('Arquivo excluído.'); refresh();
+    }));
+  }
+
+  /* ---------- Documentos ---------- */
+  const TIPOS = { contrato: 'Contrato', termo: 'Termo de consentimento', receituario: 'Receituário', atestado: 'Atestado', personalizado: 'Personalizado' };
+  const MODELOS = {
+    contrato: 'CONTRATO DE PRESTAÇÃO DE SERVIÇOS ODONTOLÓGICOS\n\nPelo presente instrumento, {{clinica}} (CONTRATADA) e {{paciente}}, CPF {{cpf}} (CONTRATANTE), acordam a prestação dos serviços odontológicos descritos no plano de tratamento aprovado, pelos valores e condições ali estabelecidos.\n\nO CONTRATANTE declara ter sido informado sobre o tratamento, riscos, alternativas e custos.\n\n{{cidade}}, {{data}}.\n\n______________________________\n{{paciente}}',
+    termo: 'TERMO DE CONSENTIMENTO LIVRE E ESCLARECIDO\n\nEu, {{paciente}}, CPF {{cpf}}, declaro que fui informado(a) pelo(a) Dr(a). {{dentista}} sobre o procedimento proposto, seus benefícios, riscos e alternativas, e autorizo sua realização.\n\n{{cidade}}, {{data}}.\n\n______________________________\n{{paciente}}',
+    receituario: 'RECEITUÁRIO\n\nPaciente: {{paciente}}\n\n1. ______________________\n   Posologia: ______________\n\n{{cidade}}, {{data}}.\n\n______________________________\nDr(a). {{dentista}}',
+    atestado: 'ATESTADO\n\nAtesto para os devidos fins que {{paciente}}, CPF {{cpf}}, esteve sob atendimento odontológico nesta data, necessitando de ______ dia(s) de afastamento de suas atividades.\n\n{{cidade}}, {{data}}.\n\n______________________________\nDr(a). {{dentista}}',
+    personalizado: '',
+  };
+  const preencher = (txt, p, dent, extra = {}) => txt.replace(/\{\{(\w+)\}\}/g, (_, k) => ({
+    paciente: p.nome, cpf: fmtCPF(p.cpf), dentista: dent || '__________', clinica: 'My Dents Odontologia & Estética', cidade: p.cidade || 'Fortaleza',
+    data: new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }), ...extra,
+  }[k] ?? ''));
+  function imprimir(titulo, texto) {
+    const w = window.open('', '_blank');
+    if (!w) return toast('Libere pop-ups para imprimir.', true);
+    w.document.write(`<!doctype html><title>${esc(titulo)}</title><body style="font:15px/1.6 Georgia,serif;max-width:720px;margin:2.5cm auto;white-space:pre-wrap">${esc(texto)}</body>`);
+    w.document.close(); w.focus(); setTimeout(() => w.print(), 300);
+  }
+  async function abaDocs(b, p) {
+    const data = await q(db.from('documentos_paciente').select('*, dentistas!dentista_id(nome)').eq('paciente_id', p.id).order('criado_em', { ascending: false }));
+    b.innerHTML = `<div class="actions" style="margin-bottom:1rem">${Object.entries(TIPOS).map(([k, v]) => `<button class="btn ghost sm" data-novo="${k}">+ ${esc(v)}</button>`).join('')}</div>` +
+      table(['Data', 'Tipo', 'Título', 'Dentista', ''], rows(data, (d) =>
+        `<tr><td>${fmtD(d.data)}</td><td>${esc(TIPOS[d.tipo])}</td><td>${esc(d.titulo)}</td><td>${esc(d.dentistas?.nome)}</td>
+         <td class="nowrap"><button class="btn ghost sm" data-ver="${esc(d.id)}">Ver / imprimir</button> <button class="btn ghost sm" data-del="${esc(d.id)}">Excluir</button></td></tr>`, 'Nenhum documento emitido.', 5));
+    $$('[data-novo]', b).forEach((x) => (x.onclick = () => {
+      const tipo = x.dataset.novo;
+      modal({
+        title: `Novo — ${TIPOS[tipo]}`, wide: true, submit: 'Salvar documento',
+        body: `<div class="form-row"><label>Título<input name="titulo" required value="${esc(TIPOS[tipo])}"></label>
+          <label>Dentista<select name="dentista_id">${opts(state.dentistas, (d) => d.nome, 'Selecione…')}</select></label></div>
+          <label>Texto (use {{paciente}}, {{cpf}}, {{dentista}}, {{data}}, {{cidade}})<textarea name="conteudo" rows="14" required>${esc(MODELOS[tipo])}</textarea></label>`,
+        onSubmit: async (v) => {
+          const dn = state.dentistas.find((d) => d.id === v.dentista_id)?.nome;
+          const conteudo = preencher(v.conteudo, p, dn);
+          await q(db.from('documentos_paciente').insert({ paciente_id: p.id, tipo, titulo: v.titulo, conteudo, dentista_id: v.dentista_id || null }));
+          toast('Documento salvo.'); refresh();
+        },
+      });
+    }));
+    $$('[data-ver]', b).forEach((x) => (x.onclick = () => {
+      const d = data.find((i) => i.id === x.dataset.ver);
+      modal({ title: d.titulo, wide: true, body: `<pre style="white-space:pre-wrap;font:inherit">${esc(d.conteudo)}</pre>`, extra: '<button type="button" class="btn" id="imp" style="margin-right:auto">Imprimir</button>',
+        onOpen: (f) => { $('#imp', f).onclick = () => imprimir(d.titulo, d.conteudo); } });
+    }));
+    $$('[data-del]', b).forEach((x) => (x.onclick = async () => {
+      if (!confirm('Excluir este documento?')) return;
+      await q(db.from('documentos_paciente').delete().eq('id', x.dataset.del)); toast('Documento excluído.'); refresh();
+    }));
+  }
+
   /* ---------- Débitos ---------- */
   async function abaDeb(b, p) {
     const [deb, rec] = await Promise.all([
@@ -177,6 +266,8 @@
       { id: 'orcamentos', label: 'Orçamentos', render: (b) => abaOrc(b, p) },
       { id: 'tratamentos', label: 'Tratamentos', render: (b) => abaTrat(b, p) },
       { id: 'anamnese', label: 'Anamnese', render: (b) => abaAnam(b, p) },
+      { id: 'imagens', label: 'Imagens', render: (b) => abaImg(b, p) },
+      { id: 'documentos', label: 'Documentos', render: (b) => abaDocs(b, p) },
       { id: 'debitos', label: 'Débitos', render: (b) => abaDeb(b, p) },
     ]);
   }, 999, 'pacientes');
