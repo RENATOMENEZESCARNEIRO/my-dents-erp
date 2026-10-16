@@ -1,0 +1,505 @@
+RELATORIO TECNICO — My Dents — correcoes de 14/10/2026
+Destino: revisao por outro agente
+Gerado em: 14/10/2026
+Sistema live: https://mydents.com.br/
+Web root: /home/mydentscom/public_html
+Fonte de publicacao: C:\Users\usuario\Projects\My_Dents\codigo-atual\
+Repositorio do codigo: C:\Users\usuario\Projects\My_Dents (branch main, SEM remote)
+Repositorio deste arquivo: docs/my-dents-erp (prototipo; nao e o sistema publicado)
+Registro de publicacao: C:\Users\usuario\Projects\My_Dents\docs\PUBLICACOES.md
+
+Este texto distingue quatro estados: diagnosticado, corrigido no codigo local,
+publicado no cPanel, validado na interface. Codigo alterado nao significa
+validado. Arquivo no ar nao significa que todo o fluxo foi exercido.
+
+
+1. O QUE NAO FOI FEITO
+
+- Nao houve SQL direto, exclusao em massa nem bypass de endpoint.
+- Nao foi publicado financeiro/api/recepcao.php. O arquivo no ar tem 37.494
+  bytes e contem a funcao recepcao_consulta_preservada. A copia local tem
+  34.781 bytes e NAO contem essa funcao. Substituir o live apagaria codigo.
+- Nao foi publicada a arvore inteira. Publicacao foi arquivo a arquivo.
+- Nao foi alterado CSRF (continua requisicao_proteger_origem + sessao +
+  recepcao_permite_acao, sem token).
+- Nao foi endurecido o login.
+- Nao foi removida a sidebar .md-sidebar.
+- Nao foram apagadas as quatro contas principais nem os usuarios de teste.
+- O seletor de executor da evolucao do plano NAO foi filtrado por unidade.
+  A regra do dentista Caio (agenda x executor/vendedor) ficou sem decisao.
+- Nao foram implementados: credito aplicado em outro debito, uso de credito
+  de uma unidade em outra, estorno depois de fechamento pago, revisao
+  estrutural, rotulo curto de conta no fluxo ("Brasil"/"Itau"), recálculo da
+  previsao de cartao ja gravada, e o aviso Recharts de container 0x0.
+- O clone do codigo nao tem remote. Os commits locais NAO foram para o GitHub.
+  O PR rascunho do prototipo docs/my-dents-erp (#1) nao contem o codigo live.
+
+
+2. COMMITS LOCAIS DO CODIGO
+
+Repositorio: C:\Users\usuario\Projects\My_Dents
+Branch: main
+Remote: nenhum
+
+18331d2
+  Mensagem: Corrige evolucao de plano, dentistas elegiveis, cartoes,
+  exclusao de conta e filtro de unidade.
+  11 arquivos, +320 / -50.
+  Este commit e a fatia cache 20261014-correcoes1.
+
+a4a6a32
+  Mensagem: Exclui a devolucao de credito do paciente do relatorio de socios.
+  2 arquivos: relatorios/relatorios-api.php e docs/PUBLICACOES.md.
+  O mesmo arquivo tambem registra no Git o tratamento de estorno_taxa_cartao
+  que ja estava no working copy publicado.
+
+Arquivos ainda modificados no working copy e NAO incluidos nesses commits,
+mas ja conferidos como presentes no cPanel (ver secao 8):
+  financeiro/api/fase12-schema.php
+  financeiro/api/fase12.php
+  financeiro/api/financeiro-lancamentos-lib.php
+  financeiro/api/homologacao-lib.php
+  financeiro/api/lancamentos.php
+  financeiro/api/taxas-cartao-lib.php
+  financeiro/mydents-global-nav.js
+  recepcao/melhorias-pacientes.js
+  financeiro/api/catalogo-precos-lib.php (untracked no Git, presente no ar)
+
+financeiro/api/recepcao.php tambem esta modificado localmente e NAO deve
+ser publicado por cima do live.
+
+
+3. BACKUP ANTES DE SOBRESCREVER
+
+Fora do web root, no servidor:
+  /home/mydentscom/arquivo-20261014/live-antes/recepcao/
+  /home/mydentscom/arquivo-20261014/live-antes/financeiro/
+  /home/mydentscom/arquivo-20261014/live-antes/financeiro/api/
+  /home/mydentscom/arquivo-20261014/live-antes/relatorios/relatorios-api.php
+
+Copia local anterior, ignorada pelo Git:
+  C:\Users\usuario\Projects\My_Dents\arquivo-20261014\live-antes\
+
+
+4. PUBLICACAO 1 — CONTATOS DO RESPONSAVEL FINANCEIRO
+
+Estado: publicado mais cedo em 14/10/2026 e validado na edicao/reabertura.
+Nao foi refeito nesta rodada.
+
+Arquivos:
+  recepcao/recepcao-app.js
+  recepcao/melhorias-pacientes.js
+  financeiro/app.html
+
+Cache: 20261014-responsavel-contatos1
+
+O que muda:
+  Os campos nativos titularTelefone e titularEmail entram no payload,
+  inclusive vazios, para permitir limpar. melhorias-pacientes.js nao injeta
+  um segundo par de campos quando os nativos ja existem.
+
+Caminho:
+  UI recepcao-app.js abrirPaciente / salvarPaciente
+  POST/PUT /financeiro/api/pacientes.php
+  pacientes-lib.php
+  Colunas cadastros.responsavel_financeiro_telefone e
+  cadastros.responsavel_financeiro_email
+
+Limite conhecido, nao corrigido:
+  GET de pacientes.php sem acao=diagnostico ainda pode chamar
+  pacientes_migrar_estado_compartilhado e escrever. Nao chamar esse GET.
+
+
+5. PUBLICACAO 2 — FATIA 20261014-correcoes1
+
+Estado: publicado no cPanel em 14/10/2026. Upload com succeeded=1 e arquivo
+existente substituido. Estaticos conferidos por SHA-256 do HTTPS GET igual
+ao local. PHP conferido por tamanho no Fileman igual ao local.
+
+Cache aplicado em app.html e producao-dentistas.html:
+  recepcao-app.js?v=20261014-correcoes1
+  fase12.js?v=20261014-correcoes1
+  fluxo-filtros.js?v=20261014-correcoes1
+  modulos-interface.js?v=20261014-correcoes1
+
+Arquivos, tamanho quando PHP, SHA-256:
+
+  recepcao/recepcao-app.js
+    8C11A220CD1F8AD22F61A5A6D0A1A8FE663FD87029BA42EA2260F61404FB3BC7
+  financeiro/app.html
+    E990B752284FD26096DB98171D93FCB5AB3E3E41B5C58C681A975DC8917FAC87
+  financeiro/fase12.js
+    60AEE48DAC0BC2568F0151D3D3CEF52A2FFDD7DAC4DDFDED4CC1C89BDD14B4F6
+  financeiro/fluxo-filtros.js
+    864AB1F657F83846EF94F19B4915182190AEF8242B30D75CCB34DE439A0D43FB
+  financeiro/modulos-interface.js
+    99E51AA44AA41D67374AFAA64B78B35F5FC460D279ABF4D1D682670AD1C7FEDD
+  financeiro/producao-dentistas.html
+    B8369BB9E1F26B2F99632CD32E90B210469AA11C4AEC3783264817D08FD9C3A2
+  financeiro/api/debitos.php
+    49676 bytes
+    CBAB978AF4F05E7EAB67D5CD819FD3B3E10B734F7BB6A9E611B0C13A9188688D
+  financeiro/api/fase12-lib.php
+    83658 bytes
+    E20B82CE6ED458EFAEB92BE6E3A34D205BA3CE817FF7F203202D3A5186E4308A
+  financeiro/api/contas-bancarias.php
+    13478 bytes
+    9C5A76D7521F04E8EB99106F0B738886AAB220A142C245FD26F1CB25E7D40412
+  financeiro/api/relatorios-consolidados.php
+    29103 bytes
+    1F44E4FB1918B55C618532C33696ECB99BEAED6C5BC838083F9ADE35BEDB34A0
+
+
+5.1 Evolucao de tratamento originado em plano
+
+Problema:
+  O POST simplificado tratamentos.php acao=evolucao rejeita
+  origem === plano_odontologico com HTTP 409. O caminho aceito e
+  fase12.php POST acao=evoluir, funcao f12_evolve em fase12-lib.php.
+  A ficha abria o formulario simples (dentista + texto), que o endpoint
+  recusa. A validacao 409 nao foi enfraquecida.
+
+Correcao na UI (recepcao-app.js):
+  Lista de tratamentos: botao "Evoluir" quando origem === plano_odontologico;
+  caso contrario "Editar".
+  detalheTratamento esconde "Editar tratamento" para origem de plano e
+  rotula os botoes de evolucao como "Registrar evolucao do plano".
+  abrirFormularioTratamento desvia para abrirEvolucaoDoPlano.
+  abrirEvolucaoDoPlano exige origemReferenciaId, abre a aba evolucoes,
+  limpa tratamentoAbertoId, localiza o plano cujo item coincide com esse id
+  e chama action('abrir', planoId) e depois action('evoluir', itemId)
+  no componente mydents-planos, depois que meta e plans/plan existem.
+  Tratamento particular continua no formulario simples.
+
+f12_evolve (ja existente, nao enfraquecido):
+  Exige item aprovado com tratamento_id.
+  Status aceitos: aprovado, em_andamento, concluido.
+  Texto obrigatorio, ate 8000 caracteres.
+  Se o tratamento ja esta concluido e o executor muda, recusa 409.
+  Status concluido grava dentista_producao (INSERT IGNORE). Por isso a
+  validacao NAO salvou uma evolucao "Executado".
+
+Validado na interface:
+  Paciente de demonstracao, plano #48, procedimento PROF-LIMP-01, unidade
+  Aldeota. "Editar tratamento" ausente. Os dois botoes dizem
+  "Registrar evolucao do plano". O clique abriu o formulario oficial:
+  Data, Dentista executor, Situacao clinica (Aguardando execucao / Em
+  tratamento / Executado) e texto. Fechado em Voltar. Nada gravado.
+  O item permaneceu "Aguardando execucao".
+  Estado: publicado e validado na abertura do formulario. Gravacao de
+  evolucao nao foi executada, de proposito, para nao gerar producao.
+
+
+5.2 Dentista ativo e da unidade
+
+Problema:
+  O recebimento oferecia dentistas inativos e de outra unidade. O endpoint
+  f12_dentist rejeitava inativo, mas nao unidade errada.
+
+Correcao:
+  f12_dentists monta clinicaIds e unidades oficiais (Aldeota, Messejana,
+  Maracanau). "Geral" nao e unidade de lancamento.
+  f12_dentist(PDO, id, payment, unit) recusa unidade ausente da lista, com
+  a mensagem "Este dentista nao esta vinculado a unidade deste lancamento."
+  debitos_registrar_recebimento chama f12_dentist com a unidade do debito.
+  f12_receive e f12_convenio_acrescentar passam a mesma unidade.
+  recepcao-app.js: dentistasElegiveis(unidade) fica so com ativo !== false
+  e clinica da unidade do debito. O select de RECEBER usa essa lista.
+  fase12.js: dentistasDaUnidade filtra d.unidades. Usado no filtro de
+  producao, no formulario de convenio e no select de receber do plano.
+  O select de executor da evolucao ficou sem esse filtro.
+
+Validado:
+  Producao, com o cabecalho em Messejana: Filtrar em Aldeota permaneceu
+  Aldeota. A lista de dentistas passou de 8 (Messejana) para 7 (Aldeota).
+  O modal RECEBER de um debito em aberto NAO foi aberto: os cadastros de
+  teste consultados estavam com saldo a receber R$ 0,00. Nao foi criado
+  debito novo, para nao alterar o caixa ja medido.
+  Estado: regra publicada e lista da producao validada. O select do
+  recebimento de paciente nao foi visto na tela.
+
+
+5.3 Quadro de cartoes e escopo de homologacao
+
+Problema:
+  O fluxo realizado (lancamentos.php) exclui origem_teste=1. O quadro de
+  cartoes lia debitos.php?acao=fluxo_caixa sem esse corte e somava
+  recebimentos de homologacao.
+
+Correcao:
+  debitos_fluxo_caixa: AND COALESCE(r.origem_teste, 0) = 0.
+  A linha do fluxo_caixa expoe origemTeste.
+  fluxo-filtros.js cardReceiptsForFilters descarta origemTeste verdadeiro
+  ou numerico 1. A nota de rodape diz que recebimento de homologacao fica
+  de fora, na mesma regra do fluxo realizado.
+  relatorios-consolidados.php: a consulta de cartao previsto em
+  paciente_recebimentos ganhou COALESCE(origem_teste, 0) = 0.
+  Previsao nao entra no saldo realizado.
+
+Validado no fluxo, unidade Todas, 01/10/2026 a 14/10/2026:
+  Saldo inicial R$ 0,00
+  Entradas R$ 102,05
+  Saidas R$ 67,05
+  Saldo final R$ 35,00
+  Quadro de cartoes: R$ 30,00, um credito previsto, liquido R$ 29,06,
+  previsao 12/11/2026, com a nota de homologacao.
+  Antes o quadro somava R$ 855,00, incluindo cartoes de homologacao.
+  O R$ 30,00 e previsto. Nao foi declarado conciliado.
+  A tela do relatorio consolidado em si nao foi a superficie dessa
+  conferencia; a DRE foi reaberta depois (secao 6) e fechou com o fluxo.
+
+
+5.4 Exclusao de conta com saldo ou vinculo
+
+Problema:
+  contas-bancarias.php marcava excluido=1 sem mostrar saldo nem vinculos.
+
+Correcao:
+  contas_impacto espelha a regra de saldo operacional (exclui origem_teste,
+  efeito_caixa=0, lado destino de transferencia e data futura).
+  GET administrativo devolve saldoOperacional, lancamentos e recebimentos.
+  POST excluir devolve 409 se ha impacto e confirmarImpacto vem vazio.
+  Mensagem: "Esta conta tem saldo ou vinculos..."
+  A interface mostra os numeros e so envia confirmarImpacto true no botao
+  explicito. Restauracao continua como inativa.
+  contas_resposta faz rollback quando status >= 400.
+
+Validado:
+  Banco do Brasil: saldo operacional R$ 20,00, 5 lancamentos, 3
+  recebimentos. A exclusao foi cancelada. A conta permanece.
+  Conta criada pela tela, TST Conta Homolog 1410, sem vinculo: aviso
+  R$ 0,00, 0 lancamentos, 0 recebimentos. Exclusao confirmada. Status:
+  "Conta excluida do cadastro ativo, com restauracao disponivel e
+  historico preservado." Depois "Mostrar contas excluidas" e Restaurar.
+  Status: "Conta restaurada como inativa." Permanece no cadastro inativa.
+  As quatro contas principais nao foram excluidas.
+  Estado: publicado e validado.
+
+
+5.5 Filtro local de unidade na producao
+
+Problema:
+  Production.load() fazia filters.unidade = unidade do cabecalho sempre que
+  o chrome existia. Filtrar era sobrescrito por window.__mdUnidadeAtiva.
+
+Correcao em fase12.js:
+  O chrome so preenche filters.unidade quando o filtro local esta vazio.
+  O listener md-unidade-change ainda define o filtro e chama load().
+  O select de dentista do filtro e o de "Acrescentar producao de convenio"
+  usam dentistasDaUnidade. Ha listener de change para refrescar as opcoes.
+
+Validado:
+  Cabecalho Messejana. Filtro local Aldeota. Filtrar manteve Aldeota.
+  Dentistas: 8 em Messejana, 7 em Aldeota.
+  Estado: publicado e validado.
+
+
+6. PUBLICACAO 3 — RELATORIO DE SOCIOS
+
+Estado: publicado e validado na tela em 14/10/2026.
+
+Problema:
+  relatorios_socios somava qualquer lancamento ativo, fora de teste, cujo
+  tipo contivesse "devolu". A devolucao de credito do paciente nasce com
+  tipo "Devolucao" e origem devolucao_credito. A DRE ja usava
+  relatorios_devolucao_emprestimo_condicao, que exige tipo com "devolu" e
+  exclui deducao e transferencia. O painel de socios nao usava essa condicao.
+
+Evidencia antes da correcao, 01/10/2026 a 14/10/2026, unidade Todas:
+  Aportes R$ 0,00, 0 lancamentos
+  Emprestimos R$ 0,00, 0 lancamentos
+  Devolucoes R$ 65,00, 1 lancamento
+  Linha: 13/10/2026, tipo devolucao, descricao vazia, unidade Aldeota,
+  R$ 65,00
+  A DRE, no mesmo recorte, ja mostrava devolucao de emprestimo R$ 0,00.
+
+Correcao em relatorios/relatorios-api.php, funcao relatorios_socios:
+  O WHERE passou a ser a uniao de:
+    relatorios_aporte_condicao
+    relatorios_emprestimo_condicao
+    relatorios_devolucao_emprestimo_condicao
+  A condicao de devolucao de emprestimo exclui origem IN
+  (devolucao_credito, estorno_recebimento, estorno_devolucao).
+  Nao foi exigido socio_id, porque a DRE tambem nao exige.
+
+Arquivo publicado:
+  relatorios/relatorios-api.php
+  Tamanho apos o upload: 78.876 bytes
+  Backup: /home/mydentscom/arquivo-20261014/live-antes/relatorios/relatorios-api.php
+  Cache: nenhum. E PHP.
+
+Validado depois do envio, mesmo recorte:
+  Aportes R$ 0,00
+  Emprestimos R$ 0,00
+  Devolucoes R$ 0,00
+  Texto: "Nenhum aporte, emprestimo ou devolucao no periodo."
+  DRE: resultado apos despesa financeira R$ 35,00
+  Conferencia com o fluxo: fechou
+  Entradas R$ 102,05, saidas R$ 67,05, variacao R$ 35,00
+  Devolucao de emprestimo na DRE: R$ 0,00, 0 lancamentos
+
+O debito em aberto de R$ 65,00 (referencia 46, procedimento de restauracao,
+data 13/10/2026) continua na fila de excecoes. Nao foi alterado. Estorno que
+devolve o dinheiro deixa o debito em aberto; isso nao foi tratado como erro.
+
+
+7. CONFERENCIA PEDIDA DEPOIS: BUGS DE OUTRO AGENTE
+
+Pedido: validar se eram reais. Nenhum desses itens foi corrigido nem
+republicado.
+
+7.1 Container Recharts 0 x 0
+  Real como aviso de console, nao como grafico visivel quebrado.
+  Em Fechamento mensal ("Despesas com Funcionarios") o console emite:
+    "The width(0) and height(0) of chart should be greater than 0"
+  O .recharts-responsive-container medido estava 0x0. A cadeia de pais
+  ate .p-8 tambem estava 0x0. O texto dentro desse bloco e o painel
+  Resultado ("Receitas, despesas e margem", resultado R$ 35,00), que
+  permanece montado enquanto outra tela esta aberta.
+  Com Resultado aberto de fato, o mesmo container mediu 532 x 260 e o
+  aviso nao disparou nessa abertura. Uma medicao anterior, tambem com
+  Resultado aberto, deu 548 x 260.
+  A tela de Fechamento visivel e o formulario de competencia, unidade,
+  VT/VA e totais. Nao ha perda de dado. Nao foi alterado codigo.
+
+7.2 fase12.js?v=20260914-faseT
+  O pedido HTTP existe e retorna 200. A pagina /relatorios/
+  (relatorios-index-modern.php) e taxas-cartao.html ainda apontam para
+  esse identificador antigo, tambem para fase12.css e apresentacao.js.
+  O corpo servido em fase12.js?v=20260914-faseT contem dentistasDaUnidade,
+  ou seja, o arquivo atual. Cache-Control: no-cache, must-revalidate.
+  O rotulo da URL esta velho. O JavaScript de 14/09 nao e o que o servidor
+  devolve. O rotulo nao foi atualizado.
+
+7.3 Rede em /financeiro/api/relatorios.php
+  analiticos, dashboard e opcoes retornaram 200. A repeticao e o reload
+  ao sincronizar a unidade do chrome (md-unidade-change chama load(), e
+  loadBreakdowns busca analiticos de novo).
+  unidade=1 e unidade=Aldeota sao a mesma clinica.
+  relatorios_unidade_valores aceita o id e, se nao achar, o nome.
+  Nao e resposta de erro.
+
+7.4 /usuarios/ redireciona ao Dashboard
+  Comportamento do codigo, nao perda de sessao.
+  usuarios/index.php: usuario autenticado, sem ?tela e com permissao de
+  recepcao, vai para /recepcao/#tela/dashboard.
+  Gestao de usuarios e /usuarios/?tela=usuarios, que aponta para
+  /financeiro/app.html#usuarios.
+  O link "Portal" usa /usuarios/ de proposito.
+
+
+8. ARQUIVOS LOCAIS QUE JA ESTAO NO AR (NAO REENVIADOS)
+
+Em 14/10/2026, depois do pedido "suba tudo", o conteudo no cPanel foi lido
+pelo Fileman e comparado com a copia local. Os marcadores abaixo existem
+no arquivo do servidor. O tamanho do Fileman (bytes no disco) coincide com
+o arquivo local. Nao houve novo upload.
+
+  catalogo-precos-lib.php     14.464   catalogo_precos_schema
+  fase12-schema.php           15.917   catalogo_precos_schema
+  fase12.php                   7.783   catalogo_precos_listar
+  financeiro-lancamentos-lib.php 17.405  estorno_taxa_cartao
+  homologacao-lib.php         14.652   information_schema.tables
+  lancamentos.php             61.211   taxas_cartao_data_previsao
+  taxas-cartao-lib.php        18.095   taxas_cartao_data_previsao
+  mydents-global-nav.js       57.105   incluirTeste
+  recepcao/melhorias-pacientes.js 9.267  titularTelefone
+  recepcao.php no ar          37.494   recepcao_consulta_preservada
+  recepcao.php local          34.781   SEM recepcao_consulta_preservada
+
+O que esses arquivos ja fazem no ar, alem da fatia correcoes1:
+  Catalogo de precos por plano (tabela recepcao_procedimento_precos),
+  exigido por fase12-lib.php (catalogo_precos_salvar, _resolver, _listar).
+  Previsao de cartao com taxas_cartao_data_previsao: soma os dias da
+  maquineta e empurra sabado para segunda e domingo para segunda.
+  Estorno de lancamento com origem taxa_cartao grava origem
+  estorno_taxa_cartao.
+  Homologacao consulta information_schema em vez de SHOW TABLES com
+  placeholder, e o insert de cadastros_homologacao respeita as colunas
+  que existem.
+  O dashboard de saldos pode pedir incluirTeste=1 e mostra saldo atual
+  separado de previsto.
+
+Esses arquivos estavam sujos no Git local e ja coincidiam com o live.
+Nao foram reenviados porque nao havia diferenca para publicar.
+
+
+9. O QUE AINDA ESTA ABERTO PARA O REVISOR
+
+Prioridade nao implementada nesta rodada:
+  Aplicar credito de um debito em outro debito ou tratamento.
+  Regra de credito entre unidades. O recebimento ja bloqueia uso de
+  credito acima da carteira da unidade do debito
+  (debitos_credito_bloquear no unidade do debito). Isso nao foi
+  reexercido com um pagamento novo.
+  Estorno depois de fechamento de producao ja pago.
+  Revisao estrutural de sessao, bibliotecas, arquivos privados e
+  duplicatas. Nao mover arquivo so porque parece antigo.
+  Cenario operacional de 5 pacientes, 5 dentistas e 4 contas.
+  GET pacientes.php sem acao=diagnostico pode escrever.
+  Rotulo "Brasil" / "Itau" no historico do fluxo, enquanto o seletor usa
+  o nome completo. A normalizacao tira o prefixo "Banco do/da".
+  Previsao do cartao pendente em 12/11/2026 contra prazo atual de 1 dia
+  na maquineta REDE. Nao ficou decidido se previsao ja gravada e retrato
+  imutavel ou se deve ser recalculada.
+  Abas Visao geral, Resultado e Financeiro do relatorio executivo chamam
+  renderDre e retornam cedo; o grafico CSS de tendencia ficou codigo morto
+  nesse caminho.
+  Container Recharts 0x0 do Resultado enquanto o Fechamento esta aberto.
+  Identificador ?v=20260914-faseT em relatorios-index-modern.php e
+  taxas-cartao.html.
+  financeiro/api/recepcao.php local divergente e menor que o live.
+  Commits 18331d2 e a4a6a32 sem push: o clone nao tem remote.
+
+Conta de teste deixada no cadastro:
+  TST Conta Homolog 1410, inativa, restauravel. Nao excluir de novo.
+
+
+10. COMO REPRODUZIR O QUE FOI VALIDADO
+
+Fluxo e cartoes:
+  https://mydents.com.br/financeiro/app.html?v=20261014-correcoes1#fluxo
+  Periodo 01/10/2026 a 14/10/2026, unidade Todas.
+  Esperado: entradas 102,05; saidas 67,05; saldo 35,00; cartoes 30,00
+  previstos, liquido 29,06, previsao 12/11/2026.
+
+Producao:
+  producao-dentistas.html?v=20261014-correcoes1#producao
+  Cabecalho numa unidade, filtro local em outra, clicar Filtrar.
+  O filtro local deve permanecer. A lista de dentistas deve mudar.
+
+Contas:
+  Excluir uma conta com movimento deve mostrar saldo, lancamentos e
+  recebimentos e permitir cancelar.
+  Nao repetir a exclusao da conta de teste ja restaurada.
+
+Evolucao de plano:
+  Ficha do paciente de demonstracao, plano #48, PROF-LIMP-01.
+  O botao deve abrir Data, executor e situacao clinica.
+  Nao gravar "Executado" sem decidir se pode nascer producao.
+
+Socios:
+  https://mydents.com.br/relatorios/
+  01/10/2026 a 14/10/2026, unidade Todas, aba Socios.
+  Esperado: tres totais R$ 0,00.
+  Aba Excecoes: o debito de R$ 65,00 referencia 46 pode continuar.
+
+DRE:
+  Mesmo periodo. Variacao de caixa R$ 35,00. Conferencia com o fluxo
+  fechada. Devolucao de emprestimo R$ 0,00.
+
+
+11. RISCO PARA O REVISOR
+
+- Nao publicar codigo/ (historico de setembro) por cima de codigo-atual.
+- Nao publicar a recepcao.php local.
+- Nao tratar o aviso Recharts 0x0 como grafico sumido na tela aberta sem
+  medir o container visivel.
+- Nao tratar /usuarios/ indo ao dashboard como queda de sessao.
+- Nao marcar o recebimento de dentista como validado na UI: a lista da
+  producao foi vista; o modal RECEBER nao foi.
+- Nao marcar a evolucao como salva: o formulario oficial abriu e foi
+  fechado sem gravar.
+- O R$ 30,00 do quadro de cartoes e previsao, nao saldo realizado.
+- Previsao de cartao em 12/11/2026 pode ser retrato antigo da regra de
+  30 dias. Nao foi regravada.
