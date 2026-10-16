@@ -1,0 +1,250 @@
+AVALIAÇÃO TÉCNICA PÓS-CODEX — MY DENTS
+Data: 14 de outubro de 2026.
+Tipo: leitura. Nenhum arquivo de produção, cPanel, banco, commit ou push foi alterado por esta avaliação.
+O texto substitui o julgamento de 11/10 e confere a revisão do Codex de 12/10 com evidência nova. O protótipo Supabase deste workspace (docs/my-dents-erp) continua fora do sistema publicado.
+
+--------------------------------------------------------------------------------
+1. O QUE FOI REAVALIADO E O QUE FICOU DE FORA
+--------------------------------------------------------------------------------
+
+Reavaliado
+
+- Git do repositório c:\Users\usuario\Projects\My_Dents, branch main, HEAD d5c5576 (13/10/2026 18:45). Commits desde 11/10 e a árvore de trabalho não commitada.
+- codigo-atual\ como fonte de publicação, com CAPTURA-MANIFEST.json de 174 arquivos (capturedAt da captura de 11/10). codigo\ permanece histórico e não foi usado como o que está no ar.
+- docs\PUBLICACOES.md (última entrada: terceira rodada de 11/10), PLANO_CORRECOES_20261011.md, REVISAO_RELATORIO_CURSOR_20261012.md, PLANO_CONCLUSAO_ADMIN_20261012.md, RELATORIO_HORARIOS_DENTISTAS_20261012.md, RELATORIO_CRO_CATALOGO_20261012.md, RELATORIO_CONCILIACAO_20261013.md e RELATORIO_REORGANIZACAO_CPANEL_20261013.md.
+- Diffs reais da árvore de trabalho e o código de login, recuperação, pacientes, origem_teste, bootstrap e recepção.
+- Sessão administrativa já aberta em https://mydents.com.br/financeiro/app.html. Percurso só de leitura: Dashboard, Fluxo de Caixa (01/10/2026 a 14/10/2026, unidades Todas, Aldeota, Messejana e Maracanaú) e /relatorios/ como a página abriu. O filtro do fluxo foi devolvido para Todas.
+- Estáticos públicos conferidos por SHA-256 no domínio: app.html, fluxo-filtros.js, mydents-global-nav.js, fase12.js, recepcao-app.js e producao-dentistas.html. O bundle antigo app.bundle.cloud-refresh-20260921.js respondeu 404.
+- cPanel já logado. O Gerenciador de arquivos foi usado só para listar tamanhos e datas e para ler a função que existe no recepcao.php do servidor e não existe na cópia local. Nada foi editado, movido, carregado ou apagado.
+
+Ficou de fora, de propósito
+
+- GET /financeiro/api/pacientes.php sem acao=diagnostico. No código cujo tamanho bate com o servidor, esse GET chama pacientes_migrar_estado_compartilhado() e pode gravar estado_financeiro_compartilhado. A tela Pacientes não foi aberta.
+- acao=diagnostico também não foi chamada. É outro endpoint de pacientes; a avaliação não usou a API para inspecionar a base.
+- Login, logout, esqueci senha, envio de formulário, exportar CSV, imprimir, "Atualizar painel" e "Atualizar dados". A sessão foi mantida. A aba voltou para #tela/dashboard.
+- VAL-FLUXO Paciente 01 não foi aberto. Nenhum nome, CPF, anamnese, senha, cookie ou token entra neste texto.
+- phpMyAdmin, disco, SSL, 2FA, MySQL remoto e cron não foram reabertos. A presença da sessão no cPanel não revalida R-01 a R-05.
+- O corpo de recepcao.php no ar não foi copiado para o disco local. A diferença foi medida por tamanho, hash e tamanho de cada função.
+- Não houve teste de espera de 30 minutos, perfil de recepcionista ou dentista, nem nova jornada de orçamento.
+
+--------------------------------------------------------------------------------
+2. O QUE O CODEX MUDOU
+--------------------------------------------------------------------------------
+
+A revisão de 12/10 está certa neste ponto: codigo-atual\ é a árvore de trabalho, com 174 caminhos no manifesto de 11/10. codigo\ é o histórico de setembro. Publicar codigo\ por cima do site continuaria apagando o que está no ar.
+
+PUBLICACOES.md não acompanhou o que veio depois. A última seção é a terceira rodada de 11/10 (cache 20261011-perfis3). As publicações de 12, 13 e 14/10 estão nos relatórios soltos e nas datas do Gerenciador, e uma parte grande ainda não está no commit d5c5576.
+
+11/10 — três rodadas, registradas em PUBLICACOES.md e nos commits 4f28f2a, 8eaf4fe, b83b243 e 61cbba5
+
+- Captura de produção para codigo-atual\.
+- Portal PHP autentica o React; snapshot legado deixa de alterar valor.
+- Relatórios passam a mostrar nome de unidade.
+- Lançamento 219, R$ 3,21, classificado como teste com auditoria, sem apagar valor nem ativo.
+- Previsões manuais no servidor.
+- Leitura agregada limitada por ação e unidade. bootstrap.php define session.gc_maxlifetime em 1800 antes de session_start.
+
+12/10 — horários, CRO e catálogo, fora do PUBLICACOES.md
+
+- RELATORIO_HORARIOS_DENTISTAS_20261012.md: publicados recepcao-app.js e financeiro/api/recepcao.php. Horário de funcionamento das três unidades e 14 dentistas marcados no nome como teste.
+- RELATORIO_CRO_CATALOGO_20261012.md: CRO da clínica e catálogo por plano. A interface importou 317 procedimentos; o relatório diz que 320 permanecem no catálogo, com os três anteriores preservados.
+- No código local, recepcao.php ganhou validação de horários e CRO. catalogo-precos-lib.php é arquivo novo, 14.464 bytes, e o servidor tem o mesmo tamanho (mtime 12/10/2026 19:40, Unix 1791844800).
+
+13/10 — conciliação, estorno e reorganização
+
+Commits: 282d3d9 (homologação e preservação de fontes), f7b8405 (inventário antes do arquivamento), d5c5576 (filtros de conta e histórico do cPanel).
+
+RELATORIO_CONCILIACAO_20261013.md descreve um ciclo executado nas APIs oficiais, com publicação de oito arquivos: debitos.php, financeiro-lancamentos-lib.php, relatorios-api.php, relatorios-consolidados.php, fluxo-filtros.js, mydents-global-nav.js, recepcao-app.js e app.html. O ciclo conciliou e estornou o recebimento 78 e concluiu o recebimento 79. Saldos registrados nesse relatório: Banco do Brasil R$ 20,00, Caixa (Espécie) R$ 15,00, Itaú R$ 62,95, Sicredi R$ 0,00. A soma é R$ 97,95.
+
+O diff não commitado desses arquivos, lido nesta avaliação, sustenta a intenção descrita:
+
+- debitos.php: previsão de cartão em dia útil e estorno da taxa na mesma transação da receita.
+- relatorios-api.php e relatorios-consolidados.php: origem_teste fica de fora dos totais; saldo atual separado do previsto.
+- fluxo-filtros.js e mydents-global-nav.js: alias de conta e previsto separado do saldo.
+- fase12.js, taxas-cartao-lib.php e lancamentos.php: mesma linha de prazo em dia útil (mtime 13/10/2026 09:40 no disco local; tamanhos iguais aos do servidor).
+
+RELATORIO_REORGANIZACAO_CPANEL_20261013.md: pacientes.php, pacientes-lib.php, app.html, recepcao-app.js, fluxo-filtros.js e usuarios/session.php conferidos no ar naquele dia. 89 entradas foram para /home/[cPanel account redacted]/arquivos_historicos, sem exclusão definitiva. O relatório diz que o cron visto naquele dia não tinha trabalho. Esta avaliação não reabriu a tela de cron.
+
+14/10 de manhã — dois PHP publicados e ainda sem commit
+
+No Gerenciador, com a sessão que já estava aberta:
+
+- homologacao-lib.php: 14.652 bytes, mtime 14/10/2026 08:41:17. O arquivo local tem o mesmo tamanho.
+- pacientes-lib.php: 33.415 bytes, mtime 14/10/2026 08:41:06. O arquivo local tem o mesmo tamanho.
+
+O diff local desses dois arquivos, em relação ao HEAD, acrescenta motivo na tabela cadastros_homologacao, trata falha de propagação por etapa e detalha a etapa dentro de pacientes_salvar_e_sincronizar(). É código de classificação de homologação, não uma exclusão de histórico. PUBLICACOES.md não cita essa publicação. git status continua mostrando os dois arquivos modificados.
+
+O que o tamanho igual confirma no ar, nesta leitura
+
+SHA-256 dos estáticos (prefixo de 16 hex, tamanho):
+
+- /financeiro/app.html: 2366e23de17a7073, 12.750 bytes. Igual ao local.
+- /financeiro/fluxo-filtros.js: 3757e52de08564cb, 24.988. Igual ao local.
+- /financeiro/mydents-global-nav.js: 04cb32785fa40e67, 57.105. Igual ao local, inclusive o que ainda não está no commit.
+- /financeiro/fase12.js: 990104d62a663fc1, 104.309. Igual ao local não commitado.
+- /recepcao/recepcao-app.js: 269f94fa6077500f, 249.261. Igual ao local.
+- /financeiro/producao-dentistas.html: bd1bb9e9ebaa0cb1, 938. Igual ao local.
+
+PHP com o mesmo tamanho local e no ar: debitos.php 49.530, fase12-lib.php 82.865, fase12-schema.php 15.917, fase12.php 7.783, financeiro-lancamentos-lib.php 17.405, lancamentos.php 61.211, pacientes.php 7.969, relatorios-consolidados.php 29.069, taxas-cartao-lib.php 18.095, relatorios-api.php 78.757, catalogo-precos-lib.php 14.464, além dos dois PHP das 08:41.
+
+recepcao.php é a exceção e está na seção 4.
+
+Arquivos que o contexto de 12/10 tratava como só no servidor
+
+- /.well-known.zip: a listagem de public_html (27 entradas) não contém esse nome. O GET do URL respondeu 403, que é o bloqueio de .zip no .htaccess, com ou sem arquivo. Efeito do zip: não está na raiz publicada.
+- financeiro/fase11-fechamento (2).js: ausente da pasta financeiro no Gerenciador. GET respondeu 404. fase11-fechamento.js oficial permanece, 43.171 bytes.
+- financeiro/api/pacientes-lib.homologacao-20260921.php: continua em public_html/financeiro/api, 28.640 bytes, mtime 21/09/2026 08:58:30. A reorganização de 13/10 não retirou este arquivo. O efeito de executá-lo não foi determinado. Ele não foi aberto além do nome, tamanho e data.
+
+--------------------------------------------------------------------------------
+3. ACHADOS DE 11/10 E 12/10 — STATUS AGORA
+--------------------------------------------------------------------------------
+
+F-01. Fonte local diferente do site.
+Status agora: parcialmente regularizado. O bloqueio de 11/10 era publicar codigo\. Esse bloqueio continua válido, e a captura de 11/10 existe.
+Evidência nova: os estáticos citados na seção 2 batem com codigo-atual\ de hoje, não com codigo\. PUBLICACOES.md e o commit d5c5576 não contêm toda essa publicação. recepcao.php local está atrás do arquivo que está no ar (seção 4). Tratar a pasta local como espelho completo, hoje, está errado nesse arquivo.
+
+F-02. Fluxo e DRE com R$ 3,21 de QA e Aldeota em zero.
+Status agora: o sintoma de R$ 3,21 não apareceu nesta tela. O isolamento geral de homologação continua aberto.
+Evidência de 14/10, Fluxo de Caixa, período que a tela já trazia (01/10/2026 a 14/10/2026):
+
+- Todas: saldo inicial R$ 0,00, entradas R$ 167,05, saídas R$ 69,10, saldo final R$ 97,95.
+- Aldeota: os mesmos quatro números.
+- Messejana: R$ 0,00 nos quatro, nenhuma linha visível.
+- Maracanaú: R$ 0,00 nos quatro.
+
+O filtro de unidade do fluxo separa as clínicas. O desenho de 11/10 (Todas R$ 3,21 e Aldeota R$ 0,00 no mesmo período) não é o que esta sessão mostrou.
+O saldo final de R$ 97,95 é a soma que o RELATORIO_CONCILIACAO_20261013.md registrou depois do ciclo dos recebimentos 78 e 79 (20,00 + 15,00 + 62,95). O PLANO_CONCLUSAO_ADMIN_20261012.md, atualizado em 13/10, diz que a marca de homologação desse cenário ainda não estava aplicada. Esta leitura não abriu o banco e não provou o flag origem_teste de cada lançamento. O que dá para afirmar: a tela operacional de outubro exibe R$ 97,95, e esse valor é o saldo que o próprio Codex documentou ao fim do ciclo de homologação.
+No código local, igual em tamanho ao publicado, fluxo, DRE, caixa e estado legado filtram COALESCE(origem_teste,0)=0. A exclusão existe. Ela só tira o que já estiver marcado. Não apaga a linha. A revisão de 12/10, que viu zeros em 01–12/10, descreve um momento anterior a este saldo.
+
+/relatorios/ abriu sozinho em Messejana, de 18/04/2026 a 14/10/2026, com receita bruta R$ 0,00 e a frase de que a variação de caixa confere com o fluxo em zero. Esse recorte é outra unidade e outro início de período. Não serve para dizer que a DRE de outubro, em Todas, divergiu do fluxo. O botão Atualizar painel não foi acionado.
+
+F-03. Combo de unidades 1, 2 e 3.
+Status agora: corrigido no rótulo visível.
+No fluxo, as opções visíveis são Todas, Aldeota, Messejana e Maracanaú.
+Em /relatorios/ há dois selects. O primeiro mostra os nomes e guarda value 2, 3 e 1 (Messejana, Maracanaú, Aldeota). O segundo mostra e guarda o nome. Os dois estavam em Messejana quando a página abriu. Trocar um e ver o outro seguir não foi repetido hoje. O defeito de 11/10 era o texto "1", "2" e "3" no lugar do nome. Esse texto não é o rótulo atual.
+
+F-04. Dashboard troca a URL e deixa o miolo no fluxo.
+Status agora: não reproduzido nesta sessão. A causa de 11/10 continua sem uma linha de código apontada como a falha.
+Medição de 14/10:
+
+- Em #tela/dashboard, o H1 visível era "Dashboard do dia", com "Saldos das contas", "Agenda de hoje" e "Central de operações". O quadro de entradas/saídas do fluxo não estava visível. O título da aba era "My Dents · Recepção".
+- O clique em Fluxo de Caixa foi para #fluxo, título "My Dents · Financeiro", e os H1/H2 do dashboard ficaram com visibilidade falsa.
+- O clique de volta mostrou de novo o dashboard e escondeu o quadro do fluxo.
+
+O título "Recepção" no dashboard permanece. É o nome da aba, não o miolo preso no fluxo.
+Ao recarregar #tela/dashboard no fim, a árvore de acessibilidade ainda listava campos de novo lançamento, com bancos Bradesco, Sicredi e Caixa (Espécie). O fluxo visível, na mesma sessão, oferecia Banco do Brasil, Banco Itaú, Caixa (Espécie) e Sicredi. Não foi medido se aqueles campos de lançamento estavam visíveis por cima do dashboard. Isso fica com N-03.
+
+F-05. API de pacientes devolveu um cadastro.
+Status agora: o sintoma de uma única linha não foi recontado. O efeito de escrita do GET continua no código publicado.
+pacientes.php local tem 7.969 bytes, o mesmo tamanho do arquivo no ar (mtime 13/10/2026 18:07:53). Nesse arquivo, GET com acao=diagnostico só lê. GET sem essa ação chama pacientes_migrar_estado_compartilhado() e grava o estado compartilhado quando o JSON muda. pacientes_listar() consulta clientes ativos, sem LIMIT, e aceita busca no servidor.
+A tela Pacientes não foi aberta e nenhum desses GET foi feito. A conclusão do Codex em 12/10 (dois cadastros naquele diagnóstico) não foi repetida. Depois disso o relatório de 13/10 registra novos cadastros de homologação. A lista de um item em 11/10 não é evidência, hoje, de base truncada. Também não é evidência de que a base real esteja completa.
+
+F-06. Login por CPF no ar e por e-mail no manual.
+Status agora: a divergência de contrato continua. O login não foi reaberto.
+usuarios/login.php aceita o campo login ou email e chama usuarios_autenticar(). Se o identificador tem 11 dígitos, a busca é por CPF; caso contrário, por e-mail. A mensagem pede "CPF ou e-mail". usuarios/index.php e recuperacao.php continuam com consulta por CPF e acao simular_envio. recuperacao.php responde simulado=true e afirma que nenhuma mensagem é enviada.
+GET /usuarios/?retorno=financeiro, com a sessão já aberta, respondeu 200 e caiu em /financeiro/app.html. O formulário de login não foi exibido. Nada foi digitado e a recuperação não foi acionada.
+
+F-07. Chip "Administrador".
+Status agora: o rótulo continua. Não há prova de que o sistema trocou o nome da pessoa pelo papel.
+Na sessão de 14/10 o chip mostrou "Administrador". O plano de 11/10 e a revisão de 12/10 já registraram que a sessão devolve esse nome. Esta avaliação não alterou usuário.
+
+F-08. Menu diferente do manual v6.1.
+Status agora: a divergência continua, nos dois menus.
+Financeiro: Dashboard, Agenda / Recepção, Pacientes, Fluxo de Caixa, Gestão Financeira, Funcionários, Dentistas, Ajustes / Configurações.
+Relatórios: Dashboard, Pacientes, Agenda / Recepção, Financeiro, Produção, Folha salarial, Relatórios, Ajustes.
+O manual v6.1 descreve outra barra. Não há decisão posterior em PUBLICACOES.md. O plano de 12/10 pede decisão antes de reescrever o contrato.
+
+N-01. Filtro de unidade volta para Todas ao sair de Lançar.
+Status agora: não revalidado. Lançar não foi aberto para gravar e o caminho Voltar não foi repetido.
+
+N-02. Poucos campos required.
+Status agora: não revalidado na tela. lancamentos.php, no código cujo tamanho bate com o servidor, continua rejeitando tipo, data e valor inválidos. Isso não fecha a matriz de unidade, conta, forma e classificação.
+
+N-03 / H-02. Formulários ou selects duplicados.
+Status agora: hipótese mantida.
+No fluxo havia um único conjunto visível de selects (conta, unidade, forma, turno). No dashboard recarregado, a acessibilidade ainda anunciava o formulário de lançamento e um conjunto de bancos diferente do fluxo. Nó no DOM não foi promovido a controle visível.
+
+N-04. Dois seletores de unidade no relatório.
+Status agora: rótulos corrigidos; a prova com movimento em mais de uma unidade continua necessária.
+Os dois selects abriram em Messejana. O fluxo, no mesmo dia, concentra o saldo de outubro em Aldeota e zera Messejana e Maracanaú. O relatório não foi atualizado para o mesmo período e a mesma unidade, então o número do relatório não foi reconciliado com os R$ 97,95.
+
+H-01. Dados bancários no payload de pacientes.
+Status agora: hipótese mantida. pacientes_registro_legacy() no código local ainda monta campos de banco, agência, conta e PIX. A API não foi chamada. Vazamento na rede não foi demonstrado.
+
+H-03. Coleta de sessão em 1.440 s contra 1.800 s.
+Status agora: o código de bootstrap.php pede 1.800 s antes de session_start e comenta que o INI da hospedagem usa 24 minutos. O arquivo no servidor não foi rehasheado nesta passagem e a sessão não foi deixada inativa para medir. Comportamento real: não revalidado.
+
+R-01 a R-05. Disco, SSL, 2FA, MySQL remoto e cron.
+Status agora: não revalidados. O cPanel estava logado e foi usado só para tamanho e data de arquivo. O relato de cron vazio é o do relatório de 13/10, não uma tela aberta hoje.
+
+--------------------------------------------------------------------------------
+4. PROBLEMAS NOVOS, COM EVIDÊNCIA
+--------------------------------------------------------------------------------
+
+4.1 recepcao.php local está atrás do publicado
+
+Tamanho no ar: 37.494 bytes, mtime 13/10/2026 08:43:06.
+Tamanho local: 34.781 bytes, só LF (657 quebras). Converter para CRLF daria 35.438 bytes, ainda abaixo do arquivo do servidor.
+O conteúdo lido pelo Gerenciador, com CR removido, tem 37.383 caracteres e hash SHA-256 começando em 5c42161395449bc4. O mesmo tratamento no arquivo local começa em 7ffbc7966bf5d841 e tem 34.673 caracteres. A diferença é de 2.710 caracteres.
+
+Funções com corpo maior no ar do que na cópia local:
+
+- recepcao_validar_vinculos: 5.545 contra 5.044
+- recepcao_validar_horarios: 5.721 contra 4.297
+- recepcao_normalizar_agendamentos: 2.285 contra 2.122
+- recepcao_auditar_diferencas: 8.223 contra 8.187
+
+O ar tem a função recepcao_consulta_preservada, ausente no local. Ela devolve verdadeiro quando clínica, dentista, paciente, data, hora e tipo do agendamento não mudaram em relação ao estado anterior, e falso quando o status anterior é cancelado, remarcado, atendido ou faltou e o novo status sai desse conjunto. O restante do corpo maior não foi diffado linha a linha. Publicar o recepcao.php local por cima do servidor removeria essa função e encolheria as outras quatro.
+
+Os demais PHP comparados na seção 2 têm o mesmo tamanho nos dois lados. O desvio está neste arquivo.
+
+4.2 O Git e o diário de publicação ficaram atrás do que já está no ar
+
+HEAD é d5c5576. A árvore de trabalho tem centenas de linhas não commitadas em debitos.php, fase12, homologacao-lib.php, pacientes-lib.php, relatorios, taxas-cartao-lib.php, fase12.js e mydents-global-nav.js, mais catalogo-precos-lib.php sem rastreamento. Vários desses arquivos já estão no servidor com o mesmo tamanho. Um commit futuro precisa partir do que está no ar, em especial recepcao.php, e o PUBLICACOES.md precisa ganhar as rodadas de 12, 13 e 14/10. Esta avaliação não commitou nada.
+
+4.3 O saldo que o operador vê em outubro é o saldo do ciclo de homologação documentado
+
+Está detalhado em F-02. Entra aqui porque a revisão de 12/10 falava em totais zerados. Em 14/10 o fluxo de Todas e de Aldeota mostra saldo final R$ 97,95. O checkbox "Incluir homologação" apareceu no dashboard, somente leitura. O estado marcado ou desmarcado não foi lido como confirmação. A evidência numérica é o próprio saldo.
+
+4.4 A cópia antiga de pacientes-lib continua publicada
+
+pacientes-lib.homologacao-20260921.php segue em financeiro/api desde 21/09/2026. Não está em codigo-atual\. Efeito: não determinado. Não foi executado.
+
+--------------------------------------------------------------------------------
+5. O QUE AINDA DEPENDE DE DECISÃO DO RENATO
+--------------------------------------------------------------------------------
+
+QA e origem_teste. O código exclui origem_teste dos relatórios e do fluxo e conserva o lançamento. O ciclo 78/79 está no saldo visível de R$ 97,95, segundo o relatório do próprio Codex e a tela de 14/10. Falta a decisão: classificar esse ciclo e os vínculos, com auditoria e sem apagar fato clínico ou financeiro, ou manter o valor na operação e rotular a tela. Prefixo no nome não basta, como o plano de 12/10 já diz.
+
+Login. O manual v6.1 fala em e-mail. O PHP aceita e-mail ou CPF e a recuperação simulada pede CPF. Trocar a tela sem decisão pode tirar a equipe do sistema. A simulação não é recuperação pronta.
+
+Menu e identificador. Financeiro e Relatórios usam barras diferentes da seção 3.1 do manual. O chip "Administrador" pode ser o nome gravado. Os dois pontos pedem decisão registrada antes de alterar contrato ou cadastro.
+
+Consolidado. Enquanto a marca de homologação não cobrir o ciclo de outubro, o consolidado de Todas inclui esse dinheiro. A decisão de produto é anterior a qualquer filtro novo.
+
+codigo-atual\ como fonte. Pode ser a fonte, desde que recepcao.php seja trazido do ar antes de qualquer publicação desse arquivo, e que o que já está publicado entre no Git e no PUBLICACOES.md. Sem essa captura, o próximo deploy desse PHP perde recepcao_consulta_preservada.
+
+--------------------------------------------------------------------------------
+6. PRÓXIMOS TRÊS PASSOS
+--------------------------------------------------------------------------------
+
+1. Copiar do servidor, só leitura, o recepcao.php publicado para a fonte local e registrar em PUBLICACOES.md as rodadas de 12, 13 e 14/10. Commit só quando o Renato pedir. Não enviar o recepcao.php local atual por cima do ar.
+
+2. Decidir o destino do ciclo 78/79 e dos dentistas de teste: marcar origem_teste com propagação e auditoria, sem DELETE de fato confirmado, ou declarar que o consolidado inclui homologação. A tela de outubro hoje mostra R$ 97,95.
+
+3. Na próxima leitura de pacientes, usar somente um caminho que não grave. O GET sem acao=diagnostico, no PHP de 7.969 bytes que está no ar, migra estado compartilhado. Diagnóstico, se for usado, precisa ser conferido de novo no arquivo publicado antes da chamada. Logout, recuperação de senha e exportação continuam fora até haver decisão e um teste autorizado.
+
+--------------------------------------------------------------------------------
+CONTAGEM
+--------------------------------------------------------------------------------
+
+Frente ao relatório de 11/10, sete achados mudaram de status com evidência desta passagem: F-01, F-02, F-03, F-04, F-05, F-07 e N-04.
+F-06 e F-08 continuam como divergência de contrato.
+N-01, N-02, H-01, H-03 e R-01 a R-05 continuam sem medição nova suficiente para fechar.
+H-02/N-03 continua hipótese, com markup de lançamento ainda presente na acessibilidade do dashboard.
+
+Frente à revisão do Codex de 12/10, duas correções: o fluxo de outubro não está mais zerado; codigo-atual\recepcao.php não é o arquivo que está no ar.
+
+Navegador: usado, sessão administrativa já aberta, só leitura.
+cPanel: usado, sessão já aberta, Gerenciador só para listar e ler uma função.
+Nada foi gravado em produção, no banco ou no Git.

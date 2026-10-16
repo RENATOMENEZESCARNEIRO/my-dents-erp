@@ -1,0 +1,756 @@
+RELATÓRIO TÉCNICO — MY DENTS NO AR
+Data da leitura: 14/10/2026.
+Fonte: arquivos do cPanel, conta [cPanel account redacted], document root /home/[cPanel account redacted]/public_html, lidos pela API de listagem e de conteúdo do Gerenciador de arquivos já autenticado em [cPanel host redacted]. Horários abaixo estão em America/Sao_Paulo.
+A pasta local (codigo/, codigo-atual/, o workspace my-dents-erp) foi ignorada como fonte do comportamento. A avaliação anterior (docs/avaliacao-pos-codex-20261014.txt) só entra na seção 8, para apontar o que ela errou ou não pôde ver por ter usado o disco local.
+
+Nada foi editado, salvo, enviado, apagado, movido, restaurado ou teve permissão, PHP, cron, SSL, banco, DNS ou conta alterados. O editor do Gerenciador não foi aberto. Nenhum formulário foi enviado. Não houve logout, exportação, impressão nem clique em Atualizar painel, Atualizar dados ou Atualizar saldos. GET /financeiro/api/pacientes.php não foi chamado, com ou sem acao=diagnostico. A tela Pacientes não foi aberta. VAL-FLUXO Paciente 01 não foi aberto. Senha, cookie, token, .env, anamnese e nomes de pacientes reais não entram neste texto.
+
+Sessão do cPanel: válida no fim da leitura (a última chamada de leitura de arquivo respondeu conteúdo). Sessão do app: válida; a aba já aberta permaneceu em https://mydents.com.br/financeiro/app.html#tela/dashboard, título "My Dents · Recepção", com o menu da recepção visível.
+
+
+1. COMO A LEITURA FOI FEITA
+--------------------------------------------------------------------------------
+
+Listagem: Fileman list_files com show_hidden=1, percorrendo public_html até esgotar a fila (11 diretórios visíveis sem ponto, mais .well-known). Pastas irmãs do home foram listadas por nome, tamanho e data. Binários, imagens e compactados não tiveram o conteúdo aberto.
+
+Corpo: Fileman get_file_content, só leitura. De cada PHP e JS de aplicação foram extraídos require/include, nomes de função e a primeira instrução de cada função. Arquivos prioritários (recepcao.php, pacientes.php, pacientes-lib.php, a cópia homologacao-20260921, debitos.php, lancamentos.php da API, session, login, fase12.php, fase12-lib.php, app.html e os .htaccess de public_html, financeiro e financeiro/api) foram relidos para o encadeamento.
+
+O bundle financeiro/app.bundle.20261005-calculos2.js (1.707.396 bytes) devolveu corpo vazio nessa API. As funções internas dele não foram extraídas. O app.html publicado mostra que ele é o bundle React, apontado por window.__mdFinanceiroBundleSrc e carregado pelo auth-guard.js (loadReactBundle / preloadBundle).
+
+
+2. HOME E PASTAS IRMÃS (LISTAGEM, SEM ABRIR CONTEÚDO CLÍNICO)
+--------------------------------------------------------------------------------
+
+Document root servido: /home/[cPanel account redacted]/public_html (0750, pasta alterada 13/10/2026 18:22:40). www é link para public_html.
+
+Pastas visíveis no home, além dos pontos de sistema (.cagefs, .caldav, .cl.selector, .cpanel, .htpasswds, .koality, .spamassassin, .trash):
+
+- anexos-folha (0750, 09/10/2026): 3 arquivos, extensões jpg, pdf, png. Conteúdo não aberto. O PHP da folha grava documento aqui (f11_documentos_diretorio aponta para dirname três níveis acima de financeiro/api, isto é /home/[cPanel account redacted]/anexos-folha).
+- arquivos_historicos (0700, 13/10/2026 18:12:19): backups/ e quarentena/. Não é document root.
+- dados_clinicos (0750, 09/10/2026): 3 arquivos, pdf e png. Conteúdo não aberto. arquivos_clinicos.php grava em /home/[cPanel account redacted]/dados_clinicos.
+- etc, logs, mail, public_ftp, ssl, tmp, access-logs: infra da hospedagem. tmp contém estatística (analog, awstats, webalizer), não a aplicação.
+- private (0700, 13/10/2026 18:25:28): config.php (228 bytes, 03/09/2026, modo 0644) e mydents-live-source/. O bootstrap.php e o db.php publicados fazem require desse config.php, que está fora do document root. O conteúdo de config.php não foi lido. mydents-live-source tem .git e cinco PHP menores e mais antigos que os publicados (fase12-lib.php 65.911 bytes em 15/09; o publicado tem 82.865 bytes em 12/10). Essa pasta não é a raiz do site.
+- Na raiz do home, fora do document root: chat_config.php (85 bytes), chat_conhecimento_regras.md, chat_senha.hash (60 bytes, 0600), Manual_sistema_My_Dents.txt. Conteúdo de senha e de config do chat não foi lido. chat_agente.php publicado faz require de /home/[cPanel account redacted]/chat_config.php.
+
+arquivos_historicos/backups/backups_arquivados: 35 pastas de cópia (acessos, ajustes, cadastros, caixa, conciliação, folha, hotfix-previsao-20261013, qa-*, reorganização, entre outras, datas de 23/09 a 13/10) e dezenas de .bak, .tar.gz e zips. Três tar.gz grandes (cerca de 31 MB, 117 MB e 120 MB). Não foram extraídos nem abertos.
+
+arquivos_historicos/quarentena/2026-10-13: home, private, public_html, tmp, manifesto-arquivos.json, manifesto-movimentos.json, README-restauracao.md, e retorno-correcao-homologacao-2026-10-14. Esse retorno contém só homologacao-lib.php, 13.187 bytes, 14/10/2026 08:21:47. O homologacao-lib.php publicado tem 14.652 bytes e data 14/10/2026 08:41:17. A cópia da quarentena é menor e anterior. Não foi usada como comportamento.
+
+Não há pasta chamada backups na raiz do home. Os backups estão em arquivos_historicos/backups.
+
+
+3. ÁRVORE PUBLICADA
+--------------------------------------------------------------------------------
+
+public_html tem 10 pastas de aplicação e documentos, mais .well-known. Contagem da listagem sem ocultos: 188 arquivos e 10 pastas. Com ocultos entram .htaccess, .user.ini e .well-known.
+
+Módulos no document root:
+
+- /  site institucional (index.html, 298.767 bytes, 06/10/2026) e chat (chat_admin.html, chat_agente.php).
+- financeiro/  shell do ERP (app.html) e a API.
+- financeiro/api/  PHP de negócio.
+- recepcao/  interface da recepção; a API fica em financeiro/api/recepcao.php.
+- pacientes/  só um redirecionamento.
+- relatorios/  DRE e indicadores.
+- usuarios/  login, sessão e permissão.
+- notas-fiscais/  rascunho de XML no navegador.
+- producao-dentistas/  redirecionado pelo .htaccess.
+- logos/ e imagens webp/png da home. Conteúdo não aberto.
+- _docs/  dois markdown. O .htaccess da raiz nega a URL _docs.
+
+Ocultos (listagem):
+
+- public_html/.htaccess  3.270 bytes  08/10/2026 05:21:26
+- public_html/.user.ini  619 bytes  07/10/2026 14:02:41  (mesmo tamanho do php.ini visível)
+- public_html/.well-known/  20/08/2026, com acme-challenge e pki-validation. Conteúdo de desafio não aberto.
+- _docs/.htaccess  18 bytes  15/09/2026 11:56:12
+- financeiro/.htaccess  540 bytes  07/10/2026 12:28:18
+- financeiro/api/.htaccess  2.141 bytes  05/10/2026 16:07:32
+- notas-fiscais/.htaccess  524 bytes  02/09/2026 13:51:56
+- recepcao/.htaccess  511 bytes  02/09/2026 13:52:11
+
+Não apareceu .env em public_html.
+
+O .htaccess da raiz, lido: força HTTPS para https://mydents.com.br; nega _docs; redireciona /producao-dentistas para /financeiro/producao-dentistas.html (301); nega URLs backup-*; nega zip, sql, bak, old, orig, config e .env; nega mydents-navegacao-piloto-20260929.html; HTML com Cache-Control no-store; display_errors Off; session.gc_maxlifetime 1440 no PHP da hospedagem; upload 16M; post 32M; memory 256M.
+
+O .htaccess de financeiro/api repete o bloqueio de zip/sql/bak e, além disso, nega acesso HTTP direto a fase12-schema.php, fase12-loader.php e taxas-cartao-lib.php. Esses três continuam carregáveis por require interno. Não nega debitos-c07.php nem pacientes-lib.homologacao-20260921.php.
+
+Listagem completa de public_html (caminho, tamanho no disco, data de modificação). Imagens e o bundle entram só com nome, tamanho e data:
+
+DIR  /home/[cPanel account redacted]/public_html/_docs  4096 bytes  15/09/2026 11:56:12
+ARQ  /home/[cPanel account redacted]/public_html/_docs/MATRIZ_REQUISITO_GAP_PRIORIDADE_20260911.md  10450 bytes  11/09/2026 23:54:20
+ARQ  /home/[cPanel account redacted]/public_html/_docs/SPRINT_C_POLITICA_P1_20260912.md  1111 bytes  11/09/2026 23:53:56
+ARQ  /home/[cPanel account redacted]/public_html/chat_admin.html  4206 bytes  06/10/2026 13:20:09
+ARQ  /home/[cPanel account redacted]/public_html/chat_agente.php  13166 bytes  06/10/2026 13:48:55
+DIR  /home/[cPanel account redacted]/public_html/financeiro  4096 bytes  13/10/2026 18:36:01
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/anexos-lancamentos.js  8084 bytes  10/09/2026 20:33:49
+DIR  /home/[cPanel account redacted]/public_html/financeiro/api  4096 bytes  14/10/2026 08:41:18
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/anamnese.php  14446 bytes  10/10/2026 22:53:20
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/anexos-financeiro.php  10461 bytes  15/09/2026 16:36:30
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/api-usuarios.php  22572 bytes  10/10/2026 11:50:22
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/arquivos-clinicos.php  11509 bytes  05/09/2026 15:23:04
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/auditoria.php  5928 bytes  03/09/2026 19:23:10
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/auditoria-lib.php  4797 bytes  03/09/2026 11:25:33
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/bootstrap.php  3982 bytes  11/10/2026 20:31:27
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/busca-global.php  6357 bytes  10/09/2026 09:33:44
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/cadastros.php  11116 bytes  22/09/2026 08:51:53
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/caixa-turno.php  15489 bytes  08/10/2026 17:18:38
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/caixa-turno-lib.php  15268 bytes  08/10/2026 17:18:48
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/catalogo-precos-lib.php  14464 bytes  12/10/2026 19:40:00
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/comunicacoes.php  23030 bytes  03/09/2026 18:06:59
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/configuracoes-clinicas.php  6468 bytes  10/10/2026 22:32:15
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/configuracoes-financeiras.php  11122 bytes  11/10/2026 11:05:51
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/configuracoes-modulos.php  5017 bytes  07/10/2026 17:36:12
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/configuracoes-recepcao.php  6727 bytes  01/09/2026 19:05:06
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/contas-bancarias.php  10488 bytes  09/10/2026 12:12:37
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/contas-config-lib.php  1977 bytes  09/10/2026 12:12:37
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/controles-financeiros.php  72352 bytes  11/10/2026 21:39:59
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/credito-devolucao.php  19592 bytes  06/10/2026 08:48:59
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/db.php  1607 bytes  03/09/2026 19:10:59
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/debitos.php  49530 bytes  13/10/2026 14:12:04
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/debitos-c07.php  47539 bytes  09/10/2026 12:12:39
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/debitos-lib.php  27456 bytes  05/10/2026 18:33:21
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/dentista-horarios-lib.php  15222 bytes  13/10/2026 08:12:36
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/documentos-paciente.php  12421 bytes  28/09/2026 14:39:20
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/erros-tecnicos.php  2423 bytes  04/09/2026 19:32:25
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/escopo-lib.php  16959 bytes  11/10/2026 11:11:54
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/fase12.php  7783 bytes  12/10/2026 19:36:54
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/fase12-arquivos-lib.php  1360 bytes  05/09/2026 15:22:10
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/fase12-lib.php  82865 bytes  12/10/2026 19:36:53
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/fase12-loader.php  483 bytes  05/09/2026 15:23:30
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/fase12-schema.php  15917 bytes  12/10/2026 19:36:44
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/financeiro-lancamentos-lib.php  17405 bytes  13/10/2026 14:12:02
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/financeiro-relatorios-wrapper.php  89 bytes  03/09/2026 14:29:42
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/folha-fechamento.php  71207 bytes  09/10/2026 21:24:51
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/folha-salarial.php  32156 bytes  11/10/2026 11:24:48
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/fornecedores.php  8516 bytes  09/10/2026 21:02:45
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/homologacao-lib.php  14652 bytes  14/10/2026 08:41:17
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/importacao-financeira.php  23129 bytes  09/10/2026 15:52:47
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/jornada-paciente.php  25488 bytes  10/10/2026 14:10:58
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/lancamentos.php  61211 bytes  13/10/2026 10:00:56
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/legacy-state.php  60401 bytes  11/10/2026 22:26:28
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/limpeza-lancamentos.php  4084 bytes  21/09/2026 18:21:36
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/listas.php  11951 bytes  11/10/2026 11:13:23
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/login.php  1393 bytes  24/08/2026 14:50:08
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/logout.php  241 bytes  24/08/2026 14:50:10
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/manutencao-homologacao.php  21459 bytes  06/10/2026 18:17:37
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/paciente-observacoes.php  6982 bytes  24/08/2026 13:44:39
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/pacientes.php  7969 bytes  13/10/2026 18:07:53
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/pacientes-lib.homologacao-20260921.php  28640 bytes  21/09/2026 08:58:30
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/pacientes-lib.php  33415 bytes  14/10/2026 08:41:06
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/pagamento-dentistas.php  43374 bytes  13/10/2026 08:12:58
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/pendencias.php  9506 bytes  03/09/2026 16:12:24
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/pendencias-lib.php  30091 bytes  15/09/2026 14:32:34
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/planos.php  27013 bytes  02/10/2026 13:44:47
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/portal-dentista.php  6805 bytes  10/10/2026 11:51:03
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/previsoes-manuais-lib.php  13302 bytes  11/10/2026 21:39:59
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/recebimentos-financeiros.php  19848 bytes  09/10/2026 21:02:46
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/recepcao.php  37494 bytes  13/10/2026 08:43:06
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/recepcao-catalogos-lib.php  7038 bytes  19/09/2026 21:26:19
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/recepcao-permissoes-lib.php  3477 bytes  15/09/2026 15:17:26
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/relatorios.php  89 bytes  03/09/2026 14:30:21
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/relatorios-consolidados.php  29069 bytes  13/10/2026 14:12:05
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/session.php  611 bytes  24/08/2026 14:50:12
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/taxas-cartao.php  2694 bytes  02/10/2026 16:38:11
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/taxas-cartao-lib.php  18095 bytes  13/10/2026 10:00:31
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/tratamentos.php  16694 bytes  05/09/2026 11:58:34
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/tratamentos-lib.php  4999 bytes  24/08/2026 14:25:35
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/usuarios.php  3614 bytes  01/09/2026 19:14:45
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/virada-producao.php  15082 bytes  16/09/2026 17:31:29
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/app.bundle.20261005-calculos2.js  1707396 bytes  11/10/2026 20:31:06
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/app.html  12750 bytes  13/10/2026 18:32:23
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/apresentacao.js  40058 bytes  07/10/2026 17:35:51
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/auth-guard.js  11953 bytes  11/10/2026 22:26:51
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/avisos.js  7930 bytes  10/09/2026 20:31:45
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/cadastros-clinicos.js  12030 bytes  10/10/2026 22:40:21
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/cadastros-financeiros.js  16442 bytes  11/10/2026 11:07:32
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/caixa-turno.js  15099 bytes  10/10/2026 15:37:59
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/controles-financeiros.js  20279 bytes  08/10/2026 09:50:05
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/controles-financeiros.php  37950 bytes  02/10/2026 18:38:15
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/enhancements.js  93873 bytes  11/10/2026 11:07:27
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/fase10-integracoes.js  20650 bytes  10/10/2026 15:26:58
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/fase11-fechamento.js  43171 bytes  09/10/2026 21:03:04
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/fase12.css  27384 bytes  07/10/2026 12:01:05
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/fase12.js  104309 bytes  13/10/2026 10:02:31
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/fase12-pendencia-financeira.js  12170 bytes  07/10/2026 10:34:30
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/financeiro-calculos-20261005.js  7922 bytes  06/10/2026 18:18:05
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/financeiro-fase02-lib.php  24816 bytes  17/09/2026 15:52:30
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/financeiro-oficial-v2.js  24136 bytes  09/10/2026 21:03:02
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/financeiro-performance.js  3566 bytes  18/09/2026 03:03:19
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/fluxo-filtros.js  24988 bytes  13/10/2026 18:32:21
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/folha-fechamento.php  29548 bytes  04/09/2026 22:49:45
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/folha-salarial.js  36214 bytes  11/10/2026 11:24:52
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/gestao-usuarios.js  28254 bytes  10/10/2026 15:27:00
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/importacao-excel.js  21446 bytes  06/10/2026 09:22:58
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/index.html  353 bytes  24/08/2026 14:50:36
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/index.php  220 bytes  24/08/2026 14:50:02
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/lancamentos.php  24833 bytes  16/09/2026 23:44:47
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/layout-modernizacao.js  35988 bytes  09/10/2026 10:34:38
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/legacy-bridge.js  37518 bytes  11/10/2026 22:26:50
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/login.html  353 bytes  24/08/2026 14:50:38
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/manutencao-homologacao.html  10489 bytes  06/10/2026 08:10:32
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/mensagens-financeiro.js  1348 bytes  25/08/2026 11:51:18
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/menu-alinhamento.js  781 bytes  28/08/2026 11:42:14
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/modulos-interface.js  25059 bytes  11/10/2026 11:02:19
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/mydents-global-nav.js  57105 bytes  13/10/2026 14:08:41
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/novo-lancamento-modal.js  8837 bytes  10/10/2026 17:09:35
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/pagamento-dentistas.js  37165 bytes  12/10/2026 22:34:28
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/portal-dentista.php  6032 bytes  10/10/2026 18:30:00
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/previsoes-contas-pagar.js  113007 bytes  11/10/2026 21:33:45
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/previsoes-layout-unificado.js  3778 bytes  08/10/2026 10:00:37
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/producao-dentistas.html  938 bytes  12/10/2026 19:37:03
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/recebimentos-previstos.js  19065 bytes  09/10/2026 17:08:21
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/tailwind-financeiro-20260925.css  11392 bytes  25/09/2026 00:10:30
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/taxas-cartao.html  561 bytes  02/10/2026 16:43:25
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/taxas-cartao.js  18002 bytes  02/10/2026 16:42:07
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/unificacao.js  4330 bytes  30/09/2026 08:54:05
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/virada-producao.js  6477 bytes  16/09/2026 17:35:45
+ARQ  /home/[cPanel account redacted]/public_html/index.html  298767 bytes  06/10/2026 12:17:47
+ARQ  /home/[cPanel account redacted]/public_html/logo-my-dents.png  103458 bytes  02/09/2026 14:36:21
+DIR  /home/[cPanel account redacted]/public_html/logos  4096 bytes  06/10/2026 11:39:51
+ARQ  /home/[cPanel account redacted]/public_html/logos/hapvida.png  3769 bytes  06/10/2026 11:35:30
+ARQ  /home/[cPanel account redacted]/public_html/logos/mydents.png  6627 bytes  06/10/2026 11:39:50
+ARQ  /home/[cPanel account redacted]/public_html/logos/odontoart.png  3884 bytes  06/10/2026 11:34:32
+ARQ  /home/[cPanel account redacted]/public_html/logos/odonto-system.png  3447 bytes  06/10/2026 11:29:37
+ARQ  /home/[cPanel account redacted]/public_html/logos/plano-clin.png  6140 bytes  06/10/2026 11:37:18
+ARQ  /home/[cPanel account redacted]/public_html/logos/unimed.png  3007 bytes  06/10/2026 11:34:58
+ARQ  /home/[cPanel account redacted]/public_html/mydents-card-1.webp  6536 bytes  06/10/2026 12:17:02
+ARQ  /home/[cPanel account redacted]/public_html/mydents-card-2.webp  7380 bytes  06/10/2026 12:17:04
+ARQ  /home/[cPanel account redacted]/public_html/mydents-card-3.webp  6176 bytes  06/10/2026 12:17:05
+ARQ  /home/[cPanel account redacted]/public_html/mydents-card-4.webp  6112 bytes  06/10/2026 12:17:06
+ARQ  /home/[cPanel account redacted]/public_html/mydents-card-5.webp  10588 bytes  06/10/2026 12:17:07
+ARQ  /home/[cPanel account redacted]/public_html/mydents-card-6.webp  9266 bytes  06/10/2026 12:17:08
+ARQ  /home/[cPanel account redacted]/public_html/mydents-card-7.webp  13482 bytes  06/10/2026 12:17:10
+ARQ  /home/[cPanel account redacted]/public_html/mydents-card-8.webp  9536 bytes  06/10/2026 12:17:11
+ARQ  /home/[cPanel account redacted]/public_html/mydents-facetas.webp  85502 bytes  06/10/2026 11:13:13
+ARQ  /home/[cPanel account redacted]/public_html/mydents-hero.webp  35450 bytes  06/10/2026 11:13:12
+ARQ  /home/[cPanel account redacted]/public_html/mydents-ortodontia.webp  55912 bytes  06/10/2026 11:13:12
+ARQ  /home/[cPanel account redacted]/public_html/mydents-proteses.webp  75028 bytes  06/10/2026 11:13:13
+DIR  /home/[cPanel account redacted]/public_html/notas-fiscais  4096 bytes  15/09/2026 11:55:45
+ARQ  /home/[cPanel account redacted]/public_html/notas-fiscais/app.js  8070 bytes  28/08/2026 09:41:11
+ARQ  /home/[cPanel account redacted]/public_html/notas-fiscais/index.html  5868 bytes  13/09/2026 09:32:58
+ARQ  /home/[cPanel account redacted]/public_html/notas-fiscais/index.php  221 bytes  02/09/2026 13:46:05
+ARQ  /home/[cPanel account redacted]/public_html/notas-fiscais/notas-fiscais-app.js  7557 bytes  27/08/2026 19:18:08
+ARQ  /home/[cPanel account redacted]/public_html/notas-fiscais/notas-fiscais-index.html  5726 bytes  28/08/2026 14:17:13
+DIR  /home/[cPanel account redacted]/public_html/pacientes  4096 bytes  22/09/2026 08:51:57
+ARQ  /home/[cPanel account redacted]/public_html/pacientes/index.php  600 bytes  22/09/2026 08:51:56
+ARQ  /home/[cPanel account redacted]/public_html/php.ini  619 bytes  07/10/2026 14:02:41
+DIR  /home/[cPanel account redacted]/public_html/producao-dentistas  4096 bytes  12/09/2026 00:18:43
+ARQ  /home/[cPanel account redacted]/public_html/producao-dentistas/index.php  106 bytes  12/09/2026 00:16:44
+DIR  /home/[cPanel account redacted]/public_html/recepcao  4096 bytes  13/10/2026 18:22:35
+ARQ  /home/[cPanel account redacted]/public_html/recepcao/experiencia-integrada.js  98042 bytes  12/10/2026 22:24:14
+ARQ  /home/[cPanel account redacted]/public_html/recepcao/index.html  638 bytes  29/09/2026 18:17:20
+ARQ  /home/[cPanel account redacted]/public_html/recepcao/index.php  219 bytes  24/08/2026 14:50:06
+ARQ  /home/[cPanel account redacted]/public_html/recepcao/melhorias-pacientes.js  9160 bytes  28/09/2026 14:40:34
+ARQ  /home/[cPanel account redacted]/public_html/recepcao/odontograma.js  9600 bytes  12/09/2026 11:49:02
+ARQ  /home/[cPanel account redacted]/public_html/recepcao/phase06-jornada.js  23115 bytes  13/09/2026 13:22:14
+ARQ  /home/[cPanel account redacted]/public_html/recepcao/phase07-comunicacoes.js  19835 bytes  11/09/2026 10:10:04
+ARQ  /home/[cPanel account redacted]/public_html/recepcao/recepcao.css  38690 bytes  02/10/2026 15:09:15
+ARQ  /home/[cPanel account redacted]/public_html/recepcao/recepcao-app.css  56203 bytes  25/09/2026 15:33:33
+ARQ  /home/[cPanel account redacted]/public_html/recepcao/recepcao-app.js  249261 bytes  13/10/2026 18:08:35
+DIR  /home/[cPanel account redacted]/public_html/relatorios  4096 bytes  13/10/2026 14:12:04
+ARQ  /home/[cPanel account redacted]/public_html/relatorios/api.php  72 bytes  03/09/2026 14:12:43
+ARQ  /home/[cPanel account redacted]/public_html/relatorios/controle-acesso.php  11590 bytes  15/09/2026 15:51:14
+ARQ  /home/[cPanel account redacted]/public_html/relatorios/credito-em-aberto.php  5438 bytes  16/09/2026 17:35:47
+ARQ  /home/[cPanel account redacted]/public_html/relatorios/dados.php  72 bytes  03/09/2026 14:27:27
+ARQ  /home/[cPanel account redacted]/public_html/relatorios/index.php  81 bytes  03/09/2026 14:16:30
+ARQ  /home/[cPanel account redacted]/public_html/relatorios/relatorios-api.php  78757 bytes  13/10/2026 14:12:03
+ARQ  /home/[cPanel account redacted]/public_html/relatorios/relatorios-index-modern.php  39215 bytes  11/10/2026 20:31:59
+ARQ  /home/[cPanel account redacted]/public_html/sistema-modern.css  15128 bytes  12/09/2026 12:00:52
+DIR  /home/[cPanel account redacted]/public_html/usuarios  4096 bytes  13/10/2026 18:08:44
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/api-experiencia.php  3442 bytes  03/09/2026 15:08:50
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/clinicas.php  11747 bytes  25/09/2026 19:19:46
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/clinicas-ui.js  12420 bytes  25/09/2026 19:21:57
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/controle-acesso.php  27686 bytes  10/10/2026 11:54:18
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/index.php  20586 bytes  10/10/2026 11:47:50
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/login.php  1746 bytes  10/10/2026 11:47:33
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/Logo My Dents.jpeg  89738 bytes  26/08/2026 16:52:45
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/logout.php  145 bytes  24/08/2026 14:49:44
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/perfil.php  6536 bytes  25/09/2026 18:44:40
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/portal-funcionario.html  7481 bytes  13/09/2026 09:32:58
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/recuperacao.php  3760 bytes  10/10/2026 11:49:00
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/sessao.php  698 bytes  10/10/2026 15:26:34
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/session.php  658 bytes  13/10/2026 18:08:43
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/trocar-senha.php  5068 bytes  10/10/2026 11:48:43
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/usuarios-experiencia-lib.php  12337 bytes  11/09/2026 18:01:04
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/usuarios-login.php  1524 bytes  03/09/2026 15:08:53
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/usuarios-sessao.php  683 bytes  03/09/2026 15:09:00
+
+Caches que o app.html publicado pede (não são os de setembro):
+
+- app.bundle.20261005-calculos2.js?v=20261011-auditoria1
+- fase12.js?v=20261013-cartao-dias-uteis1
+- fluxo-filtros.js?v=20261013-contas-alias4
+- mydents-global-nav.js?v=20261013-saldo-estorno2
+- recepcao-app.js?v=20261013-homologacao1
+- auth-guard.js e legacy-bridge.js?v=20261011-perfis3
+- virada-producao.js?v=20260916-ac1 (este cache permanece o de 16/09)
+- fase12.css?v=20261007-scrollfix1
+
+O shell carrega, depois do bundle, a fila window.__mdFinanceiroAssets (enhancements, financeiro-oficial-v2, folha, pagamento de dentistas, recebimentos, controles, previsões, fase12.js, fase11, gestão de usuários, caixa, apresentação, módulos, fluxo, cadastros financeiros) e, em seguida, os scripts da recepção.
+
+
+4. COMO OS MÓDULOS SE ENCADEIAM (SÓ O QUE O AR MOSTRA)
+--------------------------------------------------------------------------------
+
+Entrada
+
+- /financeiro/index.php exige o módulo financeiro (usuarios_exigir_pagina) e redireciona para /financeiro/app.html.
+- /financeiro/index.html e /financeiro/login.html fazem refresh para /usuarios/.
+- /recepcao/index.php exige o módulo recepcao e entrega recepcao/index.html.
+- /pacientes/index.php responde 302 para /recepcao/#tela/pacientes. Abrir essa URL na interface dispararia o carregamento de pacientes. Não foi aberta.
+- /relatorios/index.php inclui relatorios-index-modern.php. relatorios/api.php e relatorios/dados.php incluem relatorios-api.php. financeiro/api/relatorios.php e financeiro-relatorios-wrapper.php também incluem relatorios/relatorios-api.php.
+- /notas-fiscais/index.php exige controle de acesso e db.php. A página HTML monta XML no navegador (app.js / notas-fiscais-app.js: getConfig, saveNotes, xmlFor, generate). Não foi vista gravação fiscal no PHP desse módulo.
+- /producao-dentistas/index.php tem 106 bytes. O .htaccess manda a URL amigável para financeiro/producao-dentistas.html.
+
+Sessão
+
+- bootstrap.php (11/10) lê /home/[cPanel account redacted]/private/config.php. Se o arquivo não existe, responde 500 "Configuração indisponível". Define MYDENTS_SESSAO_MAX_INATIVIDADE = 1800 e MYDENTS_SESSAO_MAX_ABSOLUTA = 43200. O comentário no arquivo diz que o INI da hospedagem usa 24 min e que a aplicação ajusta session.gc_maxlifetime para 1800 antes de session_start, sem alterar o cPanel. O .htaccess da raiz ainda declara session.gc_maxlifetime 1440. mydents_encerrar_sessao_segura limpa a sessão e o cookie (secure, httponly, samesite Lax).
+- requisicao_origem_confiavel e requisicao_proteger_origem estão em bootstrap.php. A proteção de origem vista é essa função, não um token no bootstrap.
+- usuarios/clinicas.php tem clinicas_validar_csrf, cuja primeira instrução lê HTTP_X_CSRF_TOKEN. O restante dessa função não foi transcrito. Confirmado no arquivo do ar: o cadastro de clínicas consulta esse cabeçalho. Não determinado: se a ausência do cabeçalho recusa a gravação.
+- db.php abre PDO com host, nome, usuário e senha vindos do config.php. Credencial não foi copiada. Se o config ainda contém o marcador COLOQUE_, responde 500 "Banco de dados ainda não configurado".
+- usuarios/login.php: só POST. Chama usuarios_autenticar com login ou email. Se exigir_troca_senha, devolve redirect /usuarios/trocar-senha.php.
+- financeiro/api/login.php: POST compatível, usuarios_autenticar com email. Não trata troca obrigatória de senha.
+- usuarios/session.php e financeiro/api/session.php e usuarios/sessao.php: GET de leitura do contexto (usuarios_contexto). session.php de usuarios inclui também a chave contexto com a experiência. Não gravam lançamento.
+- usuarios/logout.php e financeiro/api/logout.php incluem controle-acesso. O encerramento visto em controle-acesso é usuarios_encerrar_sessao, que chama mydents_encerrar_sessao_segura quando a função existe.
+- usuarios_senha_forte, em usuarios/controle-acesso.php linha 540, traz o comentário publicado: "Regra temporária de homologação: mínimo de 6 caracteres, sem composição obrigatória." O corpo depois desse comentário não foi transcrito linha a linha. Há também usuarios_senha_nova_valida, que começa medindo o tamanho da senha.
+
+Permissão
+
+- usuarios/controle-acesso.php é o arquivo vigente (27.686 bytes, 10/10). Funções de módulo, ação financeira, unidade, CPF, tentativa de login, senha, autenticar e encerrar. Admin passa em usuarios_permite_acao e usuarios_pode_unidade.
+- relatorios/controle-acesso.php (11.590 bytes, 15/09) é uma cópia anterior: tem módulos e autenticar, e não tem as funções de unidade, CPF, tentativa e senha que existem no arquivo de usuarios/. Nenhum require publicado cita relatorios/controle-acesso.php. Os relatórios incluem usuarios/controle-acesso.php.
+- recepcao-permissoes-lib.php: recepcao_permite_acao consulta a lista recepcao_acoes_usuario. debitos, anamnese, planos, tratamentos, comunicação e pacientes exigem essas ações (debitos.visualizar, paciente.editar, plano.aprovar, tratamentos.evolucao, imagens.*, etc.).
+- escopo-lib.php fixa as unidades Aldeota, Messejana e Maracanaú (escopo_unidades_padrao) e filtra lançamentos, previsões e recepção. A tela já aberta mostrou o seletor "Todas as unidades permitidas", Aldeota, Maracanaú, Messejana. Isso combina com o código. Não se clicou no seletor.
+
+Gravação que a interface já liga
+
+- Agenda: recepcao/recepcao-app.js chama /financeiro/api/recepcao.php. O PHP lê e, no POST, faz SELECT ... FOR UPDATE em estado_recepcao_compartilhado e depois UPDATE ou INSERT desse JSON. Antes de gravar passa por recepcao_validar_vinculos, que chama recepcao_consulta_preservada.
+- Pacientes: recepcao-app.js, experiencia-integrada.js, melhorias-pacientes.js e financeiro-oficial-v2.js chamam /financeiro/api/pacientes.php. No arquivo publicado, GET sem acao chama pacientes_migrar_estado_compartilhado e pode gravar estado. GET com acao=diagnostico retorna antes dessa migração, mas chama pacientes_estado_atual, cuja primeira instrução é pacientes_garantir_estado_compartilhado. pacientes_diagnostico em si só faz SELECT em cadastros e SHOW COLUMNS. Como o caminho passa por garantir_estado, não ficou provado que a ação só lê. Por isso o endpoint não foi chamado.
+- Débitos e recebimento: recepcao-app.js chama /financeiro/api/debitos.php (inclusive acao=fluxo_caixa). debitos_registrar_recebimento e debitos_estornar_recebimento estão nesse arquivo. fase12-loader.php inclui debitos.php, não debitos-c07.php.
+- Lançamentos: enhancements.js, fluxo-filtros.js e financeiro-oficial-v2.js chamam /financeiro/api/lancamentos.php (61.211 bytes, 13/10). O arquivo financeiro/lancamentos.php (24.833 bytes, 16/09) é outro script, com só 7 funções, e não é o alvo desses JS.
+- Fluxo e relatório: fluxo-filtros.js também chama listas.php e debitos.php. fase10-integracoes.js chama relatorios-consolidados.php e debitos.php?acao=resumo. mydents-global-nav.js chama relatorios-consolidados.php. relatorios-api.php soma lancamentos e monta DRE, inadimplência, produção e agenda. relatorios_dre_operacional comenta que resultado usa rateio e caixa usa o lançamento bancário.
+- Produção do dentista: fase12.php no GET despacha acao contexto, planos, plano, evolucoes, producao, auditoria e conferencia_ciclo. conferencia_ciclo responde somenteLeitura e o comentário diz que não abre lote nem altera pagamento. POST chama f12_dispatch_write. As ações de escrita vistas nesse despacho: criar_plano, item, comercial, aprovar, decidir, cancelar, receber, evoluir, executor, acrescentar_convenio, estornar_convenio, catalogo, catalogo_importar, catalogo_importacao_previa, pagar, vincular. f12_approve exige plano.aprovar; f12_receive exige debitos.receber; f12_evolve exige tratamentos.evolucao.
+- Previsão e folha: previsoes-contas-pagar.js chama controles-financeiros.php da API (72.352 bytes), não o controles-financeiros.php da pasta financeiro (37.950 bytes, 02/10). folha-salarial.js chama api/folha-salarial.php. fase11-fechamento.js chama api/folha-fechamento.php, não o folha-fechamento.php antigo da pasta financeiro (29.548 bytes, 04/09).
+- Estado legado: legacy-bridge.js chama /api/legacy-state.php. Esse PHP mescla lançamentos com o banco, esconde origem de teste na leitura (estado_ocultar_origem_teste) e recusa snapshot que apague valor (estado_validar_snapshot_monetario: "Use a operação oficial para inativar lançamentos").
+- Homologação: homologacao-lib.php é incluída por pacientes-lib.php, debitos-lib.php, financeiro-lancamentos-lib.php, pacientes.php e manutencao-homologacao.php. Funções vistas: garantir coluna origem_teste, homologacao_cadastro_teste, propagar para lançamentos e planos, marcar cadastro. O dashboard já aberto mostra um checkbox "Incluir homologação" em estado somente leitura. Não foi alternado.
+
+Menu visto na aba já logada, sem clique, e o arquivo que o app.html associa:
+
+- Dashboard: hash #tela/dashboard, shell app.html + bundle + mydents-global-nav.js.
+- Agenda / Recepção: recepcao-app.js -> financeiro/api/recepcao.php.
+- Pacientes: link presente. Não aberto. O destino publicado de /pacientes/ é /recepcao/#tela/pacientes, e o JS chama pacientes.php.
+- Fluxo de Caixa: fluxo-filtros.js -> api/lancamentos.php e api/debitos.php.
+- Gestão Financeira: grupo; os hashes do próprio app.html incluem fluxo, resultado, previsoes, recebimentos, lancar, importar, controle-financeiro.
+- Funcionários: folha-salarial.js -> api/folha-salarial.php.
+- Dentistas: pagamento-dentistas.js -> api/pagamento-dentistas.php e também /financeiro/api/recepcao.php.
+- Ajustes / Configurações: hashes configuracoes, config-contas, config-socios; modulos-interface.js chama configuracoes-modulos.php e contas-bancarias.php.
+- Relatórios: link para o módulo; relatorios/relatorios-index-modern.php fala com relatorios-api.php.
+- Financeiro: link no chrome.
+- Pendências e notificações: experiencia-integrada.js chama pendencias.php. Botão visível, não acionado.
+- Novo agendamento: botão visível, não acionado.
+- Atualizar saldos e Atualizar dados: visíveis, não acionados.
+
+
+5. FUNÇÕES POR ARQUIVO DE APLICAÇÃO
+--------------------------------------------------------------------------------
+
+Padrão repetido nos endpoints, visto no ar: *_resposta envia JSON e o código HTTP; *_entrada lê o corpo JSON; *_texto / *_data_valida cortam e validam campo; *_usuario_atual exige $_SESSION['user_id'] numérico. Abaixo, o que cada função faz além desse padrão, com o nome exatamente como está no arquivo publicado. Arquivos sem função nomeada são roteadores ou redirects.
+
+5.1 Usuários e sessão
+
+usuarios/login.php: sem função própria. POST -> usuarios_autenticar. Troca de senha obrigatória devolve redirect.
+
+usuarios/logout.php, usuarios/usuarios-login.php, usuarios/usuarios-sessao.php, usuarios/sessao.php, usuarios/session.php, usuarios/trocar-senha.php, usuarios/index.php: sem função nomeada no corpo lido. Incluem controle-acesso.php e db.php. index.php é a página da equipe (20.586 bytes). trocar-senha.php é o destino do login quando a troca é obrigatória.
+
+financeiro/api/login.php e logout.php e session.php: sem função nomeada. login compatível só com email. session devolve authenticated, user e permissions.
+
+usuarios/controle-acesso.php:
+usuarios_modulos_financeiros — lista lançar, lançamentos, contas, resultado, sócios, previsões, fluxo, cadastros, importar, usuários.
+usuarios_modulos_herdados — comentário: usuário antigo sem registro explícito conserva o financeiro.
+usuarios_acoes_financeiro_disponiveis — lista de ações.
+usuarios_permissoes_garantir_estrutura — cria a estrutura uma vez.
+usuarios_acoes_financeiro_normalizadas / _padrao / _usuario — recortam a lista; admin recebe todas.
+usuarios_permite_acao / usuarios_exigir_acao_json — consultam e recusam.
+usuarios_unidades, usuarios_unidades_filtro, usuarios_unidade_ids, usuarios_clinica_ids_permitidos, usuarios_sincronizar_unidades_operacionais, usuarios_pode_unidade, usuarios_exigir_unidade_json, usuarios_unidades_contexto — escopo de unidade; admin recebe '*'.
+usuarios_acesso_detalhes_garantir — prepara tabela de detalhe.
+usuarios_cpf_normalizado / usuarios_cpf_valido — dígitos e validação.
+usuarios_senha_temporaria_gerar — alfabeto sem caracteres ambíguos.
+usuarios_senha_nova_valida — mede o tamanho.
+usuarios_contexto / usuarios_pode_modulo_contexto / usuarios_pode_modulo / usuarios_resposta_acesso_json / usuarios_exigir_pagina — sessão e porta de página.
+usuarios_chave_tentativa_login / usuarios_tentativas_login_garantir / usuarios_verificar_bloqueio_login / usuarios_registrar_falha_login / usuarios_limpar_tentativas_login — bloqueio por falha.
+usuarios_senha_forte — comentário de mínimo 6, sem composição, marcado como regra temporária de homologação.
+usuarios_email_valido — tamanho até 190.
+usuarios_autenticar — identifica e abre sessão.
+usuarios_encerrar_sessao — delega a mydents_encerrar_sessao_segura.
+
+relatorios/controle-acesso.php: o mesmo núcleo antigo (módulos, ações, contexto, autenticar, encerrar) sem unidade, CPF, tentativa e senha. Não é incluído por outro arquivo publicado.
+
+usuarios/usuarios-experiencia-lib.php:
+usuarios_experiencia_perfis / _areas — catálogos.
+usuarios_experiencia_garantir_estrutura / _json / _estado_unidades — tabela e JSON.
+usuarios_experiencia_fallback — admin cai em perfil administracao.
+usuarios_experiencia_contexto / _pode_area / _salvar_sessao / _selecionar / _salvar_configuracao — lê e grava a experiência na sessão.
+usuarios_experiencia_filtrar_estado_recepcao — se houver unidades configuradas, filtra o estado da recepção. recepcao.php chama isso no GET.
+
+usuarios/api-experiencia.php: experiencia_resposta. Endpoint curto da experiência.
+
+usuarios/perfil.php: perfil_responder.
+usuarios/recuperacao.php: recuperacao_responder — recusa método que não seja POST.
+usuarios/clinicas.php: clinicas_responder, clinicas_estrutura (CREATE mydents_clinicas), clinicas_unidades (admin vê '*'), clinicas_pode_ver, clinicas_validar_csrf (lê X-CSRF-Token), clinicas_buscar.
+usuarios/clinicas-ui.js: chama /usuarios/clinicas.php. Funções esc, addStyle, getState, ensureDetail, showMessage, renderList, load, renderDetail, backToList, saveClinic, uploadLogo, bindDialog, scan.
+
+financeiro/api/api-usuarios.php: usuarios_resposta, modulos_padrao, modulos_financeiros_padrao (tira recepção, relatórios e dentistas), modulos_normalizados, modulos_usuario, salvar_modulos_usuario, entrada_json, usuario_auditoria_atual, usuarios_dentistas_disponiveis, usuarios_dentista_id_usuario. Inclui escopo e permissão de recepção. A tela de equipe (gestao-usuarios.js) chama este arquivo.
+
+financeiro/api/usuarios.php: usuarios_resposta. Endpoint menor, também com auditoria.
+
+financeiro/gestao-usuarios.js: chama /api/api-usuarios.php. Funções de página, senhaForte, permissoes, unidades, editor e carregar. 32 funções nomeadas.
+
+5.2 Bootstrap e banco
+
+financeiro/api/bootstrap.php: mydents_encerrar_sessao_segura, requisicao_origem_confiavel, requisicao_proteger_origem. Também abre a sessão com os limites 1800/43200.
+financeiro/api/db.php: sem função. PDO a partir de private/config.php.
+financeiro/api/erros-tecnicos.php: erros_resposta. Inclui escopo.
+financeiro/api/escopo-lib.php: escopo_unidades_padrao (Aldeota, Messejana, Maracanaú), escopo_unidade_operacional, escopo_exigir_unidade_operacional, escopo_unidades, escopo_normalizar_unidade, escopo_garantir, escopo_usuario_atual, escopo_idempotencia_chave / _buscar / _salvar, escopo_usuario_unidades, escopo_salvar_usuario_unidades (DELETE+grava usuarios_unidades), escopo_tem_unidade, escopo_unidade_registro, escopo_filtrar_estado, escopo_mesclar_colecao, escopo_mesclar_estado, escopo_filtrar_recepcao, escopo_mesclar_recepcao, escopo_contexto_seguro, escopo_registrar_erro.
+
+5.3 Recepção — arquivo publicado financeiro/api/recepcao.php (37.494 bytes, 13/10/2026 08:43:06, 691 linhas, 23 funções)
+
+Inclui bootstrap, db, auditoria-lib, recepcao-permissoes-lib e usuarios/controle-acesso.php. Não inclui a cópia homologacao de pacientes.
+
+recepcao_resposta — HTTP JSON e encerra.
+recepcao_entrada — JSON do corpo.
+recepcao_estado — monta o array de estado.
+recepcao_texto_limitado — texto escalar limitado.
+recepcao_data_valida — data.
+recepcao_hora_valida — HH:MM.
+recepcao_lista_ids — lista de ids.
+recepcao_consulta_preservada — linhas 69 a 77. Devolve falso se não há consulta anterior com o mesmo id. Compara clinicaId, dentistaId, pacienteId, data, hora e tipoAgendamento; se algum mudou, devolve falso. Status terminais: cancelado, remarcado, atendido, faltou. Devolve falso quando o status anterior é terminal e o novo não é. Caso contrário devolve verdadeiro. Chamada na linha 173, dentro de recepcao_validar_vinculos: se o dentista não está vinculado à unidade do agendamento, a gravação só segue quando esta função devolve verdadeiro. Há uma terceira ocorrência na linha 279 (o nome aparece de novo no arquivo).
+recepcao_validar_vinculos — confere clínica, dentista, agenda e agendamento. Recusa unidade ou dentista inexistente, horário invertido, data inválida e sobreposição de agenda do mesmo dentista na mesma unidade (HTTP 409). Usa a função preservada para não recusar agendamento antigo cujo vínculo de unidade já não existe, desde que os campos estáveis não tenham mudado.
+recepcao_hora_em_minutos — hora em minutos.
+recepcao_clinica_permite_horario — se a clínica não tem horariosFuncionamento, permite; senão exige o intervalo dentro de um período do dia.
+recepcao_validar_horarios_clinicas — percorre clinicas do estado.
+recepcao_validar_permissao_horarios_clinicas — admin passa direto.
+recepcao_validar_horarios — índice de clínicas e validação da grade.
+recepcao_normalizar_agendamentos — ocupa horários.
+recepcao_validar_paciente_conflitos — chaves antigas de conflito.
+recepcao_validar_transicoes — mapa de status permitidos.
+recepcao_registro_unidade_permitida — '*' libera.
+recepcao_filtrar_estado_unidades — admin vê o estado inteiro.
+recepcao_mesclar_estado_unidades — admin grava o recebido; os demais não substituem unidade alheia.
+recepcao_usuario — SELECT id, nome, email, perfil em usuarios ativos.
+recepcao_modulos — admin tem o conjunto cheio.
+recepcao_auditar_diferencas — mapa de coleções para auditoria.
+
+No final do arquivo, o GET lê estado_recepcao_compartilhado e pode filtrar pela experiência. O POST bloqueia a linha (FOR UPDATE) e faz UPDATE ou INSERT do JSON. CREATE TABLE IF NOT EXISTS estado_recepcao_compartilhado aparece no próprio arquivo.
+
+recepcao-permissoes-lib.php: recepcao_acoes_disponiveis, recepcao_permissoes_garantir_estrutura, recepcao_acoes_normalizadas, recepcao_acoes_usuario, recepcao_permite_acao, recepcao_mapa_permissoes.
+recepcao-catalogos-lib.php: catalogos_coluna_existe, catalogos_slug, catalogos_garantir_estrutura, catalogos_tabela_existe, catalogos_migrar_setores_historicos, catalogos_setores, catalogos_procedimentos, catalogos_lista_simples.
+
+JS da recepção (funções nomeadas vistas; o arquivo recepcao-app.js tem 267, as primeiras são de data, horário de clínica, requisição e permissão):
+- recepcao-app.js (249.261 bytes, 13/10 18:08, cache v=20261013-homologacao1): chama recepcao.php, legacy-state.php, pacientes.php, paciente-observacoes.php, tratamentos.php, planos.php, debitos.php, credito-devolucao.php, anamnese.php, arquivos-clinicos.php, documentos-paciente.php, configuracoes-recepcao.php, jornada-paciente.php, fase12.php?acao=planos e logout. Funções iniciais: hoje, confirmarDataRecebimento, uid, moeda, horariosDaClinica, slotDentroDoHorarioClinica, previsaoCartao, requisicao, recepcaoPermite, abrirCadastroDentista, e mais 240 não listadas uma a uma neste parágrafo. O corpo foi lido para nomes e URLs; não foi reescrito função por função além desse conjunto inicial.
+- experiencia-integrada.js: menu, pacientes.php, recepcao.php, api-experiencia.php, pendencias.php, relatorios embutido. loadPatients, loadPendencias, abrirPendencia, applyExperienceVisibility.
+- melhorias-pacientes.js: pacientes.php e arquivos-clinicos.php. Foto, responsável, contrato, anamnese na ficha. Não foi aberta a ficha.
+- odontograma.js: tratamentos.php?cadastro_id=. denticaoMapa, regioesDe, extrairDentes.
+- phase06-jornada.js: jornada-paciente.php. Abas de resumo, recibo e origem.
+- phase07-comunicacoes.js: comunicacoes.php. Modelos e fila.
+- recepcao/index.php: exige página recepcao e entrega o HTML.
+- recepcao/index.html: casca "Abrindo".
+
+5.4 Pacientes
+
+financeiro/api/pacientes.php (7.969 bytes, 13/10 18:07):
+pacientes_resposta, pacientes_entrada, pacientes_usuario_atual, pacientes_tem_permissao.
+pacientes_estado_atual — chama pacientes_garantir_estado_compartilhado.
+pacientes_migrar_estado_compartilhado — comentário no arquivo: DDL no MySQL confirma transação implícita; a tabela é garantida antes. É o caminho do GET sem acao. Pode gravar estado_financeiro_compartilhado. Não foi executado.
+Fluxo lido: POST/PUT exige paciente.editar. origemHomologacao só é aceita se o perfil é admin. GET acao=diagnostico chama estado_atual e pacientes_diagnostico e responde antes da migração. GET comum lista e migra.
+
+financeiro/api/pacientes-lib.php (33.415 bytes, 14/10 08:41, incluída pelos endpoints de paciente):
+pacientes_texto (strip_tags), pacientes_documento_normalizado, pacientes_documento_formatado, pacientes_telefone_formatado, pacientes_parentesco_legal, pacientes_cpf_valido, pacientes_exigir_cpf_paciente, pacientes_data_valida, pacientes_validar_data_nascimento_informada, pacientes_validar_telefone_obrigatorio, pacientes_coluna_existe, pacientes_indice_existe, pacientes_garantir_estrutura (CREATE), pacientes_estado_normalizado, pacientes_registro_legacy, pacientes_linha_para_registro, pacientes_buscar_id (usa homologacao_registro_existe), pacientes_buscar_cpf, pacientes_listar, pacientes_assinatura, pacientes_mesclar_migracao, pacientes_gravar_completo, pacientes_diagnostico (SELECT cadastros tipo cliente ativos + SHOW COLUMNS; conta faltantes e conflitos de CPF; não faz INSERT/UPDATE/DELETE), pacientes_sincronizar_estado (percorre o JSON e grava/atualiza; o corpo segue depois da primeira instrução), pacientes_gerar_id, pacientes_salvar_oficial, pacientes_trocar_unidade, pacientes_garantir_estado_compartilhado, pacientes_salvar_e_sincronizar.
+
+financeiro/api/pacientes-lib.homologacao-20260921.php: ver seção 6. Não é incluído.
+
+Outros PHP de ficha, todos exigindo pacientes-lib e permissão de recepção:
+- anamnese.php: anamnese_modelos, anamnese_perguntas (SELECT anamnese_perguntas), anamnese_paciente, anamnese_respostas_da_versao, anamnese_formatar, anamnese_atual, anamnese_historico, anamnese_buscar_versao, anamnese_salvar. Mais resposta, entrada, texto, usuário, permissão.
+- arquivos-clinicos.php: arquivos_garantir_estrutura (CREATE arquivo_categorias), arquivos_pasta (dados_clinicos, mkdir 0750), arquivos_listar, arquivos_buscar, arquivos_visualizar (imagens.visualizar), arquivos_enviar (imagens.enviar), arquivos_excluir (imagens.excluir). fase12.js pede acao=visualizar.
+- documentos-paciente.php: docs_tipos, docs_formatar, docs_listar, docs_buscar, docs_campos_sanitizados, docs_titulo, docs_salvar.
+- paciente-observacoes.php: observacoes_garantir_estrutura, observacoes_paciente, observacoes_listar, mais resposta/entrada/usuário/permissão.
+- cadastros.php: cadastros_resposta, cadastros_entrada, cadastros_texto. Inclui pacientes-lib. enhancements.js chama este arquivo.
+- jornada-paciente.php: jornada_tabela_existe, jornada_colunas, jornada_pode, jornada_exigir, jornada_paginas, jornada_data, jornada_agenda (estado_recepcao_compartilhado), jornada_tratamentos, jornada_planos, jornada_financeiro, jornada_comunicacoes, jornada_eventos_excecao, jornada_timeline.
+- comunicacoes.php: comunicacoes_garantir_estrutura (CREATE comunicacoes_interacoes), comunicacoes_paciente, comunicacoes_historico, comunicacoes_status_operacional, comunicacoes_fila_planos, comunicacoes_fila.
+- configuracoes-clinicas.php e configuracoes-recepcao.php: CRUD de listas clínicas (setores, procedimentos, categorias de arquivo, formas de pagamento) com auditoria e recepcao_permite_acao.
+- pacientes/index.php: só o 302 descrito acima. Sem função.
+
+5.5 Débitos, lançamentos, caixa, cartão
+
+financeiro/api/debitos.php (49.530 bytes, 13/10 14:12), o arquivo que o JS chama:
+debitos_tem_permissao — debitos.visualizar ou recebimentos.visualizar.
+debitos_paciente — pacientes_buscar_id.
+debitos_formatar_valor — centavos para texto.
+debitos_meta — garante taxas de cartão se não há transação aberta.
+debitos_unidades_garantir_estrutura — paciente_debitos e paciente_recebimentos.
+debitos_linha_formatada, debitos_listar, debitos_detalhe, debitos_recebimentos.
+debitos_fluxo_caixa — filtro de início.
+debitos_resumo, debitos_atualizar_resumo (FOR UPDATE em paciente_debitos).
+debitos_registrar_recebimento — grava recebimento a partir de debitoId.
+debitos_estornar_recebimento — estorna por recebimentoId.
+debitos_mensagem_publica — esconde a mensagem técnica.
+Mais resposta, entrada, texto, data, usuário. Inclui fase12-lib, debitos-lib, financeiro-lancamentos-lib, caixa, taxas e catálogos. Perto do fim inclui fase12-loader.php.
+
+financeiro/api/debitos-c07.php (47.539 bytes, 09/10): as mesmas 20 funções, linhas deslocadas (versão anterior). O nome "debitos-c07" não aparece em nenhum PHP, JS ou HTML publicado. fase12-loader inclui debitos.php. O .htaccess da API não nega a URL direta. A URL não foi chamada. Confirmado: nenhum include o carrega. Hipótese: um GET direto ainda executaria esse script, porque ele tem bootstrap e despacho próprios.
+
+financeiro/api/debitos-lib.php: estrutura, centavos, status, unidade, vencimento, gerar débito de plano e de tratamento, reconciliar paciente, formas que exigem conciliação (cartão crédito/débito e link), espécie, caixa, crédito do paciente (saldo, bloquear, registrar). Inclui homologacao-lib.php.
+
+financeiro/api/credito-devolucao.php: registra e estorna movimento de crédito, gera lançamento, marca origem de teste via homologacao_cadastro_teste. Inclui debitos-lib, lançamentos, caixa e catálogos.
+
+financeiro/api/lancamentos.php (61.211 bytes, 13/10), o alvo do JS:
+lancamentos_receber_cartao — obtém maquineta.
+lancamentos_registro — SELECT lancamentos FOR UPDATE.
+lancamentos_classificar_teste — só admin.
+lancamentos_resolver_lista, lancamentos_conta_ativa.
+financeiro_validar_transferencia — duas contas ativas.
+lancamentos_replay_compativel, lancamentos_rateio_compativel.
+lancamentos_codigo_atendimento, lancamentos_saldo_conta (alias banco_caixa -> banco_caixa_especie).
+lancamentos_grupo_financeiro — aporte, empréstimo e devolução.
+lancamentos_tipo_estorno — receita vira despesa.
+lancamentos_preservar_producao — origem saldo_inicial tem ramo próprio.
+lancamentos_estornar_um / lancamentos_estornar — estorno por id.
+
+financeiro/lancamentos.php (24.833 bytes, 16/09): só resposta, entrada, texto, data, registro, tipo de estorno e estornar. Não é o script citado pelo fluxo-filtros.js. Continua publicado e incluível por URL. Não determinado se alguma tela antiga ainda o abre; o app.html atual não o cita.
+
+financeiro/api/financeiro-lancamentos-lib.php: formas de pagamento, setor, colunas e índices de lancamentos, garantir estrutura (comentário de migração do campo tipo), estado normalizado, revisão de estado_financeiro_compartilhado, financeiro_criar_lancamento_recebimento, financeiro_estornar_lancamento_vinculado. Inclui homologacao-lib e contas-config-lib.
+
+financeiro/api/caixa-turno.php: caixa_resposta, caixa_entrada, caixa_texto. Delega à lib.
+financeiro/api/caixa-turno-lib.php: turno, data, garantir tabela, espécie, nome do banco, efeito em espécie, esperado, linha, turno encerrado, exigir aberto, hoje em Sao_Paulo, abrir diário se preciso, exigir operação, meus lançamentos.
+financeiro/caixa-turno.js: chama /api/caixa-turno.php. pintar, carregar, abrir, fechar.
+
+financeiro/api/taxas-cartao.php: taxas_cartao_resposta. Inclui a lib.
+financeiro/api/taxas-cartao-lib.php: padrão e maquineta, listar, obter, gravar, percentual, prazo, garantir estrutura, ler (comentário: sem DDL aqui, porque CREATE TABLE no MySQL confirma transação), gravar, percentual, líquido, data de previsão.
+financeiro/taxas-cartao.js e taxas-cartao.html: tela que chama /api/taxas-cartao.php. O .htaccess nega a lib, não o endpoint.
+
+financeiro/api/recebimentos-financeiros.php: meta de formas, listar (comentário: a janela não termina mais em "hoje" porque previsão de cartão é futura), conciliar por recebimentoId, mensagem pública. Inclui fase12-loader no fim.
+financeiro/recebimentos-previstos.js: chama esse PHP. postConciliacao, abrirConciliacao.
+
+financeiro/api/contas-bancarias.php: contas_resposta, contas_campo, contas_booleano.
+financeiro/api/contas-config-lib.php: financeiro_contas_configuracoes, financeiro_conta_exigir_unidades (listas_financeiras tipo banco).
+financeiro/api/listas.php: listas_json_response, listas_input_json, listas_clean. O JS de fluxo e de cadastro financeiro chama listas.php.
+financeiro/api/configuracoes-financeiras.php: cfg_json, cfg_text, cfg_natureza.
+financeiro/cadastros-financeiros.js: chama configuracoes-financeiras.php e listas.php.
+
+5.6 Controles, previsão, importação, virada, legado
+
+financeiro/api/controles-financeiros.php (72.352 bytes, 11/10) — alvo do JS:
+cf_origem_teste, cf_competencia_valida, cf_no_periodo, cf_data_caixa, cf_lancamento_ativo_caixa, cf_lancamentos_banco_da_previsao, cf_tipo_fluxo, cf_previsao_total, cf_previsao_pago, cf_previsao_baixada, cf_previsao_cancelada, cf_lancamentos_da_previsao, cf_estado_normalizado, cf_estado_atual (SELECT estado_financeiro_compartilhado, FOR UPDATE se pedido), cf_somatorio_periodo, cf_alertas, cf_unidades, cf_garantir_fechamentos, cf_fechamentos, cf_auditoria, cf_historico_previsao, cf_estado_visivel_por_unidade, cf_resumo, cf_persistir_estado, cf_conta_canonica, cf_resolver_banco_id, cf_unidade_operacional, cf_criar_previsao, cf_baixar_previsao, cf_regularizar_previsao, cf_fechar_mes, cf_reabrir_mes, cf_operacao_previsao_id, cf_cancelar_previsao, cf_estornar_previsao. Inclui caixa, escopo, previsoes-manuais-lib e, mais abaixo, financeiro-lancamentos-lib.
+
+financeiro/controles-financeiros.php (37.950 bytes, 02/10): conjunto menor, sem origem_teste, sem baixar/cancelar/estornar previsão nomeados, e o resumo chama financeiro_fase02_garantir_estrutura. Não é o URL do controles-financeiros.js.
+
+financeiro/api/previsoes-manuais-lib.php: pm_assinatura, pm_data, pm_vencimento, pm_config, pm_gerar (série), pm_editavel (origem manual, manual_recorrente, parcelamento_manual), pm_editar, pm_recorrencia.
+financeiro/previsoes-contas-pagar.js: 125 funções de tela (filtro, recorrência, anexo, histórico). Chama listas, fornecedores, controles-financeiros e anexos-financeiro. Não lista todas as 125 neste parágrafo; o corpo foi lido para nomes e URLs.
+
+financeiro/api/fornecedores.php: documento, usuário, categoria, registro, id no formato cad- + hex.
+financeiro/api/anexos-financeiro.php: tipo, registro, CREATE anexos_financeiros, diretório /home/[cPanel account redacted]/anexos-financeiro, lê estado_financeiro_compartilhado, exige unidade do registro.
+financeiro/anexos-lancamentos.js: chama /api/anexos-financeiro.php. afRemoverAnexo, load.
+
+financeiro/api/importacao-financeira.php: normaliza linha, assina token com hash_hmac e session_id (o segredo não foi copiado), lote até 2.000 linhas, origemTeste no payload. Inclui lançamentos, contas e financeiro-fase02-lib.
+financeiro/importacao-excel.js: chama esse PHP. validar, confirmar, openCentral.
+
+financeiro/api/legacy-state.php: estado inicial, fornecedores e lançamentos no banco, origem de teste (ocultar na leitura, preservar na escrita), canonizar conta, mesclar, validar snapshot monetário, inativar só pela operação oficial, preservar produção e saldo inicial, filtrar unidade, projetar leitura, preservar pacientes ocultos, modulos_usuario_financeiro. Inclui pacientes-lib e, no fim, pagamento-dentistas.php.
+financeiro/legacy-bridge.js: chama legacy-state.php e logout.php. Projeta coleções no navegador e faz pull/save. Não foi acionado.
+
+financeiro/api/virada-producao.php: ac_tabela_existe, ac_coluna_existe, ac_garantir_estrutura (recusa migração dentro de transação), ac_usuario, ac_bancos (bradesco, sicredi, caixa espécie), ac_status (financeiro_virada_producao id=1), ac_marcar_lista, ac_marcar_estado, ac_ativar, ac_valor_centavos, ac_salvar_saldo.
+financeiro/virada-producao.js: chama /api/virada-producao.php. openEditor, injectCards.
+
+financeiro/api/limpeza-lancamentos.php: limpeza_resposta. Inclui lançamentos e auditoria. Não foi executado.
+financeiro/financeiro-fase02-lib.php: estrutura de lancamentos, status, caixa, transferência, listar, resumo de caixa, sincronizar legado. Usada pelo controles antigo e pela importação.
+
+5.7 Fase 12, planos, tratamentos, pagamento de dentista
+
+financeiro/api/fase12-loader.php: inclui arquivos-lib, planos.php, tratamentos.php, debitos.php, pagamento-dentistas.php, fase12-schema.php, fase12-lib.php. HTTP direto negado pelo .htaccess.
+financeiro/api/fase12.php: sem função nomeada. Exige admin ou plano.visualizar ou tratamentos.visualizar, chama f12_schema, POST -> f12_dispatch_write, GET -> as ações da seção 4.
+financeiro/api/fase12-schema.php: f12_schema. Inclui catalogo-precos-lib. HTTP direto negado.
+financeiro/api/fase12-arquivos-lib.php: arquivos_f12_vinculos, arquivos_f12_permitido (admin passa), arquivos_f12_preservar.
+financeiro/api/fase12-lib.php (82.865 bytes, 60 funções):
+f12_fail, f12_q, f12_one, f12_money, f12_decimal, f12_percent, f12_incremental_commission (comentário: carrega centavos fracionários sem mudar a origem já gerada), f12_date, f12_audit, f12_access, f12_admin, f12_unit, f12_plan, f12_dentists (lê estado_recepcao_compartilhado), f12_dentist, f12_tx, f12_has_table, f12_contratos_por_plano, f12_contrato_do_plano, f12_summary, f12_detail, f12_catalog_save, f12_commercial, f12_item_save, f12_extract_pending_plan, f12_approve, f12_commissions, f12_receive, f12_evolve, f12_cancel, f12_guard_debt, f12_receipt_hook, f12_reverse_receipt_commission, f12_treatment_access, f12_treatment_visible, f12_execution_pending, f12_pagamento_composicao, f12_convenio_acrescentar, f12_convenio_estornar, f12_production, f12_financial_state, f12_save_financial_state (INSERT/UPDATE estado_financeiro_compartilhado), f12_pagamento_aviso, f12_centavos_signed, f12_decimal_signed, f12_linha_pagar, f12_tipo_celula_row, f12_celula_linha, f12_lote_proximo_aberto, f12_producao_data_liberacao, f12_producao_estornar, f12_ajuste, f12_lote_garantir, f12_lote_status_derivar, f12_previsao_encerrar, f12_close, f12_close_lote, f12_pagamento_rateio, f12_pay, f12_dispatch_write.
+financeiro/api/catalogo-precos-lib.php: schema de recepcao_procedimento_precos, listar, salvar (admin), resolver, normalizar importação (1 a 1000 linhas), prévia, importar.
+
+financeiro/api/planos.php: status de item e geral, metadados, garantir estrutura, formato, buscar, listar, itens, recalcular, criar, item_salvar, marcar_status_item (recusa aprovar por esse caminho), aprovar_itens. Inclui fase12-loader no fim.
+financeiro/api/tratamentos.php: setores e status via catálogo, garantir, paciente, salvar, buscar (chama f12_treatment_access se existir), listar, evolucoes_listar. Inclui fase12-loader.
+financeiro/api/tratamentos-lib.php: catálogo de setores e status, índice, CREATE da tabela principal, tratamentos_criar_de_item_plano.
+
+financeiro/api/pagamento-dentistas.php: unidades oficiais lidas do estado da recepção, estrutura, formatar, listar com filtro de unidade, vencimento, previsão baixada, componentes, sincronizar fornecedor, composição, espelhar previsões, dentista_atualizar_previsoes (comentário: a previsão oficial nasce de dentista_producao em f12_close), sincronizar agenda no estado da recepção, salvar.
+financeiro/api/dentista-horarios-lib.php: hora, minutos, dias, pausas, ler, validar, slots, aplicar (comentário: troca só a regra semanal daquele dentista), dentista_dados_horarios, dentista_enriquecer_lista, dentista_meta, dentista_aplicar_horarios, dentista_editar_legado.
+financeiro/api/portal-dentista.php: portal_dentista_responder. API.
+financeiro/portal-dentista.php: página; as funções vistas no corpo são JS embutido (linhaVazia, carregar), não PHP nomeado.
+financeiro/pagamento-dentistas.js: chama pagamento-dentistas.php e recepcao.php. Grade, horários, save.
+financeiro/producao-dentistas.html: página "Produção dos Dentistas", 938 bytes. Conteúdo além do título não foi preciso além do cabeçalho.
+producao-dentistas/index.php: 106 bytes, sem função nomeada.
+
+financeiro/fase12.js: chama /financeiro/api/fase12.php e arquivos-clinicos.php. Roteamento de hash, fechamento, previsão de cartão, catálogo CSV. 56 funções nomeadas, entre elas previsaoCartao, abrirFechamentoDireto, publicarRota, garantirDatasFluxo.
+
+5.8 Folha
+
+financeiro/api/folha-salarial.php: estrutura, formatar funcionário, catálogos a partir do estado da recepção, vincular empresa com unidade operacional, listar, vencimento, previsão baixada, componentes, sincronizar fornecedor, dados e atualização de previsão (FOR UPDATE no estado financeiro), itens extras, salvar.
+financeiro/api/folha-fechamento.php (71.207 bytes): gera previsões de pagamento dentro de transação, CNPJ, ajuste, f11_origem, f11_controle_homologacao (se a origem não é 1, devolve nulo; o comentário diz que origem 1 já exige admin), editável só em rascunho ou conferido, faltas com divisor 30, competências, linhas, alertas, documentos em /home/[cPanel account redacted]/anexos-folha.
+financeiro/folha-fechamento.php (29.548 bytes, 04/09): versão anterior, sem origem_teste e sem o controle de homologação. O JS fase11 chama a cópia da API.
+financeiro/folha-salarial.js e fase11-fechamento.js: telas correspondentes.
+
+5.9 Relatórios
+
+relatorios/relatorios-api.php (78.757 bytes, 50 funções): existência de tabela e coluna, filtros, expressões de tipo e origem, condições de transferência, dedução, estorno, despesa financeira, aporte, empréstimo e devolução, base e soma em lancamentos, resumo, DRE operacional, período anterior, estado JSON, identidade de clínica, previsões, a receber em paciente_debitos, exceções, agenda, nomes de dentista, detalhe, opções, sócios, dentistas, tendência, por unidade, conversão, inadimplência, produtividade, ocupação e faltas, etapa 2.
+relatorios/relatorios-consolidados.php: relatorios_data_real, relatorios_variacao, relatorios_conta_nome, relatorios_tabela_ok, relatorios_etapa1 (contas a pagar a partir do estado), relatorios_saldos_contas (comentário: histórico conserva nome de conta inativa).
+relatorios/relatorios-index-modern.php: a página. Funções JS no HTML: money, load, renderDre, renderExceptions, renderDentists, renderPartners, exportCsv (navega para acao=export), bootRelatorios. Não foi clicado exportar.
+relatorios/credito-em-aberto.php: credito_relatorio_h, credito_relatorio_moeda. Inclui debitos-lib.
+relatorios/index.php, api.php, dados.php: includes de uma linha, sem função.
+
+5.10 Homologação e manutenção
+
+financeiro/api/homologacao-lib.php (14.652 bytes, 14/10 08:41, incluída):
+homologacao_registro_existe, homologacao_tabela_existe (lista planos_tratamento, paciente_debitos, paciente_recebimentos, paciente_credito_movimentos, dentista_producao e afins), homologacao_garantir_estrutura, homologacao_colunas_registro, homologacao_cadastro_teste, homologacao_recebimento_teste, homologacao_ids, homologacao_propagar_lancamentos, homologacao_marcar_cadastro, homologacao_propagar_plano, homologacao_rows, homologacao_graph, homologacao_graph_public.
+financeiro/api/manutencao-homologacao.php: mh_cents, mh_decimal, mh_employee_qa_schema (coluna origem_teste em folha_funcionarios), mh_other_graph, mh_other_public, mh_cards (recebimentos), mh_hash, mh_public. Página HTML manutencao-homologacao.html existe (10.489 bytes). Não foi aberta nem o PHP executado.
+
+5.11 Notas, chat, shell financeiro
+
+notas-fiscais/index.php: exige acesso e db, sem função nomeada.
+notas-fiscais/app.js e notas-fiscais-app.js: configuração e notas no navegador, xmlFor, generate. Dois arquivos quase iguais.
+chat_agente.php: resp, falhas, registrar_falha, redigir (corta linha que pareça senha antes de seguir), caminho_seguro, arquivo_bloqueado, ultimas_linhas, ferramenta, chamar_gemini. Require do chat_config.php fora do document root. Conteúdo do config não lido.
+chat_admin.html: página "Assistente", noindex. Corpo não transcrito.
+
+Shell JS do financeiro, cada um lido para nomes e URLs:
+- app.html: boot de hash (fluxo, resultado, previsões, recebimentos, folha, fechamento, configurações, cadastros, usuários, pagamento-dentistas, controle-financeiro, importar, lançar, dashboard). Funções current, message, finish, ready, check, begin, showError, restore, schedule.
+- auth-guard.js: /usuarios/sessao.php. limparCacheSensivel, moduleAllowed, actionAllowed, reportsAllowed, startAuthorizedApp, loadReactBundle.
+- legacy-bridge.js: legacy-state e logout. Ver seção 5.6.
+- enhancements.js: cadastros, listas, fornecedores, pacientes.php, lancamentos.php, controles. Formulário de lançamento e listas oficiais.
+- fluxo-filtros.js: listas, lancamentos, debitos. Totais, saldo inicial, alias de conta, recebimento de cartão no filtro.
+- financeiro-oficial-v2.js: taxas, fornecedores, pacientes, lancamentos, anexos.
+- financeiro-calculos-20261005.js: chave, elegivel, resumo, agrupado, contas. Sem URL PHP.
+- financeiro-performance.js: observa gravação e avisa outras abas.
+- mydents-global-nav.js: sessao, logout, perfil, relatorios-consolidados, portal-dentista. Menu, unidades, saldos do dashboard.
+- apresentacao.js: sessao.php. Nome no chip, seletor de unidade, datas do fluxo.
+- layout-modernizacao.js, menu-alinhamento.js, unificacao.js, previsoes-layout-unificado.js, avisos.js, mensagens-financeiro.js: apresentação e navegação, sem endpoint próprio além do que já está no shell.
+- novo-lancamento-modal.js: sessao.php. Abas por permissão.
+- modulos-interface.js: configuracoes-modulos.php e contas-bancarias.php.
+- fase10-integracoes.js: busca-global, relatorios-consolidados, debitos?acao=resumo.
+- fase11-fechamento.js: folha-fechamento.php da API.
+- fase12-pendencia-financeira.js: sem URL PHP no extrato; monta diálogo de pendência financeira.
+- cadastros-clinicos.js: configuracoes-clinicas.php e comunicacoes.php.
+- virada-producao.js: virada-producao.php.
+- controles-financeiros.js: api/controles-financeiros.php.
+- importacao-excel.js, caixa-turno.js, taxas-cartao.js, recebimentos-previstos.js, folha-salarial.js, pagamento-dentistas.js, previsoes-contas-pagar.js, anexos-lancamentos.js, gestao-usuarios.js: já citados nos módulos.
+
+CSS (fase12.css, tailwind-financeiro-20260925.css, recepcao.css, recepcao-app.css, sistema-modern.css): listados com tamanho e data. Regras não lidas. Não definem gravação.
+
+
+6. pacientes-lib.homologacao-20260921.php
+--------------------------------------------------------------------------------
+
+Caminho publicado: /home/[cPanel account redacted]/public_html/financeiro/api/pacientes-lib.homologacao-20260921.php
+Tamanho 28.640 bytes, data 21/09/2026 08:58:30. 554 linhas, 25 funções.
+
+Varredura de todo PHP, JS e HTML de public_html: a cadeia "pacientes-lib.homologacao" não aparece em nenhum arquivo, inclusive nele mesmo. Nenhum include ou require do código publicado o carrega. Não foi executado. Não foi pedido por URL.
+
+É uma biblioteca: o arquivo termina dentro de pacientes_salvar_e_sincronizar, que, se fosse chamada, faria UPDATE ou INSERT em estado_financeiro_compartilhado. Não há despacho depois da última chave. Um request direto definiria as funções e não chamaria essa gravação. Isso é o que o final do arquivo mostra. Não foi testado com HTTP.
+
+Funções, todas com o mesmo nome da lib vigente, menos quatro que só existem na lib de 14/10: pacientes_documento_formatado, pacientes_telefone_formatado, pacientes_validar_data_nascimento_informada, pacientes_validar_telefone_obrigatorio. A lib vigente também faz strip_tags em pacientes_texto e consulta homologacao_registro_existe em pacientes_buscar_id. A cópia de 21/09 não inclui homologacao-lib.php.
+
+Conclusão confirmada no ar: arquivo órfão, cópia anterior, sem include. Não participa do GET de pacientes.php, que inclui pacientes-lib.php.
+
+
+7. DEBITOS-C07 E DUPLICATAS AINDA PUBLICADAS
+--------------------------------------------------------------------------------
+
+Confirmado no arquivo do ar:
+
+- debitos-c07.php não é incluído por ninguém. Mesmas funções de debitos.php, arquivo menor e mais velho (09/10 contra 13/10).
+- financeiro/lancamentos.php, financeiro/controles-financeiros.php e financeiro/folha-fechamento.php continuam no document root e são menores que as cópias em financeiro/api/, que são as citadas pelo JavaScript do app.html.
+- relatorios/controle-acesso.php não é incluído. O vigente é usuarios/controle-acesso.php.
+- private/mydents-live-source não é servido. Os PHP de lá são de 15/09 e menores que os publicados em outubro.
+
+
+8. O QUE A AVALIAÇÃO ANTERIOR ERROU POR LER O DISCO
+--------------------------------------------------------------------------------
+
+A avaliação de docs/avaliacao-pos-codex-20261014.txt usou codigo-atual\ como fonte do comportamento e só foi ao servidor para tamanho, data e a função que faltava no recepcao.php local. Isso produziu três erros de método, mesmo onde o tamanho coincidia:
+
+1. Tratou tamanho igual como prova de que o diff local é o comportamento do ar. Vários PHP de 13/10 e 14/10 foram descritos a partir do disco ("o diff local sustenta a intenção", "no código cujo tamanho bate"). O comportamento deste relatório saiu do corpo publicado. O tamanho igual não foi usado como substituto da leitura.
+
+2. Não abriu pacientes-lib.homologacao-20260921.php. Disse que o efeito não estava determinado. No ar, nenhum include o carrega, e o arquivo é a lib de pacientes de 21/09, sem as quatro funções de formato e validação que a lib de 14/10 tem, e sem o include de homologacao-lib.php.
+
+3. Leu no servidor só recepcao_consulta_preservada e media o resto de recepcao.php por tamanho e hash contra o local. A função está mesmo no ar, linhas 69-77, e o texto que a avaliação deu dela confere com o corpo publicado. O que ela não podia ver, porque não leu o restante no servidor, é a chamada na linha 173 dentro de recepcao_validar_vinculos, as outras 22 funções, e o POST que grava estado_recepcao_compartilhado. Também não comparou, no servidor, as duplicatas da seção 7: o disco de trabalho não é a lista do que continua publicado ao lado do arquivo novo.
+
+O que ela acertou e este relatório confirma no arquivo do ar, sem usar o disco: a função recepcao_consulta_preservada existe no recepcao.php publicado; o GET de pacientes sem acao pode migrar estado (visto agora no PHP do ar, não só por tamanho); homologacao-lib.php e pacientes-lib.php têm data 14/10/2026 08:41.
+
+
+9. ACHADOS
+--------------------------------------------------------------------------------
+
+Confirmado no arquivo do ar
+
+- A1. recepcao_consulta_preservada está em financeiro/api/recepcao.php linhas 69-77 e é usada na validação de vínculo (linha 173). Preserva agendamento antigo se clínica, dentista, paciente, data, hora e tipo não mudaram, e bloqueia saída de status terminal.
+- A2. pacientes.php GET sem acao chama pacientes_migrar_estado_compartilhado. GET acao=diagnostico volta antes, mas passa por pacientes_garantir_estado_compartilhado. pacientes_diagnostico só lê cadastros e colunas. Endpoint não chamado.
+- A3. Nenhum include/require publicado carrega pacientes-lib.homologacao-20260921.php.
+- A4. Nenhum PHP/JS/HTML publicado cita debitos-c07.php. O script irmão debitos.php é o incluído pelo loader e o citado pelo JS.
+- A5. O app.html de 13/10 18:32 carrega as APIs novas (controles, lançamentos, folha, débitos, recepção, fase12) e não os PHP antigos homônimos da pasta financeiro/.
+- A6. bootstrap limita inatividade a 1800 s e absoluta a 43200 s, e o .htaccess ainda publica gc_maxlifetime 1440. Os dois valores estão nos arquivos. Qual deles a sessão real obedece não foi medido.
+- A7. Unidades padrão no escopo-lib: Aldeota, Messejana, Maracanaú. O dashboard já aberto lista essas três.
+- A8. homologacao-lib.php de 14/10 08:41 é incluída por pacientes, débitos, lançamentos e manutenção. A cópia em quarentena (13.187 bytes, 08:21) não é a publicada.
+- A9. fases12-schema, fase12-loader e taxas-cartao-lib têm HTTP direto negado e seguem carregados por require.
+- A10. usuarios_senha_forte traz comentário de mínimo 6 caracteres, sem símbolo, como regra temporária de homologação.
+- A11. private/config.php é a configuração do PDO e fica fora do document root. Conteúdo não lido.
+- A12. Anexos financeiros e de folha, e arquivos clínicos, ficam fora de public_html (anexos-financeiro no código de anexos, anexos-folha, dados_clinicos).
+
+Hipótese
+
+- H1. A URL direta de debitos-c07.php ainda executa o endpoint antigo, porque o arquivo é um script completo e o .htaccess não o nega. Não foi chamada.
+- H2. financeiro/lancamentos.php, financeiro/controles-financeiros.php e financeiro/folha-fechamento.php também respondem se a URL for pedida. O shell atual não aponta para eles.
+- H3. clinicas_validar_csrf pode recusar gravação sem o cabeçalho. Só a leitura do cabeçalho foi vista.
+- H4. O bundle React de 1,7 MB contém a tela de fluxo e o dashboard. O app.html e o auth-guard mostram que ele é carregado; o corpo não voltou na API de leitura.
+
+Não determinado
+
+- N1. Se acao=diagnostico grava ao chamar pacientes_garantir_estado_compartilhado (CREATE/ALTER). O SELECT de pacientes_diagnostico não grava. O caminho inteiro não foi executado.
+- N2. Qual gc_maxlifetime vale na sessão real (1440 do .htaccess ou 1800 do bootstrap).
+- N3. Se o checkbox "Incluir homologação" do dashboard altera a consulta ou só reflete um estado. Não foi clicado. Está readonly na árvore de acessibilidade.
+- N4. Conteúdo de private/config.php, chat_config.php, chat_senha.hash, anamnese, dados_clinicos e anexos.
+- N5. Funções internas do bundle.
+- N6. Se relatorios/controle-acesso.php é alcançado por alguma URL antiga fora dos includes vistos.
+- N7. Saldos, origem_teste de cada lançamento e cron. Não reabertos. A tela de fluxo não foi percorrida nesta leitura; a aba ficou no dashboard.
+
+
+10. O QUE NÃO FOI LIDO E POR QUÊ
+--------------------------------------------------------------------------------
+
+- Corpo do bundle de 1.707.396 bytes: a API devolveu vazio. Não se abriu o editor, para não haver botão Salvar.
+- CSS: só tamanho e data. Não carregam regra de negócio.
+- Imagens, webp, png, jpeg, zip, tar.gz, bak: só nome, tamanho e data.
+- dados_clinicos, anexos-folha e anexos-financeiro no disco: listagem rasa, sem abrir arquivo, para não copiar documento clínico.
+- private/config.php, chat_config.php, chat_senha.hash: existem; abrir seria copiar segredo para o relatório.
+- Manifestos e README da quarentena: listados, não abertos. A cópia de homologacao-lib da quarentena não foi lida; a publicada foi.
+- Pastas internas das 35 cópias em backups_arquivados: só o nome da pasta e os arquivos soltos no nível de cima.
+- .well-known/acme-challenge e pki-validation: só o diretório.
+- phpMyAdmin, cron, SSL, disco, 2FA, DNS: não reabertos. A listagem não dependia deles.
+- Tela Pacientes, VAL-FLUXO, exportar, imprimir, atualizar painel, novo agendamento, pendências (o botão), troca de unidade: não clicados, porque gravam ou disparam o GET de pacientes.
+- Banco: nenhuma query foi enviada por esta leitura. O que se sabe de tabela saiu do SQL escrito nos PHP.
+
+
+11. TRÊS PRÓXIMOS PASSOS (SEM ALTERAR O SERVIDOR)
+--------------------------------------------------------------------------------
+
+1. Capturar para o Git, a partir do ar, o conjunto que o app.html realmente carrega (api/debitos.php, api/lancamentos.php, api/recepcao.php, api/pacientes.php, api/pacientes-lib.php, api/homologacao-lib.php, api/controles-financeiros.php, api/folha-fechamento.php, fase12.js, fluxo-filtros.js, recepcao-app.js, app.html). Não publicar a pasta local por cima desses arquivos.
+
+2. Decidir, ainda sem apagar, o que fazer com os órfãos que continuam no document root: pacientes-lib.homologacao-20260921.php, debitos-c07.php, financeiro/lancamentos.php, financeiro/controles-financeiros.php, financeiro/folha-fechamento.php e relatorios/controle-acesso.php. O primeiro não é incluído. Os outros são endpoints antigos ainda alcançáveis por URL.
+
+3. Ler pacientes_garantir_estado_compartilhado até o fim, no arquivo publicado, antes de qualquer GET em pacientes.php. Só depois dá para dizer se acao=diagnostico é só leitura. Até lá, a tela Pacientes continua capaz de disparar a migração do GET sem acao.
+
+
+12. CONTAGEM
+--------------------------------------------------------------------------------
+
+Arquivos de aplicação com corpo lido para extrair função: 104 PHP e 43 JS (147).
+app.html lido por inteiro para o encadeamento.
+Três .htaccess lidos (raiz, financeiro, financeiro/api).
+HTML restantes: só o início (redirecionamento ou título), mais os índices PHP pequenos, que entram nos 104.
+CSS: 5 arquivos só na listagem.
+Bundle: listado, corpo não obtido.
+Imagens e compactados: só nome, tamanho e data.
+
+Sessão do cPanel ao terminar: válida.
+Sessão do app ao terminar: válida, em #tela/dashboard.
+Nenhum arquivo do servidor foi gravado por esta leitura.

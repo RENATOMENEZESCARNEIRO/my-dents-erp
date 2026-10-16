@@ -1,0 +1,917 @@
+RELATÓRIO DE ERROS E SUGESTÕES DE MELHORIA — MY DENTS
+Data da consolidação: 11 de outubro de 2026.
+Tipo: texto técnico autocontido. Nenhuma correção foi implementada. Nenhum arquivo de produção, cPanel, commit ou push foi alterado por este relatório.
+Fontes lidas por inteiro:
+- docs/auditoria-funcional-my-dents.md (auditoria funcional de 11/10/2026)
+- docs/arquitetura-my-dents.md (leitura de arquitetura de 11/10/2026)
+- docs/plano-correcao-tecnica-my-dents.md (proposta; não implementa)
+Complemento, somente com fatos já documentados e marcados como não revalidados:
+- analise-cpanel-producao.md (inventário somente leitura do cPanel em 11/10/2026; o painel não foi percorrido de novo na auditoria funcional)
+
+CONTAGEM USADA NESTE ARQUIVO
+- Status confirmado: 8 (F-01 a F-08). Sintoma visto na auditoria. Quando a causa não foi lida, o próprio item diz "causa: não determinada".
+- Status hipótese: 3 (H-01 a H-03). A auditoria pediu para não confirmar como bug.
+- Status não determinado: 4 (N-01 a N-04). Faltou evidência para fechar defeito.
+- Status não revalidado: 5 (R-01 a R-05). Vieram da análise de cPanel de 11/10 e não foram reabertos na auditoria funcional. Não são defeito novo do servidor.
+
+--------------------------------------------------------------------------------
+1. RESUMO EXECUTIVO
+--------------------------------------------------------------------------------
+
+O sistema que o operador usa é o PHP de /home/[cPanel account redacted]/public_html, no domínio mydents.com.br. Não é o protótipo deste workspace (docs/my-dents-erp, Supabase) e não é a cópia em codigo\, alinhada às publicações até 23/09/2026. O HTML servido em 11/10/2026 pede scripts de 05 a 11/10/2026. Publicar a pasta codigo\ por cima do live apagaria o que está em produção. Este é o bloqueio de maior impacto (F-01), antes de qualquer outro conserto.
+
+Com sessão administrativa já presente na aba (a auditoria não digitou senha e não determinou o que criou o cookie), o fluxo de caixa de 01/10/2026 a 11/10/2026, unidade Todas, mostrou entradas de R$ 3,21 e uma receita na conta "QA — Banco Todas Unidades 09-10". A unidade Aldeota, no mesmo período, mostrou R$ 0,00 e nenhuma movimentação. O texto da DRE em /relatorios/ exibiu a mesma receita bruta de R$ 3,21. O combo de unidade desse relatório lista clínicas reais como "1", "2" e "3", enquanto unidades de teste aparecem com nome.
+
+A lista de pacientes devolvida por GET /financeiro/api/pacientes.php tinha um item: cadastro de teste "QA CADASTROS CLINICOS 10/10" (e-mail em domínio example.test, unidade Aldeota). A busca por TST-CURSOR-Ficha-Stab não retornou linha. O banco não foi aberto. Não se sabe se os demais pacientes estão inativos ou se a API corta o resultado.
+
+Clicar em Dashboard trocou a URL para #tela/dashboard e o título para "My Dents · Recepção", mas o miolo ainda continha o fluxo de caixa. O heading "Dashboard do dia" não estava visível. O heading visível era "Central administrativa". Isso foi visto uma vez.
+
+A primeira abertura de /financeiro/app.html caiu no login por CPF, com "Esqueci minha senha". O manual v6.1 e o codigo\usuarios\index.php descrevem login por e-mail, sem essa recuperação. recuperacao.php existe no ar e não existe na pasta local. A senha não foi digitada. Não foi provado que o POST de CPF falhe ou funcione.
+
+O chip de sessão mostrou o rótulo "Administrador" e "Sessão ativa", não o nome da pessoa. O menu do ar não segue a barra que o manual v6.1 descreve, e o menu de Relatórios é diferente do menu do Financeiro. Não há nota em PUBLICACOES.md depois de 23/09 que registre essa navegação.
+
+Itens de disco, certificado, MySQL remoto, 2FA e cron constam da análise de cPanel de 11/10 e não foram revalidados. Não entram aqui como falha nova.
+
+--------------------------------------------------------------------------------
+2. ESCOPO E LIMITAÇÕES
+--------------------------------------------------------------------------------
+
+Data da auditoria funcional: 11 de outubro de 2026.
+Ambiente: navegador do Cursor e arquivos locais. Produção apenas em leitura. Nenhum registro foi gravado, apagado ou enviado. Nenhum commit.
+
+Feito, segundo a auditoria:
+
+- Leitura do manual v6.1, do final de PUBLICACOES.md, da árvore codigo\ e do protótipo deste workspace.
+- Leitura da análise de cPanel já gravada em 11/10. O painel não foi percorrido de novo.
+- GET das rotas publicas e, com a sessão que apareceu na aba, leitura de fluxo, lancar (sem enviar), pacientes, produção e relatórios.
+- Screenshots sem dados de paciente real em docs/auditoria-evidencias\.
+
+Não feito, de propósito:
+
+- Nenhuma gravação, exclusão, upload, e-mail, SMS, impressão ou exportação CSV.
+- phpMyAdmin não foi aberto. Contagem de tabelas: não determinada.
+- Corpo do log de PHP: não lido. A análise de cPanel registra o arquivo logs/mydents_com_br.php.error.log com 450 KB e não despejou o corpo.
+- VAL-FLUXO Paciente 01 não foi aberto.
+- Logout não foi executado, para não derrubar a auditoria.
+- A análise de disco, cron, SSL, MySQL remoto, 2FA e backups do cPanel não foi revalidada nesta passagem. Essa lacuna não é defeito novo do servidor.
+- Usuários e permissões (a tela lista nomes reais), novo paciente, editar, lancar, caixa, importar, folha, fechamento de lote, upload, nota fiscal autenticada, WhatsApp, esqueci senha, logout e relatório exportado não foram operados.
+- Orçamento, débito e recebimento não foram testados. Exigiriam gravar ou abrir ficha. O código local existe; o PHP live não foi lido.
+- Fluxo de abrir e fechar turno de caixa não foi executado (seria gravação). O botão "Abertura e fechamento de caixa" estava visível.
+- Conteúdo autenticado de portal-funcionario.html não foi percorrido. A URL respondeu 200 com 7.481 bytes, igual ao repositório.
+- A tela de notas fiscais não foi aberta com sessão. Sem cookie, /notas-fiscais/ redireciona ao login.
+- Agenda não foi percorrida além do atalho. No DOM do dashboard havia o texto "Nenhum atendimento encontrado para esta data"; o heading não estava visível.
+- A API de produção não foi chamada de novo sem cookie. O HTML de producao-dentistas.html, sem cookie, é HTTP 200. Vazamento de dado sem sessão: não determinado.
+- Não foi determinado se a sessão administrativa usada nos testes e a conta Cursor Teste ou outra. O chip mostrou "Administrador". O nome não foi registrado.
+- Conteúdo dos PHP de outubro que estão só no servidor (recuperacao.php, bundle, nav global) não foi fechado.
+- Se o log de PHP tem fatal recente: não determinado.
+
+Legenda herdada das fontes:
+
+- Observado: visto na interface ou na resposta HTTP da sessão de 11/10.
+- Inferido do código local: lido em codigo\, que está defasado em relação ao live.
+- Não determinado: faltou evidência.
+- Não revalidado: veio da análise de cPanel de 11/10 e não foi reaberto.
+
+O plano de correção explicita o que não entra em implementação futura imediata: logout, exclusão, WhatsApp, e-mail, SMS, upload real, encerrar lote, lancar movimentação, abrir VAL-FLUXO Paciente 01, apagar Cursor Teste, Codex Teste, unidades QA ou o lançamento de R$ 3,21, criar token de API no cPanel, mudar PHP, cron, SSL, DNS ou permissão de arquivo, e tratar como bug o que a auditoria marcou como não revalidado.
+
+--------------------------------------------------------------------------------
+3. CONTEXTO TÉCNICO
+--------------------------------------------------------------------------------
+
+Três arvores distintas, lidas em 11/10/2026. Não são o mesmo código.
+
+- https://mydents.com.br e PHP mais HTML/JS estaticos no cPanel. Document root /home/[cPanel account redacted]/public_html. É o sistema que o operador usa.
+- c:\Users\usuario\Projects\My_Dents\codigo\ é cópia local do PHP, alinhada às publicações anotadas até 23/09/2026. Está atrás do que o navegador serviu em 11/10/2026.
+- c:\Users\usuario\Projects\My_Dents\docs\my-dents-erp\ é protótipo HTML/JS com Supabase. O README.md descreve hospedagem em GitHub Pages. Não é o que responde em mydents.com.br. Corrigir o live a partir desta pasta não altera o cPanel. js\config.js contém URL e chave anon; os valores ficam de fora deste relatório.
+
+Contrato de comportamento lido: MANUAL_FUNCIONAL_MY_DENTS.md v6.1, de 14/09/2026. O manual manda corrigir o código quando a tela divergir, salvo decisão registrada. PUBLICACOES.md para em 23/09/2026 (?v=20260923-boot1). O HTML servido em 11/10 usa versões 20261005 a 20261011.
+
+Hospedagem, da análise de cPanel de 11/10, não revalidada no painel pela auditoria funcional:
+
+- Conta [cPanel account redacted]. Domínio mydents.com.br. Home /home/[cPanel account redacted]. Document root /home/[cPanel account redacted]/public_html.
+- Não é Laravel, WordPress nem Node. Não há artisan, composer.json, vendor, package.json nem node_modules. E PHP próprio mais HTML/JS estatico.
+- PHP do domínio: 8.2 FPM (ea-php82). Padrão do sistema no painel: PHP 7.2 (ea-php72), marcado como obsoleto. O seletor CloudLinux estava em native (7.2) com 0 dominios. O site e do MultiPHP, não do seletor.
+- Pool FPM descrito: pm_max_children=5, pm_process_idle_timeout=10, pm_max_requests=20. Handler no .htaccess: AddHandler application/x-httpd-ea-php82.
+- Overrides iguais em public_html/php.ini, .user.ini e no bloco gerado do .htaccess: display_errors=Off, log_errors=On, error_log=error_log, max_execution_time=30, max_input_time=60, max_input_vars=1000, memory_limit=256M, post_max_size=32M, upload_max_filesize=16M, session.gc_maxlifetime=1440, zlib.output_compression=Off.
+- Banco único no painel: MySQL financeiro, 3,22 MB, usuário mydents. Não há segundo banco. phpMyAdmin não foi aberto na auditoria funcional. Quantidade de linhas por tabela: não determinada.
+- Config da aplicação: /home/[cPanel account redacted]/private/config.php, 228 bytes, fora do docroot. Pasta private em 0700. Chaves: db_host, db_name, db_user, db_pass, db_charset, session_name. Não existe .env em public_html, public_html/financeiro, /home/[cPanel account redacted] nem /home/[cPanel account redacted]/private. A senha do banco não foi copiada.
+- O código local confirma o desenho de conexão, e isso é o repositório, não uma leitura nova do config.php no servidor: codigo\financeiro\api\db.php lê private/config.php três níveis acima do diretório api e abre PDO MySQL com prepared statements, desligando emulate prepares.
+- Cron de aplicação: a tela Trabalhos Cron da análise anterior diz nenhum trabalho. Não revalidado.
+- SSL na análise anterior: Let's Encrypt, CN mydents.com.br mais www, válido de 02/09/2026 a 01/12/2026. AutoSSL em 11/10 com aviso unmanaged nos 10 nomes. Force HTTPS do domínio desligado; o .htaccess faz 301. O navegador da auditoria abriu https://. Não revalidado no painel.
+- Disco na análise anterior: 1.184 MB de 10.240 MB. public_html usa 23,91 MB. Peso fora do site: arquivos soltos no home 755,93 MB e backups_arquivados/ 274,36 MB. Não revalidado.
+- Backup da conta na ferramenta Backup: pontos até 09/10/2026. Tar manual de 10/10 dentro do home. Não revalidado.
+- Uploads no código local: anexos-financeiro.php, arquivos-clinicos.php, documentos-paciente.php. A análise de cPanel cita dados_clinicos/ (~1,62 MB) e anexos-folha/ (~0,12 MB) fora do document root. Arquivo clínico não foi aberto.
+- Git no servidor, não revalidado: repositório "My Dents live source" em /home/[cPanel account redacted]/private/mydents-live-source. Sem branch, sem URL de clone, deployable=0. A pasta visível tem poucos PHP, não a árvore do site. Serve como cópia, não como publicação.
+- No home, fora do docroot, a análise cita chat_config.php, chat_conhecimento_regras.md e chat_senha.hash (0600). O hash não foi lido. Este relatório não cópia o conteúdo.
+- Imunify360 v8.14.1, na análise anterior: aba Maliciosos sem resultado. Bloqueador de IP: nenhum IP bloqueado. Uso de recursos em 11/10: sem problemas nas últimas 24 horas; memoria fisica cerca de 6 a 10 MB de 1 GB; falhas de LVE: 0. Não revalidado.
+- .htaccess do docroot, resumo da análise anterior: Options -Indexes; DirectoryIndex index.php index.html; HTTPS forcado; /_docs proibido; producao-dentistas redireciona 301 para /financeiro/producao-dentistas.html; bloqueio de backup-*, error_log, .jsx, .map, .zip, .sql, .bak e nomes config / .env; headers HSTS, nosniff, SAMEORIGIN, Referrer-Policy, Permissions-Policy e CSP; HTML com Cache-Control no-store.
+- Apache, últimas linhas na análise anterior, sem IP de cliente: 116 linhas. 80 são authz_core (o .htaccess negou _docs, .sql, .zip e .bak). 32 são autoindex (pedido a public_html/financeiro/api/ sem index, listagem proibida). 4 são cgi-bin inexistente, em setembro. Nenhum evento suEXEC recente.
+
+Comparação HTTP sem cookie em 11/10, arquivo live contra codigo\:
+
+- / (index.html): live 298.767 bytes; local 282.754. Landing pública divergente. A análise de cPanel descreve o index.html da landing como cerca de 292 KB no disco; este relatório não reconcilia os dois métodos além do que as fontes já escreveram.
+- /financeiro/app.html: live 12.727; local 5.526. Shell divergente.
+- Bundle citado pelo app.html local (app.bundle.cloud-refresh-20260921.js): HTTP 404 no ar; o arquivo existe no repositório. O live não usa esse nome.
+- Bundle citado pelo app.html live (app.bundle.20261005-calculos2.js?v=20261011-cadastros7): 1.708.351 bytes, HTTP 200; arquivo ausente em codigo\.
+- fase12.js (a query antiga ainda devolve o arquivo do disco): live 96.924; local 94.303.
+- auth-guard.js: live 9.885; local 4.291.
+- recepcao-app.js: live 237.244; local 222.113. A análise de cPanel descreve recepcao-app.js como cerca de 232 KB.
+- usuarios/portal-funcionario.html: 7.481 nos dois.
+- producao-dentistas.html: live 938; local 650.
+
+O app.html live referencia arquivos que não existem em codigo\ e responderam HTTP 200:
+
+- novo-lancamento-modal.js (8.837)
+- modulos-interface.js (25.059)
+- previsoes-layout-unificado.js (3.778)
+- fluxo-filtros.js (17.831)
+- cadastros-financeiros.js (16.442)
+- mydents-global-nav.js (55.631)
+- financeiro-calculos-20261005.js (7.922)
+- unificacao.js (4.330)
+- cadastros-clinicos.js (12.030)
+- fase12-pendencia-financeira.js (12.170)
+- tailwind-financeiro-20260925.css (11.392)
+- usuarios/clinicas-ui.js (12.420)
+
+Cache visto no HTML live (amostra): fase12.js?v=20261009-comissoes-forma1, auth-guard.js?v=20261010-access-routes4, recepcao-app.js?v=20261010-anamnese-historico1, previsoes-contas-pagar.js?v=20261011-cadastros9. O repositório e o manual de publicação ainda apontam ?v=20260923-boot1.
+
+Fluxo de uma tela autenticada, observado no HTML/JS servido. Onde a fonte e só o repositório, está dito abaixo.
+
+- O navegador pede GET /financeiro/app.html (estatico; no live, 12.727 bytes).
+- auth-guard.js pede GET /usuarios/sessao.php (JSON: authenticated, user, permissions). Se falso, vai para /usuarios/?retorno=financeiro.
+- Em seguida o bundle React (nome de outubro no live) e a fila de enhancements (fase12, lançamentos, folha, caixa e outros).
+- As APIs ficam em /financeiro/api/*.php. No código local, o bootstrap exige sessão e origem da requisição, sem token CSRF, abre PDO via private/config.php e checa permissão de módulo, ação e unidade.
+
+Sessão no código local (bootstrap.php): cookie Secure, HttpOnly, SameSite=Lax, nome vindo de session_name. Inatividade máxima no código: 1.800 s. Teto absoluto: 43.200 s. O php.ini descrito na análise de cPanel tem session.gc_maxlifetime=1440. É uma diferença entre dois arquivos. Não foi medido se a sessão cai aos 24 minutos no ar. Os dois arquivos podem nem ser os do live de outubro.
+
+Proteção de escrita no código local: requisicao_proteger_origem() exige Origin ou Referer do mesmo host em POST. Não há token de formulário. O manual v6.1 confirma essa regra.
+
+GET /financeiro/api/ sem sessão: HTTP 403 (listagem negada). Confere com o log Apache descrito na análise anterior (autoindex em financeiro/api/).
+
+GET /financeiro/api/session.php e GET /usuarios/sessao.php sem cookie: authenticated false e permissões falsas. Sem corpo de usuário.
+
+Mapa de entradas no ar, pelo HTML e pelos redirecionamentos. Não é o menu do manual.
+
+Menu visto dentro de /financeiro/app.html:
+
+- Dashboard, hash #tela/dashboard (o título da aba virou "My Dents · Recepção")
+- Agenda / Recepção
+- Pacientes, hash #tela/pacientes
+- Fluxo de Caixa, hash #fluxo (Lancar fica nesta área, hash #lancar)
+- Gestão Financeira
+- Funcionarios
+- Dentistas, também /financeiro/producao-dentistas.html#produção
+- Ajustes / Configurações
+
+Menu visto em /relatorios/: Dashboard, Pacientes, Agenda / Recepção, Financeiro, Produção, Folha salarial, Relatórios, Ajustes.
+
+O manual v6.1 (seção 3.1) descreve outra barra: Início, Pacientes, Agenda, Financeiro, Produção, Ajustes, com abas L2 dentro de cada módulo. O live não segue esse desenho. Não há decisão posterior a 23/09 no PUBLICACOES.md que explique a troca.
+
+Portas HTTP sem cookie em 11/10:
+
+- /financeiro/app.html: 200. O JS manda ao login se não houver sessão.
+- /recepcao/: 302 para /usuarios/?retorno=recepção
+- /relatorios/: 302 para /usuarios/?retorno=relatórios
+- /notas-fiscais/: 302 para /usuarios/?retorno=financeiro
+- /financeiro/portal-dentista.php: 302 para /usuarios/?retorno=dentistas
+- /usuarios/trocar-senha.php: 302 para /usuarios/
+- /usuarios/login.php: 405 em GET
+- /usuarios/recuperacao.php: 405 em GET
+- /financeiro/producao-dentistas.html: 200. HTML público; dados só foram vistos com sessão.
+
+recuperacao.php, trocar-senha.php e portal-dentista.php respondem no ar e não existem em codigo\.
+
+API no repositório local (pasta codigo\financeiro\api\). Lista de arquivos, não de comportamento live. O PHP do ar não foi baixado.
+
+- Pacientes e clínica: pacientes.php, anamnese.php, arquivos-clinicos.php, documentos-paciente.php, jornada-paciente.php, recepcao.php, planos.php, tratamentos.php, pendencias.php.
+- Dinheiro: debitos.php, lançamentos.php, controles-financeiros.php, recebimentos-financeiros.php, caixa-turno.php, pagamento-dentistas.php, folha-salarial.php, folha-fechamento.php, taxas-cartao.php, importacao-financeira.php, credito-devolucao.php.
+- Acesso: login.php (em usuarios\), session.php, usuários.php, api-usuarios.php, auditoria.php.
+- Relatórios: relatorios.php tem 89 bytes no repositório e aponta para outro arquivo. A implementação longa está em codigo\relatorios\relatorios-api.php (72.979 bytes). Não foi conferido se o live usa esse mesmo arquivo.
+
+Autenticação, dois comportamentos observados em momentos diferentes.
+
+Tela de login sem sessão (/usuarios/?retorno=financeiro):
+
+- Rótulo CPF, input name="login", placeholder "Digite seu CPF".
+- Senha com botão de mostrar.
+- Botão "Esqueci minha senha".
+- O script da página faz POST ./login.php com FormData (campo login, não email).
+- O mesmo script faz POST ./recuperacao.php com acao consultar e acao simular_envio. O texto do script diz que o envio e simulado. O botão não foi acionado.
+
+Código local (codigo\usuarios\index.php e login.php):
+
+- Rótulo E-mail, name="email", type="email".
+- Sem "Esqueci minha senha".
+- usuarios_autenticar() busca usuários.email, password_verify, bloqueio após 5 falhas em 15 minutos, session_regenerate_id.
+- Mensagem de falha genérica: e-mail ou senha inválidos.
+- Senha nova no código: 12 caracteres com maiúscula, minúscula, número e símbolo. Login aceita senha já gravada com mínimo 8.
+
+O manual v6.1 (seção 4.1 e a correção da seção 0) diz login por e-mail, não por CPF. A tela no ar está no CPF. O PHP live de login.php não foi lido. Não dá para afirmar se o POST com login autentica de fato.
+
+Com sessão administrativa já presente na aba, sessao.php devolveu authenticated true, papel admin, permissões de financeiro, recepção, relatórios e dentistas.
+
+Dados:
+
+- Banco único citado no cPanel: financeiro.
+- O schema.sql do repositório tem 596 bytes e só cria usuários (id, nome, email, senha_hash, perfil admin ou usuário, ativo). O restante do esquema nasce em scripts PHP (CREATE TABLE IF NOT EXISTS em fase12-schema.php e afins) e em migrações disparadas pela API. No docroot, a análise de cPanel cita public_html/financeiro/database/schema.sql com 596 bytes e .htaccess que nega .sql.
+- A revisão vista na resposta de pacientes foi 13706. Isso indica estado acumulado. Não é uma contagem de pacientes.
+- Unidades oficiais no manual: Aldeota, Messejana, Maracanaú. No ar, os combos também listam QA BASE 10/10, TESTE UNIDADE DEMO 001 e, no relatório, TESTE CLÍNICA DEMO 001 e Clínica Ficticia QA Base 10/10. Contas no fluxo: Bradesco, Sicredi, Caixa (Espécie) e quatro contas com prefixo QA.
+
+Como o manual diz que o sistema deveria operar (somente o que a fonte sustenta):
+
+Cadeia do manual, seção 1: paciente, orçamento, aprovacao por item, tratamento mais débito, recebimento, conta, comissão de venda, evolução, comissão de execução, fechamento. Aprovar não entra dinheiro. Receber baixa o débito. Evoluir não paga o dentista na hora. Fato confirmado não se apaga. Dinheiro em duas casas, half-up (D-11). localStorage não é saldo oficial.
+
+- Login: e-mail e senha; mensagem genérica; sessão no servidor; equipe ativa. No ar foi visto formulário de CPF. O código local é e-mail. Os dois divergem.
+- Início / indicadores: o manual cita #painel, relatórios e tarefas, conforme permissão. O live abre Dashboard em #tela/dashboard. O conteúdo não coincidiu com o hash.
+- Pacientes: base única; ficha por id; unidades Aldeota, Messejana, Maracanaú; recepção ou admin. Foi observado um cadastro de teste. TST-CURSOR ausente na resposta.
+- Agenda: cartao abre resumo; hash permanece na agenda; recepção. Não percorrido além do atalho.
+- Orçamento, débito, recebimento: aprovacao separada de recebimento; parcial não reescreve o original. Não testado.
+- Fluxo, lancar e contas: a unidade do topo filtra; lancar usa grupo e subgrupo oficiais; transferência não é receita. Fluxo e formulário de lancar foram observados. O formulário não foi enviado.
+- Caixa por turno: overlay; fechar devolve a rota anterior. Botão visível. Fluxo não executado.
+- Produção e comissão: venda em percentual congelado; execução em valor fixo; lote mensal. Tela aberta. Lote 10/2026 status Aberto, "Sem células encerradas". Listas do filtro inicial vazias.
+- Folha e portal: documentos e ciência. portal-funcionario.html responde 200. Conteúdo autenticado não percorrido.
+- Ajustes / equipe: o manual pede o nome da sessão no chip; unidades são o cadastro de clínicas. Chip observado: "Administrador" e "Sessão ativa". Lista de usuários não foi aberta.
+- Relatórios: a mesma unidade e o mesmo valor do fluxo. Página aberta. Receita bruta exibida R$ 3,21. Exportar e imprimir não foram acionados.
+- Nota fiscal: por URL e por Ajustes; não é item L1. Sem cookie, /notas-fiscais/ redireciona ao login. Tela não aberta com sessão.
+- Fora do núcleo: WhatsApp em massa, TEF, estoque e anamnese como P1. Link WhatsApp existe na ficha ou lista. Não foi clicado.
+
+O que deu para ver da entidade lançamento, paciente e relatório:
+
+Lançamento financeiro. Entrada: formulário #lancar com data preenchida com 11/10/2026, valor, unidade, setor, banco, grupo, subgrupo, NF-e, observação e forma de pagamento. Validação observada no DOM: só o select de forma de pagamento está required. O botão "Lancar movimentação" é type="submit". Gravação não executada. Relacionamento e auditoria depois da gravação: não determinados. Exibição do que já existe: uma linha em 11/10, tipo Receita, conta QA, R$ 3,21, quando a unidade está em Todas.
+
+Paciente. Entrada da lista: busca por nome, CPF ou telefone. A API pacientes.php devolveu um array data com um objeto. Chaves incluem identificação, contato, unidade e também dados bancarios, PIX e titular financeiro. Valores não foram copiados. Não dá para dizer se estão preenchidos.
+
+Relatório. Entrada: período default de 15/04/2026 a 11/10/2026, botões de 30, 90, 180 e 365 dias, dois combos de unidade. Cálculo exibido: receita bruta R$ 3,21, deduções R$ 0,00, receita líquida R$ 3,21, despesa operacional R$ 0,00, e o texto "Fluxo: entradas R$ 3,21 − saídas R$ 0,00". O texto da tela diz que a DRE e regime de caixa, na data de efetivação, no mesmo período e unidade do fluxo, e que transferência fica de fora.
+
+Produção, leitura com sessão: lote competencia 10/2026, status Aberto, aberto em 01/10/2026, "Sem células encerradas". Comissões de venda, execução e convênio: "Nenhum registro neste filtro." Dentista listado no filtro: "QA BASE — Dentista Fictício 10/10 revisado". Não foi clicado "Acrescentar produção" nem "Encerrar lote". O combo de unidade chegou a mostrar Messejana e as unidades de teste.
+
+Dados e tratamento observados:
+
+- O consolidado "Todas" mistura unidade oficial e unidade QA. O único movimento de 01 a 11/10 nesse consolidado e R$ 3,21 numa conta QA.
+- Aldeota no mesmo recorte está zerada. Isso foi lido na tela. Não prova que Aldeota não tenha movimento em outras datas.
+- Pacientes visíveis para esta sessão: um cadastro de teste. Não usar esse número como censo da clínica até olhar o banco.
+- Contas oficiais do manual (Bradesco, Sicredi, Caixa Espécie) aparecem no combo junto com contas QA.
+
+--------------------------------------------------------------------------------
+4. LISTA PRIORIZADA
+--------------------------------------------------------------------------------
+
+A prioridade abaixo separa o que a auditoria funcional fechou do que a análise de cPanel listou e não foi reaberto. Não misturar as duas listas na hora de publicar PHP.
+
+4.1 Falhas com sintoma confirmado
+
+Alto:
+
+1. F-01. Não publicar codigo\ até o live estar no Git. Impacto: perda do código de outubro.
+2. F-02. Separar QA do consolidado de fluxo e da DRE, depois de identificar a linha sem apaga-la. Impacto: decisão gerencial em cima de R$ 3,21 de teste.
+3. F-03. Rótulos 1, 2 e 3 no relatório. Impacto: filtro errado.
+4. F-04. Dashboard que não troca o miolo. Impacto: o operador acha que mudou de módulo. Foi visto uma vez; o plano pede repetir antes de tratar como estável.
+5. F-05. Lista de pacientes com um registro. Impacto alto se a base real não voltar. Causa ainda aberta.
+6. F-06. Decidir login (CPF no ar versus e-mail no manual) antes de corrigir a tela. Impacto: trancar a equipe fora se o PHP live espera CPF e o repositório for publicado.
+
+Medio:
+
+7. F-07. Chip mostra "Administrador" em vez do nome da sessão pedido pelo manual, seção 3.4.
+8. F-08. Menu live diferente do manual, seção 3.1. E divergência de contrato. Não e, sozinho, um defeito de clique. Depende de decisão de produto.
+
+Baixo, entre as falhas confirmadas: nenhum dos oito itens foi classificado como baixo pela auditoria. F-07 e F-08 ficam no medio porque não alteram o número do caixa por si só e porque o plano manda decidir o menu antes de unificar código.
+
+4.2 Itens cujo defeito não foi fechado
+
+Não entram na fila de patch antes da leitura que a própria fonte pede.
+
+- N-01 a N-04: status não determinado. Ver seção 6.
+- H-01 a H-03: status hipótese. Ver seção 7. Não corrigir no escuro.
+
+4.3 Itens do cPanel em 11/10, não revalidados
+
+A análise de cPanel ordenou assim. A auditoria funcional não reabriu o painel. Prioridade operacional daquela leitura, não prioridade de deploy do PHP.
+
+Alto naquela análise:
+
+- R-01. Uso do disco e arquivos mortos no home.
+- R-02. SSL: certificado válido até 01/12/2026 e AutoSSL com unmanaged em 11/10.
+- R-03. Revisar configuração de 2FA da conta cPanel (estado omitido deste relatório público).
+- R-04. Acesso remoto MySQL com quatro hosts.
+- Rotina Imunify360, lista de maliciosos vazia naquela leitura. Não é falha confirmada. Fica em sugestão.
+
+Medio naquela análise: manter PHP 8.2, observar memory_limit com pm_max_children, não ligar zlib junto com mod_deflate, arquivos grandes e duplicados no docroot, backup, log de erros, cron vazio (R-05), Git do servidor sem deploy.
+
+Baixo naquela análise: bloqueador de IP vazio, hotlink protection, ferramentas do painel que o site não usa (WordPress, Sitejet, Social Média, Python, PEAR), FTP extra, índices, páginas de erro, métricas de tráfego, token de API (não foi criado).
+
+--------------------------------------------------------------------------------
+5. FALHAS COM SINTOMA CONFIRMADO
+--------------------------------------------------------------------------------
+
+ID: F-01
+Título: O código local não é o que está no ar
+Classificacao: infraestrutura
+Status: confirmado
+Impacto: alto, antes de qualquer outro conserto. Qualquer correção feita em codigo\ e publicada por cima substitui o trabalho de outubro que não está no Git. O plano resume o efeito: corrigir o arquivo de setembro e subir por cima do live destrói o que está em produção. A primeira entrega é cópia do live para o Git, não um patch.
+Onde aparece:
+- Site: https://mydents.com.br, document root /home/[cPanel account redacted]/public_html
+- Arquivo live: /financeiro/app.html (12.727 bytes) contra codigo\ (5.526 bytes)
+- Bundle live: app.bundle.20261005-calculos2.js?v=20261011-cadastros7 (1.708.351 bytes, HTTP 200), ausente em codigo\
+- Bundle do repositório: app.bundle.cloud-refresh-20260921.js, HTTP 404 no ar
+- Scripts de outubro citados no app.html live e ausentes em codigo\, com HTTP 200: mydents-global-nav.js, cadastros-financeiros.js, fluxo-filtros.js, cadastros-clinicos.js, e os demais tamanhos listados no contexto
+- PHP no ar e ausentes em codigo\: recuperacao.php, trocar-senha.php, portal-dentista.php
+- Documentação: PUBLICACOES.md para em 23/09/2026 (?v=20260923-boot1). Regra D-29 do manual: a alteração nasce no Git e o cPanel não é editado direto; divergindo, capturar o live para o repositório antes de alterar
+- Complemento não revalidado: o Git do cPanel em /home/[cPanel account redacted]/private/mydents-live-source não é a árvore do site (deployable=0, poucos PHP)
+O que foi observado: o HTML servido em 11/10 usa versões 20261005 a 20261011. Tamanhos de index.html, app.html, fase12.js, auth-guard.js, recepcao-app.js e producao-dentistas.html divergem do repositório. portal-funcionario.html tem o mesmo tamanho (7.481). O bundle antigo do repositório responde 404 no ar. Cache de amostra no HTML live: fase12.js?v=20261009-comissoes-forma1, auth-guard.js?v=20261010-access-routes4, recepcao-app.js?v=20261010-anamnese-historico1, previsoes-contas-pagar.js?v=20261011-cadastros9.
+O que era esperado: o manual manda corrigir o código quando a tela divergir, salvo decisão registrada, e a regra D-29 manda o live estar no Git antes de alterar. Não há, nas fontes, uma decisão posterior a 23/09 que autorize o live ficar a frente do repositório.
+Passos para reproduzir:
+1. GET sem cookie de /financeiro/app.html e comparar o tamanho com codigo\financeiro\app.html (12.727 contra 5.526 na leitura de 11/10).
+2. Ver no HTML live o nome do bundle app.bundle.20261005-calculos2.js e confirmar que esse arquivo não está em codigo\.
+3. GET do bundle citado pelo app.html local e observar HTTP 404.
+4. Confirmar que PUBLICACOES.md ainda cita ?v=20260923-boot1.
+Evidência: tabela de tamanhos em docs/arquitetura-my-dents.md, seção 2. Confirmado por tamanho e por nome de arquivo.
+Sugestão técnica de correção (proposta, não implementar aqui):
+1. Baixar em leitura o public_html atual (financeiro, usuários, recepção, relatórios, notas-fiscais) para uma pasta de captura, fora de qualquer deploy.
+2. Comparar com codigo\ arquivo a arquivo (tamanho e hash).
+3. Commitar a captura no Git privado antes de qualquer diff de correção. Anotar em docs/PUBLICACOES.md que foi captura, não publicação.
+4. Não usar o Gerenciador de arquivos para editar durante a cópia.
+Risco de alterar produção: sobrescrever app.html ou o bundle com a versão de setembro tira do ar o shell de outubro. O bundle antigo já responde 404. Publicar o index.php de usuários do repositório remove a recuperação e o campo CPF se o PHP live depender deles. Não há cron de aplicação, na análise anterior não revalidada, para desfazer uma migração.
+Como validar depois: um checkout novo contém os mesmos nomes e tamanhos que o GET de 11/10, inclusive o bundle de 1.708.351 bytes e recuperacao.php. Repetir os GET de tamanho citados na arquitetura. Não precisa logar. PUBLICACOES.md passa a citar as versões 20261011, ou registra que o live foi só copiado e ainda não republicado.
+Dependências de outras correções: esta captura bloqueia todas as outras alterações de arquivo. Sem isso, o patch nasce no código velho. F-02, F-03, F-04, F-05, F-06, F-07 e F-08 dependem do código de outubro capturado, não do fase12.js de setembro nem do layout-modernizacao.js de setembro.
+
+ID: F-02
+Título: Totais operacionais incluem movimento de teste
+Classificacao: dados
+Status: confirmado
+Impacto: quem olha o consolidado le teste como movimento do grupo. A auditoria coloca este item em segundo lugar, depois da captura do live.
+Onde aparece:
+- Tela: Fluxo de Caixa, URL #fluxo, em /financeiro/app.html
+- Período lido: 01/10/2026 a 11/10/2026
+- Conta nomeada na linha: QA — Banco Todas Unidades 09-10
+- Relatório: /relatorios/, texto da DRE, período default 15/04/2026 a 11/10/2026 na abertura da página; a conferência citada usa o mesmo R$ 3,21
+- Combos do fluxo também listam Bradesco, Sicredi, Caixa (Espécie) e contas com prefixo QA
+O que foi observado:
+- Unidade Todas: saldo inicial R$ 0,00, entradas R$ 3,21, saídas R$ 0,00, saldo final R$ 3,21. Linha: 11/10/2026, Receita, conta QA — Banco Todas Unidades 09-10, R$ 3,21.
+- Unidade Aldeota, mesmo período, depois de Atualizar: saldo inicial, entradas, saídas e saldo final R$ 0,00. Texto: "Nenhuma movimentação no período selecionado."
+- Voltar de #lancar para #fluxo recoloca a unidade em Todas e o total de R$ 3,21.
+- O texto da DRE mostrou receita bruta R$ 3,21, deduções R$ 0,00, receita líquida R$ 3,21, despesa operacional R$ 0,00, e "Fluxo: entradas R$ 3,21 − saídas R$ 0,00".
+- O corpo do relatório também cita TESTE UNIDADE DEMO 001.
+- Causa (lançamento manual, script de QA, falta de origem_teste): não determinada. Evidência que falta: a linha no banco, sem abrir edicao. Não houve SELECT no phpMyAdmin.
+O que era esperado: a matriz da auditoria registra o esperado pelo manual como operação das três unidades, sem lixo de teste no consolidado. O texto da própria tela diz que a DRE e regime de caixa, na data de efetivação, no mesmo período e unidade do fluxo, e que transferência fica de fora. A recomendação da auditoria cita a regra de origem_teste (corte de 16/09 no manual de handoff) como ainda não visível na tela. Como aplicar essa regra no código de outubro: não determinado.
+Passos para reproduzir:
+1. Entrar com um admin já autorizado. Não registrar senha.
+2. Abrir https://mydents.com.br/financeiro/app.html#fluxo
+3. Período 01/10/2026 a 11/10/2026, unidade Todas.
+4. Ler entradas. Nesta sessão: R$ 3,21, conta QA, data 11/10/2026.
+5. Trocar a unidade para Aldeota e atualizar. Nesta sessão: R$ 0,00.
+6. Abrir /relatorios/ com a mesma sessão e ler a receita bruta.
+Evidência: valores lidos do texto do miolo, não dá imagem. Captura de enquadramento (os totais ficam abaixo da dobra): docs/auditoria-evidencias/02-fluxo-filtros.png. Relatório: docs/auditoria-evidencias/03-relatorios-executivos.png. Cópias também em media/auditoria-my-dents/ no store do agente que fez a análise de cPanel.
+Sugestão técnica de correção (proposta, só depois de F-01):
+1. Achar no código capturado o filtro de fluxo e o da DRE. Ver se existe origem_teste ou equivalente e se a tela ignora.
+2. No banco, em leitura, localizar a linha de R$ 3,21 (conta, unidade, data, origem, usuário). Não dar UPDATE ainda.
+3. Decisão do operador, por escrito: o consolidado operacional exclui QA, ou QA continua e o rótulo da tela diz que o total inclui teste.
+4. Se a decisão for excluir: filtrar na API, não só no JS. A tela e o relatório tem de usar o mesmo critério. Não apagar a linha. Cancelar ou marcar origem, com auditoria, se o padrão do manual for esse (fato confirmado não se apaga).
+5. Unidades, contas, formas e setores com prefixo QA (QA BASE, TESTE UNIDADE DEMO 001, TESTE CLÍNICA DEMO 001) entram no mesmo critério. Não remover o cadastro.
+Risco de alterar produção: inativar o lançamento de R$ 3,21 sem auditoria muda o saldo que a tela mostra hoje. DELETE ou inativação sem trilha muda o saldo que a auditoria acabou de ler. Apagar unidade QA pode quebrar o lote 10/2026 (status Aberto, sem células encerradas) e o dentista fictício visto no filtro. Não apagar nesta fase.
+Como validar depois:
+- #fluxo, 01 a 11/10, unidade Todas, sem o R$ 3,21, se a regra for excluir teste.
+- Aldeota no mesmo período continua R$ 0,00, a menos que outro movimento real exista e tenha sido escondido pelo filtro.
+- DRE do mesmo período mostra o mesmo número do fluxo.
+- A linha de teste continua consultável em trilha de auditoria. O histórico não some.
+- Pronto, na formulação do plano, quando fluxo e DRE, mesmo período e mesma unidade, mostram o mesmo número, e esse número não inclui a receita QA a menos que o rótulo avise.
+Dependências de outras correções: depende de F-01. A regra de excluir QA dos totais depende de achar o lançamento e a flag no código que está no ar, não no fase12.js de setembro. Não abrir phpMyAdmin para consertar o lançamento nesta leva. Primeiro contar, em leitura.
+
+ID: F-03
+Título: Unidades reais aparecem como 1, 2 e 3 no relatório
+Classificacao: interface
+Status: confirmado
+Impacto: filtro fácil de errar. Terceiro item na priorização da auditoria.
+Onde aparece:
+- Tela: /relatorios/, título "Relatórios executivos"
+- Combo de unidade do filtro (não o do canto). Opções visíveis: Todas, 2, 3, TESTE CLÍNICA DEMO 001, 1, Clínica Ficticia QA Base 10/10 — revisada
+- O seletor do topo, na captura, mostrava Messejana. Há dois seletores
+- Aldeota, Messejana e Maracanaú não aparecem nesse combo do filtro; aparecem no outro seletor, o do topo
+- Arquivo local possivelmente envolvido: codigo\relatorios\relatorios-api.php (72.979 bytes). Não foi conferido se o live usa esse arquivo. relatorios.php no repositório tem 89 bytes e aponta para outro arquivo
+O que foi observado: as unidades de teste aparecem com nome. As opções 1, 2 e 3 estão no select. O valor R$ 3,21 coincide com o fluxo consolidado. O vinculo com a unidade do topo não foi isolado (ver N-04). Causa (id gravado no option em vez do nome): não determinada no PHP live.
+O que era esperado: a matriz da auditoria diz que o manual espera nomes de unidade e valor rastreável ao fluxo. O plano diz que o manual aponta o seletor do topo como o que manda no número. Nomes oficiais no manual: Aldeota, Messejana, Maracanaú.
+Passos para reproduzir:
+1. Com sessão de admin, abrir /relatorios/.
+2. Ler as opções do combo de unidade do filtro.
+3. Não exportar CSV e não imprimir.
+Evidência: docs/auditoria-evidencias/03-relatorios-executivos.png. Os totais ficam abaixo da dobra; os números vieram do texto da página. Sem cookie, /relatorios/ responde 302 para o login. Confirmado por GET.
+Sugestão técnica de correção (proposta, depois de F-01): no código capturado do relatório, o option deve usar o nome da clínica. O value pode continuar sendo o id. Há dois seletores na página; definir qual manda no número (o manual diz o do topo) e fazer o outro seguir, ou esconder o duplicado. Não inventar nome para o id 1 sem olhar a tabela de clínicas.
+Risco de alterar produção: alterar o relatório a partir de relatorios-api.php local pode não ser o PHP que está no ar. Rotular id sem ler a tabela de clínicas pode gravar nome errado na tela.
+Como validar depois: o select do relatório mostra Aldeota, Messejana e Maracanaú, não 1, 2 e 3. Trocar a unidade muda o total de forma coerente com o fluxo na mesma unidade e período. Abrir /relatorios/ com sessão de admin, ler as opções, comparar um período curto com #fluxo na mesma unidade. Não exportar CSV.
+Dependências de outras correções: depende de F-01. O rótulo 1/2/3 depende do PHP/JS de relatórios que está no ar. A coerencia do número com o fluxo depende de F-02 se a regra de QA mudar o total. N-04 (qual seletor manda) precisa ser fechado junto, porque o plano trata os dois seletores neste mesmo conserto.
+
+ID: F-04
+Título: Dashboard não troca o miolo
+Classificacao: interface
+Status: confirmado
+Impacto: o operador acha que mudou de módulo. A auditoria confirma o fato uma vez e diz que não foi repetido três vezes. O plano pede repetir antes de tratar como estável.
+Onde aparece:
+- Partida: #fluxo em /financeiro/app.html
+- Destino da URL: /financeiro/app.html#tela/dashboard
+- Título da aba: "My Dents · Recepção"
+- Item com aria-current: link Dashboard
+- Área .md-main: continuou com o texto do fluxo e o total de R$ 3,21
+- Headings com caixa visível: "Central administrativa", "Pendências da operação", "Contatos a fazer"
+- No DOM, sem caixa visível (offsetParent nulo): "Dashboard do dia", "Agenda de hoje", "Saldos das contas"
+- Código apontado pelo plano, ausente em codigo\: mydents-global-nav.js e o bundle de outubro
+O que foi observado: clique em Dashboard a partir do fluxo mudou hash, título e item corrente. O miolo visível seguiu no fluxo. "Dashboard do dia" ficou fora da área visível. "Central administrativa" ficou visível. O manual, seção 3.3, diz que a URL, o item destacado e o conteúdo tem de ser o destino, não a tela anterior com título novo.
+O que era esperado: a matriz da auditoria diz tela de indicadores, com conteúdo igual ao hash. O plano acrescenta: seguir a ordem do manual seção 3.3 só se o operador ainda quiser aquele contrato. Se o menu de outubro for o novo oficial, registrar a decisão e consertar só a incoerência (URL diferente do miolo), sem recriar a barra L1 de setembro no escuro.
+Passos para reproduzir:
+1. Na mesma sessão, em #fluxo, clicar Dashboard.
+2. Comparar a URL (#tela/dashboard), o título e o texto do miolo.
+Evidência: leitura de URL, título, aria-current, headings e texto de .md-main nesta sessão. Não há screenshot exclusivo do dashboard na lista de evidências da auditoria.
+Sugestão técnica de correção (proposta): no nav de outubro (mydents-global-nav.js e o bundle), a troca de rota tem de pintar o destino e tirar o fluxo da área visível. Decidir antes se o contrato da seção 3.3 continua valendo (ver F-08).
+Risco de alterar produção: recriar a barra de setembro por cima do nav de outubro desfaz o shell que o operador ve. O arquivo que precisa ser lido não está em codigo\.
+Como validar depois:
+- Clique em Dashboard deixa URL, título, item corrente e miolo na mesma tela.
+- O texto do fluxo não permanece como conteúdo visível.
+- Recarregar #tela/dashboard abre a mesma tela.
+- Do fluxo, clicar Dashboard; recarregar; clicar Fluxo de Caixa e ver o fluxo voltar.
+- Fazer em largura estreita, porque a captura do fluxo mostrou filtros empilhados.
+- Repetir o clique mais de uma vez. A auditoria viu o caso uma única vez.
+Dependências de outras correções: depende de F-01. Depende de mydents-global-nav.js e do bundle de outubro, ambos ausentes em codigo\. A decisão de qual menu e oficial (F-08) define se o conserto só alinha URL e miolo ou se também restaura a barra do manual.
+
+ID: F-05
+Título: Lista de pacientes com um cadastro de teste
+Classificacao: dados
+Status: confirmado
+Impacto: se a base real sumiu da API, a recepção não acha paciente. Se a base foi isolada de propósito, a tela não explica o recorte. A auditoria trata o impacto como alto somente se a base real não voltar. Causa ainda aberta. Não usar o número 1 como censo da clínica.
+Onde aparece:
+- Rota: /recepcao/#tela/pacientes abriu /financeiro/app.html#tela/pacientes. A recepção está dentro do shell financeiro
+- Endpoint: GET /financeiro/api/pacientes.php
+- Resposta: HTTP 200, ok true, data com comprimento 1, revision 13706
+- Grade: uma linha, QA CADASTROS CLINICOS 10/10, unidade Aldeota, e-mail em domínio example.test
+- Busca: texto TST-CURSOR-Ficha-Stab. A linha some e não entra outra. O nome TST-CURSOR não está no array. VAL-FLUXO também não
+- Botões visíveis e não acionados: Abrir, Editar e um link WhatsApp
+O que foi observado: a grade e o JSON devolveram um item de teste. A busca pelo paciente de teste citado no roteiro ficou vazia. Não determinado se o paciente de teste foi inativado, se está em outra unidade fora do escopo da API, ou se a API devolve só um recorte. Evidência que falta: contagem na tabela de pacientes, com ativos e inativos, sem copiar CPF. A revisão 13706 não é contagem de pacientes.
+O que era esperado: a matriz diz achar o paciente de teste se ele existir. Não há, nas fontes, uma contagem oficial de pacientes ativos que este relatório possa usar como número esperado.
+Passos para reproduzir:
+1. Abrir #tela/pacientes com sessão de admin.
+2. Buscar TST-CURSOR-Ficha-Stab.
+3. Não abrir outra ficha. Não usar WhatsApp.
+4. Opcional de leitura: GET /financeiro/api/pacientes.php e ver data.length.
+Evidência: grade e JSON (data.length igual a 1). Nenhum valor de CPF, telefone, banco ou PIX foi copiado para a auditoria.
+Sugestão técnica de correção (proposta; não corrigir com insert):
+1. Leitura no banco: contar pacientes por status e unidade. Procurar o nome de teste TST-CURSOR sem copiar CPF para o relatório.
+2. No PHP capturado, ver se há LIMIT, filtro de unidade ou filtro que só devolve cadastro recente.
+3. Se o paciente de teste existir inativo, a tela de busca deve dizer isso. Não reativar sem pedido.
+4. Se a API estiver limitada, corrigir o limite e a paginação. A busca tem de ir ao servidor, não só a página já carregada. Hoje a lista visível tinha uma linha antes mesmo da busca.
+Risco de alterar produção: insert, reativação ou edicao de paciente no live sem a contagem prévia altera dado clínico. Não abrir VAL-FLUXO. Não clicar WhatsApp, Editar ou Novo paciente nesta leva.
+Como validar depois: o total da tela bate com a contagem lida no banco para o mesmo escopo, e a busca do paciente de teste reflete o status real. A busca por TST-CURSOR-Ficha-Stab acha o cadastro se ele ainda existir ativo, ou a tela diz que não há paciente, com um total coerente com o banco. Se a correção for reduzir o payload, a API não precisa devolver PIX e conta na listagem; conferir com um paciente de teste, sem copiar o valor para o relatório (ver H-01).
+Dependências de outras correções: depende de F-01 para ler o PHP que está no ar. A contagem no banco é leitura, e pode ocorrer depois da captura e antes do patch. Não depende de F-02 para existir, mas o mesmo critério de QA pode aparecer se a decisão de produto separar cadastro de teste.
+
+ID: F-06
+Título: Login do ar diverge do manual e do repositório
+Classificacao: documentação
+Status: confirmado
+Impacto: a auditoria classifica como documentação e possível defeito de contrato, e pede para não tratar como login quebrado até um teste com usuário de homologação. O risco de corrigir cedo e trancar a equipe fora, se o PHP live espera CPF e o repositório for publicado. Falha de autenticação: não testada.
+Onde aparece:
+- Primeira ida a /financeiro/app.html redirecionou para /usuarios/?retorno=financeiro
+- Tela: rótulo CPF, senha, Entrar, Esqueci minha senha
+- Script inline consulta ./recuperacao.php e declara simulação de envio. POST ./login.php com campo login, não email. POST ./recuperacao.php com acao consultar e acao simular_envio
+- Arquivos que respondem no ar e não existem em codigo\: recuperacao.php (405 em GET), trocar-senha.php (302 para /usuarios/ em GET), portal-dentista.php
+- Código local: codigo\usuarios\index.php e login.php, campo email
+- Contrato: manual v6.1, seção 4.1 e correção da seção 0
+O que foi observado: formulário de CPF e recuperação. A senha não foi digitada. O botão de recuperação não foi clicado, para não disparar POST. Mais tarde a mesma aba passou a ter sessão de admin. Não foi determinado o que criou essa sessão. Logout não foi feito.
+O que era esperado: o manual pede e-mail e senha, mensagem genérica e sessão no servidor. O código local segue e-mail, sem "Esqueci minha senha", com usuarios_autenticar() em usuários.email, password_verify, bloqueio após 5 falhas em 15 minutos e session_regenerate_id. O que o PHP live de login.php faz com o campo login: não determinado, porque o arquivo executa no servidor e não foi lido.
+Passos para reproduzir:
+1. Abrir /financeiro/app.html sem sessão.
+2. Observar o redirect para /usuarios/?retorno=financeiro.
+3. Ler rótulos CPF e Esqueci minha senha.
+4. Não enviar a senha e não clicar na recuperação.
+Evidência: docs/auditoria-evidencias/01-login-sem-sessao.png. Ausência local de recuperacao.php, trocar-senha.php e portal-dentista.php.
+Sugestão técnica de correção (proposta; decisão antes de código):
+1. Não substituir usuarios/index.php pelo do repositório.
+2. O operador escolhe: o contrato passa a ser CPF, ou o live volta para e-mail.
+3. Só então alinhar tela, login.php e manual. Se ficar CPF, o manual muda por decisão escrita. A seção 0 do manual diz que o contrato só muda assim.
+4. O script de recuperação diz que o envio e simulado. Confirmar no PHP capturado. Não acionar o botão no live durante o teste.
+Risco de alterar produção: publicar o index.php de usuários do repositório remove a recuperação e o campo CPF se o PHP live depender deles. Trocar o login para e-mail enquanto o PHP live espera login impede a equipe de entrar. Isso não foi provado. O teste de POST fica para depois da captura, com conta de teste.
+Como validar depois: tela, POST e manual usam o mesmo identificador, e uma conta de teste entra. Mensagem de erro continua genérica. Se a decisão for e-mail, a tela mostra e-mail e uma conta de teste entra. Se a decisão for CPF, o manual é que muda, por decisão explícita, e o repositório passa a ter o mesmo index.php do ar. Conta de teste já existente. Não criar usuário. Não resetar senha de outra pessoa. Ler o PHP live de login.php só depois de copiar o arquivo para o Git, para ver se o campo login é CPF.
+Dependências de outras correções: depende de F-01. Decisão de produto primeiro. Código depois. Não depende dos patches de fluxo, relatório ou dashboard para a decisão existir, mas qualquer publicação de usuarios\ antes da captura colide com F-01.
+
+ID: F-07
+Título: Chip de sessão mostra "Administrador"
+Classificacao: interface
+Status: confirmado
+Impacto: o operador não ve o nome da sessão no chip. O nome real não foi anotado de propósito. Impacto de tela, não de cálculo. A auditoria coloca o item depois das falhas de dados e de navegação.
+Onde aparece:
+- Chip da sessão no shell autenticado
+- Rótulos lidos: "Administrador" e "Sessão ativa"
+- Contrato: manual v6.1, seção 3.4
+- Endpoint que a proposta cita como fonte do nome: /usuarios/sessao.php (na sessão de teste devolveu papel admin; o nome da pessoa não foi registrado)
+O que foi observado: o rótulo do papel, não o nome da pessoa. Não foi determinado qual conta estava no chip. A lista de usuários não foi aberta, porque teria nomes reais.
+O que era esperado: o manual, seção 3.4, pede o nome da sessão no chip.
+Passos para reproduzir:
+1. Com sessão de admin já aberta, ler o chip do canto.
+2. Não abrir o menu se isso listar e-mail em evidência.
+Evidência: observação de tela na auditoria de 11/10. Sem screenshot citado especificamente para o chip. Sem nome de pessoa neste relatório.
+Sugestão técnica de correção (proposta, depois da captura): o componente do canto usa o nome já devolvido por sessao.php. Não gravar esse nome em screenshot de auditoria.
+Risco de alterar produção: baixo para o cálculo financeiro. O risco e de evidência: abrir o menu de usuários ou fotografar o chip com nome real coloca dado pessoal em relatório. Não fazer isso.
+Como validar depois: o chip não diz só "Administrador" quando a sessão tem nome. Não abrir o menu se isso for listar e-mail em evidência pública. Confirmar com o operador qual conta estava no chip, fora deste arquivo.
+Dependências de outras correções: depende de F-01. O plano coloca chip e navegação depois da decisão de menu (F-08), porque dependem dessa decisão. Não depende de F-02.
+
+ID: F-08
+Título: Menu do ar diferente do manual
+Classificacao: documentação
+Status: confirmado
+Impacto: divergência de contrato. Não e, sozinho, um defeito de clique. Pode ser decisão de outubro não escrita. Até isso ser decidido, não tratar como bug isolado de navegação. Não há nota em PUBLICACOES.md depois de 23/09 que registre essa navegação.
+Onde aparece:
+- Shell /financeiro/app.html: Dashboard, Agenda / Recepção, Pacientes, Fluxo de Caixa, Gestão Financeira, Funcionarios, Dentistas, Ajustes / Configurações
+- Shell /relatorios/: Dashboard, Pacientes, Agenda / Recepção, Financeiro, Produção, Folha salarial, Relatórios, Ajustes
+- Manual v6.1, seção 3.1: Início, Pacientes, Agenda, Financeiro, Produção, Ajustes, com abas L2
+- O live mostra outro menu, e o menu de Relatórios é diferente do menu do Financeiro. /relatorios/ está mais próximo do manual (inclui Folha e Produção)
+O que foi observado: dois desenhos de menu no ar, nenhum igual ao parágrafo 3.1, e os dois diferentes entre si. Observado nos dois shells.
+O que era esperado: a barra descrita na seção 3.1, salvo decisão registrada. Decisão posterior a 23/09: não encontrada em PUBLICACOES.md.
+Passos para reproduzir:
+1. Com sessão, abrir /financeiro/app.html e ler o menu.
+2. Abrir /relatorios/ e ler o menu.
+3. Comparar com a seção 3.1 do manual v6.1.
+Evidência: leitura de menu na auditoria e na arquitetura de 11/10. Não há nota de publicação depois de 23/09 explicando a troca.
+Sugestão técnica de correção (proposta): não unificar no código até decidir qual menu vale. Se a decisão for o menu de outubro, atualizar o manual. Se for o manual, o trabalho e no mydents-global-nav.js capturado, não no layout-modernizacao.js de setembro.
+Risco de alterar produção: unificar no escuro recria a barra de setembro ou apaga o menu que o operador já usa em outubro. O mesmo risco de F-04.
+Como validar depois: ou o manual passa a descrever o menu que está no ar, por decisão escrita, ou os dois shells passam a seguir a seção 3.1. URL, item corrente e conteúdo continuam coerentes (critério de F-04).
+Dependências de outras correções: depende de F-01. A decisão deste item condiciona F-04 (só incoerência de miolo, ou volta da barra L1) e F-07 (quando mexer no canto). O plano coloca nav depois da decisão de produto, junto com o chip.
+
+--------------------------------------------------------------------------------
+6. OBSERVAÇÕES CUJO DEFEITO NÃO FOI FECHADO
+--------------------------------------------------------------------------------
+
+Estes itens foram vistos ou ficaram em aberto. A fonte não os numerou como falha fechada. Status: não determinado.
+
+ID: N-01
+Título: Filtro de unidade volta para Todas ao sair de Lancar
+Classificacao: interface
+Status: não determinado
+Impacto: o operador que filtrou Aldeota e abriu Lancar, ao voltar, ve de novo o consolidado Todas com R$ 3,21. Efeito de leitura observado. Não foi medido em outros módulos.
+Onde aparece: #lancar e retorno para #fluxo em /financeiro/app.html. Botão "Voltar ao fluxo de caixa".
+O que foi observado: voltar de #lancar para #fluxo recoloca a unidade em Todas e o total de R$ 3,21. O filtro Aldeota não permaneceu. "Voltar ao fluxo" não grava. O item corrente em #lancar continuou "Fluxo de Caixa".
+O que era esperado: não determinado. A matriz diz que o manual não especifica persistência do filtro como obrigatória.
+Passos para reproduzir:
+1. Em #fluxo, período 01/10/2026 a 11/10/2026, unidade Aldeota, atualizar e ler R$ 0,00.
+2. Abrir #lancar sem preencher de propósito e sem enviar.
+3. Clicar Voltar ao fluxo de caixa.
+4. Ler unidade e total.
+Evidência: matriz de fluxos da auditoria, linha "Persistência de filtro" e linha "Voltar do lancar".
+Sugestão técnica de correção: não há patch enquanto a regra de persistência não for decidida. Se o operador quiser que o filtro permaneça, isso se implementa no JS de outubro capturado (fluxo-filtros.js esta só no ar), depois de F-01. Não inventar a regra.
+Risco de alterar produção: mudar a unidade default pode esconder ou mostrar o R$ 3,21 conforme F-02, e confundir a conferência com a DRE.
+Como validar depois: só depois de uma regra escrita. Repetir os três passos e comparar com o comportamento combinado.
+Dependências de outras correções: F-01. Interage com F-02, porque o total que reaparece é o consolidado com QA.
+
+ID: N-02
+Título: No DOM, só a forma de pagamento do Lancar esta obrigatória
+Classificacao: interface
+Status: não determinado
+Impacto: não determinado. A tela abre. A validação completa no servidor não foi testada. Não tratar como falha de gravação.
+Onde aparece: formulário #lancar. Campos vistos: data (preenchida com 11/10/2026), valor, unidade, setor, banco, grupo, subgrupo, NF-e, observação, forma de pagamento. Botão "Lancar movimentação", type="submit". Tipos a vista: Receita, Despesa, Transferência, Aporte de Sócio, Empréstimo de Sócio, Devolução de Empréstimo. Texto de convênio: somente valor recebido da operadora, sem paciente.
+O que foi observado: só o select de forma de pagamento está required. O formulário não foi enviado.
+O que era esperado: não determinado. O manual diz que lancar usa grupo e subgrupo oficiais e que transferência não é receita. Não há, na auditoria, a lista de campos que o servidor de outubro exige.
+Passos para reproduzir:
+1. Com sessão, abrir #lancar.
+2. Inspecionar o DOM dos campos required.
+3. Não clicar em Lancar movimentação.
+Evidência: leitura de DOM na auditoria. Sem POST.
+Sugestão técnica de correção: depois de F-01, ler a validação no PHP capturado de lançamentos e comparar com o required do HTML de outubro. Não enviar lançamento no live para descobrir a regra.
+Risco de alterar produção: um POST de teste grava movimento real no consolidado. A auditoria proíbe essa gravação nesta leva.
+Como validar depois: em ambiente que não seja o live, ou em roteiro que pare antes da confirmacao, o servidor recusa o que o contrato mandar recusar, com a mesma mensagem no fluxo e no relatório. Não há roteiro fechado nas fontes.
+Dependências de outras correções: F-01. Não depende de F-06.
+
+ID: N-03
+Título: A árvore de acessibilidade da página de pacientes expõe campos de Lancar
+Classificacao: interface
+Status: não determinado
+Impacto: o leitor da árvore enxerga campos de valor, banco, grupo e forma de pagamento na página de pacientes. Não foi medido se estão display:none para o olho. Não foi classificado como defeito fechado.
+Onde aparece: /financeiro/app.html#tela/pacientes. A auditoria também nota dois shells no DOM para contas: há, na árvore de acessibilidade, outro select só com Bradesco, Sicredi e Caixa, que não era o texto visível do miolo (ver H-02).
+O que foi observado: a árvore de acessibilidade ainda expunha campos do formulário de lancar. Efeito visual para o operador: não determinado.
+O que era esperado: não determinado.
+Passos para reproduzir:
+1. Abrir #tela/pacientes.
+2. Ler a árvore de acessibilidade.
+3. Não concluir se o campo esta visível sem medir offsetParent ou estilo, medição que a auditoria não fez neste ponto.
+Evidência: nota na seção Pacientes da auditoria.
+Sugestão técnica de correção: depois de F-01 e de repetir a medição no nav de outubro, esconder do leitor o que não for da tela corrente, se a medição mostrar que o nó continua ativo. Não apagar o formulário de lancar.
+Risco de alterar produção: remover nos do DOM pode quebrar #lancar se os dois shells compartilham markup. O plano faz o mesmo alerta para selects duplicados.
+Como validar depois: em #tela/pacientes, a árvore não anuncia valor, banco, grupo e forma de pagamento do lançamento. Em #lancar, esses campos continuam utilizáveis. Não gravar.
+Dependências de outras correções: F-01 e F-04, porque os dois tratam de miolo que permanece montado quando a rota muda.
+
+ID: N-04
+Título: Não se isolou qual seletor de unidade produz o R$ 3,21 do relatório
+Classificacao: dados
+Status: não determinado
+Impacto: não dá para afirmar se a receita bruta segue o seletor do topo (na captura, Messejana) ou o consolidado. O número coincide com o fluxo da unidade Todas. Pode ser o mesmo fato de F-02 ou um filtro cruzado. A fonte não isolou.
+Onde aparece: /relatorios/. Dois seletores. Topo, na captura: Messejana. Combo do filtro: Todas, 2, 3, TESTE CLÍNICA DEMO 001, 1, Clínica Ficticia QA Base 10/10 — revisada.
+O que foi observado: receita bruta R$ 3,21 igual ao fluxo consolidado, com o topo mostrando Messejana na captura. Não foi determinado se o R$ 3,21 segue o topo ou o consolidado.
+O que era esperado: o plano diz que o manual aponta o seletor do topo como o que manda no número. Não foi feito o teste de trocar só um seletor e reler o total.
+Passos para reproduzir: a auditoria não isolou o vinculo. Um teste futuro, sem exportar, seria fixar o período, trocar apenas o combo do filtro, reler o total, depois trocar apenas o topo e reler de novo, e comparar com #fluxo na mesma unidade. Isso não foi executado.
+Evidência: docs/auditoria-evidencias/03-relatorios-executivos.png e o texto da página.
+Sugestão técnica de correção: a mesma de F-03. Definir qual seletor manda e fazer o outro seguir, ou esconder o duplicado. Não assumir que Messejana estava zerada só porque o topo mostrava esse nome.
+Risco de alterar produção: esconder o seletor errado muda o número que o operador usa para decidir.
+Como validar depois: trocar a unidade altera o total de forma coerente com o fluxo na mesma unidade e período.
+Dependências de outras correções: F-01 e F-03. A leitura do número também depende de F-02.
+
+--------------------------------------------------------------------------------
+7. HIPÓTESES — NÃO CONFIRMAR COMO BUG
+--------------------------------------------------------------------------------
+
+A auditoria agrupou estes pontos como suspeitas. O plano manda investigar, não corrigir no escuro.
+
+ID: H-01
+Título: Payload da lista de pacientes traz chaves bancárias, PIX e titular
+Classificacao: dados
+Status: hipótese
+Impacto: se os valores estiverem preenchidos, a lista carrega dado que a grade não precisa mostrar. Suspeita, não defeito confirmado de vazamento. Valores não foram lidos e não devem ser copiados.
+Onde aparece: GET /financeiro/api/pacientes.php. Chaves de banco, agência, conta, PIX e titular financeiro, além de identificação, contato e unidade. Grade em #tela/pacientes.
+O que foi observado: as chaves existem no objeto. Não dá para dizer se estão preenchidas.
+O que era esperado: não determinado. A grade observada não foi descrita como exibindo esses campos.
+Passos para reproduzir: repetir o GET com sessão de admin e ver se os valores vem vazios, sem colar o valor em relatório, Git ou captura.
+Evidência: descricao das chaves na auditoria e na seção de dados. Nenhum valor bancário foi transcrito.
+Sugestão técnica de correção: no código capturado, tirar esses campos da listagem se a grade não usa. Conferir se vem preenchidos. Não colar valor no Git.
+Risco de alterar produção: remover campo que outra tela da mesma resposta usa quebra ficha ou recebimento. Só tirar da listagem depois de ver o PHP de outubro.
+Como validar depois: a listagem responde sem PIX e conta. A ficha de um paciente de teste, se for aberta em roteiro separado, continua com o dado que o contrato exigir. Não copiar o valor para o relatório.
+Dependências de outras correções: F-01 e a leitura de F-05. Não corrigir antes de saber se o valor vem vazio.
+
+ID: H-02
+Título: Dois selects de conta no DOM
+Classificacao: interface
+Status: hipótese
+Impacto: efeito para o operador não determinado além da lista visível com QA. Pode ser resto de shell antigo ou o select oficial escondido.
+Onde aparece: árvore de acessibilidade do financeiro. Um select visível no miolo inclui contas QA junto com Bradesco, Sicredi e Caixa (Espécie). Outro select, na árvore, só com as três oficiais, não era o texto visível do miolo.
+O que foi observado: dois shells no DOM. Falta ver qual o operador enxerga em cada hash depois do boot.
+O que era esperado: não determinado. O manual cita Bradesco, Sicredi e Caixa (Espécie) como contas oficiais. Não diz que o DOM deva ter um único select.
+Passos para reproduzir: depois do boot, em #fluxo, ver qual select fica visível. A auditoria não fechou essa medição por hash.
+Evidência: nota em "Dados e tratamento" da auditoria.
+Sugestão técnica de correção: ver qual fica visível depois do boot em #fluxo. Não apagar select sem saber qual é o oficial.
+Risco de alterar produção: apagar o select oficial impede lancar ou filtrar conta.
+Como validar depois: em #fluxo, um único controle visível, com as contas que a decisão de F-02 mandar mostrar, e o outro ausente da árvore de acessibilidade se estiver morto.
+Dependências de outras correções: F-01. Relacionado a N-03 e a F-02 (contas QA no combo visível).
+
+ID: H-03
+Título: gc_maxlifetime de 1440 segundos contra inatividade de 1800 segundos no código local
+Classificacao: infraestrutura
+Status: hipótese
+Impacto: não foi medido se a sessão cai aos 24 minutos no ar. Se o INI do live for 1440 e o PHP de outubro esperar 1800, a sessão pode expirar antes do teto do código. Isso não foi observado como queda nesta auditoria. Logout não foi testado. A sessão, uma vez presente, sobreviveu a uma nova abertura de #fluxo.
+Onde aparece:
+- php.ini descrito na análise de cPanel: session.gc_maxlifetime=1440, também em .user.ini e no bloco do .htaccess. Não revalidado no painel.
+- código local bootstrap.php: inatividade máxima 1.800 s, teto absoluto 43.200 s, cookie Secure, HttpOnly, SameSite=Lax
+- A auditoria alerta: os dois arquivos podem nem ser os do live de outubro
+O que foi observado: diferença entre dois arquivos de fontes diferentes. Não houve medição de expiração.
+O que era esperado: não determinado para o live de outubro.
+Passos para reproduzir: não executado. O plano pede comparar o INI live com o bootstrap.php capturado. Não mudar INI no cPanel nesta leva.
+Evidência: arquitetura, seção 3, e tabela de PHP da análise de cPanel.
+Sugestão técnica de correção: comparar, depois da captura, o INI que o domínio realmente usa com o bootstrap.php capturado. Não alterar o INI enquanto a comparação não existir.
+Risco de alterar produção: mudar gc_maxlifetime ou o teto de sessão no cPanel pode derrubar sessões da equipe ou alongar sessão além do que o código pretende. Fora desta leva.
+Como validar depois: o valor efetivo no ar é o valor no bootstrap capturado estão documentados. Se forem diferentes, a decisão de qual vale fica registrada antes de editar.
+Dependências de outras correções: F-01 para o bootstrap de outubro. O lado INI continua não revalidado (não é o mesmo status da captura de public_html).
+
+--------------------------------------------------------------------------------
+8. ITENS DO CPANEL NÃO REVALIDADOS
+--------------------------------------------------------------------------------
+
+Fonte única: analise-cpanel-producao.md, 11 de outubro de 2026, inventário somente leitura. Canal descrito naquela análise: navegador do Cursor, aba já logada no cPanel Secrel, tema Jupiter, cPanel 138.0.15. Nenhuma senha foi digitada. Nada foi salvo, criado, excluido ou editado. A auditoria funcional leu esse texto e não reabriu o painel. Status de todos os itens desta seção: não revalidado. Não tratar como defeito novo descoberto na passagem funcional.
+
+A auditoria diz que disco, tar dentro do home, MySQL remoto, AutoSSL unmanaged, revisão de 2FA e cron vazio continuam hipóteses operacionais daquele relatório, não achados novos. Este arquivo guarda o fato documentado e a marca de não revalidado. Não reclassifica esses fatos como confirmados em 11/10 na segunda passagem.
+
+ID: R-01
+Título: Arquivos mortos no home ocupam a maior parte da cota
+Classificacao: infraestrutura
+Status: não revalidado
+Impacto: a cota descrita e 1.184 MB de 10.240 MB (cerca de 11,6%). O site em public_html usa 23,91 MB. O próximo backup da conta pode arquivar backup dentro de backup, porque o tar de 10/10 está dentro do home. Não houve falta de disco descrita.
+Onde aparece:
+- Cota da conta [cPanel account redacted]
+- Arquivos soltos no home: 755,93 MB. .cagefs.zip 371,27 MB (7 out, permissão 0644) e backup-10.10.2026_18-55-41_[cPanel account redacted].tar.gz 384,42 MB (10 out, permissão 0600)
+- backups_arquivados/: 274,36 MB. Dezenas de pastas de deploy e três tarballs (cerca de 29,6, 111,7 e 114,1 MB, de 24 e 29 set)
+- Subdiretórios ocultos: 64,63 MB, quase tudo em .trash (61,98 MB)
+- private/: 51,79 MB, zips e .bak de homologação, mais config.php
+- public_html: 23,91 MB, incluindo .well-known.zip de 9,53 MB
+- Backups da ferramenta Backup, fora do home: 2026-10-09, 10-07, 10-02, 09-30, 09-28, 09-25, 09-23. O mais recente automático citado e 9 de outubro
+O que foi observado: na análise de 11/10, o peso estava em arquivo morto no home, não no site.
+O que era esperado: não determinado. A análise recomenda tirar o tar e o .cagefs.zip do home, e a lixeira depois de olhar, porque o Backup da conta já guarda pontos até 9 de outubro fora do home. Não é regra do manual v6.1.
+Passos para reproduzir: não reexecutados. A fonte usou Uso do disco e o Gerenciador de arquivos em /home/[cPanel account redacted]. Capturas citadas: 05-file-manager-home.webp, 19-disk-usage.webp, 17-backup.webp, na pasta media/cpanel-analise/.
+Evidência: tabelas de disco da análise de cPanel. Não revalidadas.
+Sugestão técnica de correção: revalidar no painel em leitura. Se os tamanhos continuarem, mover ou remover o tar e o .cagefs.zip do home só depois de conferir que o Backup da conta tem ponto utilizável, e olhar a lixeira antes. File and Directory Restoration existe no painel para restauração pontual. Não apagar backup nesta fase. Não fazer isso no mesmo deploy do PHP.
+Risco de alterar produção: apagar o único tar de 10/10 sem um backup de conta mais novo reduz o ponto de retorno. O automático citado para em 09/10. Inodes descritos: 1.750, sem limite aplicado. Banco 3,22 MB de cerca de 8,85 GB. Banda do mês: 565,25 MB, ilimitada.
+Como validar depois: nova leitura de Uso do disco, sem o tar e o zip soltos no home, e um ponto de backup da conta fora do home ainda restaurável. Não foi feito.
+Dependências de outras correções: independente do patch PHP. Não bloqueia F-01, mas a captura do live não deve usar esses tarballs como se fossem a árvore publicada. O plano separa itens de cPanel do deploy do PHP.
+
+ID: R-02
+Título: AutoSSL unmanaged em 11/10, com certificado Let's Encrypt ainda dentro da validade
+Classificacao: infraestrutura
+Status: não revalidado
+Impacto: o certificado que a análise diz estar servindo o site vale até 01/12/2026. O aviso unmanaged não foi descrito como site fora do ar. O navegador da auditoria funcional abriu https://. Renovação automática ficou em dúvida naquela leitura.
+Onde aparece:
+- Certificado instalado no vhost: Let's Encrypt (AutoSSL), DV, RSA 2048
+- CN mydents.com.br, SAN www.mydents.com.br
+- Validade citada: 2026-09-02 a 2026-12-01
+- Painel: Active
+- Na aba Status, 10 nomes (mydents.com.br, www, mail, cpanel, webmail, webdisk, cpcontacts, cpcalendars, autodiscover, autoconfig) com erro de AutoSSL em 11/10/2026: domínio unmanaged (registro ou nameserver autoritativo). Apex e www ainda aparecem como AutoSSL Domain Validated, com o mesmo erro por cima
+- Há certificados guardados da ZeroSSL e um autoassinado. O que está servindo o site, segundo a análise, é o Let's Encrypt
+- Force HTTPS Redirect do domínio: desligado. O .htaccess já faz 301 para https://mydents.com.br
+O que foi observado: aviso unmanaged e redirect de HTTPS no arquivo, com o interruptor do domínio desligado.
+O que era esperado: não determinado pelo manual do produto. A análise recomenda conferir DNS no Zone Editor e no registrador antes da renovação, e não trocar o certificado a mao enquanto o Let's Encrypt instalado seguir válido.
+Passos para reproduzir: não reexecutados. Capturas citadas: 11-ssl-status.webp e 25-dashboard-geral.webp.
+Evidência: seção SSL da análise de cPanel.
+Sugestão técnica de correção: revalidar em leitura. Não emitir certificado a mao enquanto o Let's Encrypt valer, segundo aquela análise, até 01/12/2026. Não ligar Force HTTPS no painel sem reler o 301 do .htaccess, para não empilhar redirect.
+Risco de alterar produção: trocar certificado ou DNS no escuro pode tirar o HTTPS do domínio. Fora do plano de correção do PHP.
+Como validar depois: nova leitura de SSL/TLS com data de validade e sem erro unmanaged, ou com o erro explicado pelo DNS. O navegador continua abrindo https://.
+Dependências de outras correções: nenhuma correção de código. Não misturar com F-01.
+
+ID: R-03
+Título: Revisar configuração de 2FA da conta cPanel
+Classificacao: seguranca
+Status: não revalidado
+Impacto: a análise anterior apontou a necessidade de revisar o segundo fator da conta do painel. O estado atual não é confirmado neste relatório público. Não é o login do My Dents (F-06). Não há evidência, nas fontes, de invasão.
+Onde aparece: ferramenta Senha e Segurança / API de dois fatores da conta cPanel (detalhes de estado redigidos).
+O que foi observado: leitura anterior via API; detalhes omitidos deste documento público.
+O que era esperado: não determinado. Recomenda-se confirmar 2FA com o operador fora do Git público.
+Passos para reproduzir: não reexecutados. Não abrir a tela de senha para copiar segredo neste relatório.
+Evidência: seção de lacuna e item 3 da prioridade alta da análise de cPanel (estado redigido).
+Sugestão técnica de correção: revalidar em leitura privada. Se o segundo fator não estiver ativo, ligá-lo por decisão do operador, fora do deploy de PHP. Não criar token de API. A análise diz que Manage API Tokens existe e que token não foi criado.
+Risco de alterar produção: ligar 2FA sem guardar o método de recuperação pode trancar o operador fora do cPanel. Não é risco para o site PHP em si.
+Como validar depois: nova leitura privada da API ou da tela, sem copiar segredo para Git.
+Dependências de outras correções: nenhuma. Independente de F-06.
+
+ID: R-04
+Título: MySQL remoto autorizado para quatro hosts
+Classificacao: seguranca
+Status: não revalidado
+Impacto: quatro endereços podem conectar de fora, segundo a ferramenta Remote Database Access. Não há curinga %. O app fala com o banco em localhost via config.php. Não foi descrito vazamento de dado por esses hosts. O usuário do banco e mydents, privilegiado, banco único financeiro.
+Onde aparece: ferramenta Remote Database Access, sem comentário nos hosts.
+- [IP redacted]
+- [IP redacted] (identificado na análise como IP interno do vhost)
+- [IP redacted] (identificado na análise como IP público compartilhado)
+- [IP redacted]
+O que foi observado: quatro hosts listados em 11/10 (endereços redigidos neste relatório público), sem comentário. phpMyAdmin não foi aberto na auditoria funcional.
+O que era esperado: não determinado. A análise pede confirmar com a hospedagem quais IPs são o próprio servidor antes de remover qualquer um, e não apagar os IPs do servidor no escuro.
+Passos para reproduzir: não reexecutados. Capturas citadas: 20-remote-mysql.webp e 21-remote-mysql-hosts.webp.
+Evidência: seção de banco da análise de cPanel e tabela da arquitetura.
+Sugestão técnica de correção: revalidar a lista em leitura. Não remover host nesta leva. Não abrir acesso remoto além do que a hospedagem confirmar.
+Risco de alterar produção: remover o IP do próprio servidor pode impedir o PHP de falar com o MySQL, se algum caminho não for localhost. A fonte diz que o app usa localhost, e mesmo assim pede para não apagar os IPs do servidor no escuro.
+Como validar depois: lista relida, cada host com dono conhecido, sem curinga, e o site ainda abre o fluxo com sessão.
+Dependências de outras correções: nenhuma de código. A leitura do lançamento de R$ 3,21 (F-02) e da contagem de pacientes (F-05), se for feita por phpMyAdmin, usa o banco local. Não exige ampliar esta lista.
+
+ID: R-05
+Título: Nenhum trabalho cron de aplicação na tela do painel
+Classificacao: infraestrutura
+Status: não revalidado
+Impacto: se alguma rotina de backup, limpeza ou fechamento deveria rodar sozinha, ela não estava agendada naquela leitura. Não há, nas fontes, uma rotina nomeada que esteja faltando. O manual de handoff citado pela auditoria diz que não há cron de aplicação na análise anterior. Não dá para desfazer migração por cron.
+Onde aparece: tela Trabalhos Cron, "Nenhum trabalho cron". O e-mail de saída do cron apontava para a conta [cPanel account redacted]. O módulo UAPI Cpanel::API::Cron não existe neste host. A API2 listcron devolveu count 1 e fetchcron veio vazio. A tela do painel e a fonte usada: não há job cadastrado.
+O que foi observado: tela vazia. A divergência count 1 contra fetchcron vazio ficou registrada; a conclusão da fonte e a tela.
+O que era esperado: não determinado. Não há requisito, nestas fontes, de um cron específico do My Dents.
+Passos para reproduzir: não reexecutados. Captura citada: 09-cron.webp.
+Evidência: seção de cron da análise de cPanel.
+Sugestão técnica de correção: revalidar a tela. Não criar cron nesta leva. Não usar cron para compensar patch de PHP.
+Risco de alterar produção: um cron novo de fechamento ou limpeza pode gravar ou apagar dado sem operador. Fora do plano.
+Como validar depois: a tela continua sem job, ou um job futuro esta escrito, com comando e horário, sem segredo no Git.
+Dependências de outras correções: nenhuma. Reforça o risco de F-01 e F-02: não há cron para desfazer publicação ou inativação.
+
+--------------------------------------------------------------------------------
+9. COMPORTAMENTOS OBSERVADOS QUE NÃO SÃO DEFEITO
+--------------------------------------------------------------------------------
+
+A auditoria pediu para não tratar estes resultados como defeito do servidor.
+
+- GET de /financeiro/api/session.php e /usuarios/sessao.php sem cookie devolveu não autenticado, sem corpo de usuário. Comportamento de seguranca considerado correto.
+- GET /financeiro/api/ sem sessão: HTTP 403. Listagem negada. Considerado correto. Confere com autoindex negado no log Apache da análise anterior.
+- Sem cookie, /recepcao/, /relatorios/, /notas-fiscais/ e /financeiro/portal-dentista.php responderam 302 para /usuarios/. Considerado correto.
+- A sessão, uma vez presente, sobrevive a uma nova abertura de #fluxo e não cai no login.
+- O filtro de unidade do fluxo muda o total: Todas R$ 3,21, Aldeota R$ 0,00, no recorte 01 a 11/10/2026. O filtro responde. O problema é o conteúdo de teste no consolidado (F-02), não a ausencia de filtro.
+- Fluxo consolidado e o texto da DRE mostram o mesmo R$ 3,21 de entrada e R$ 0,00 de saída.
+- "Voltar ao fluxo" não grava.
+- URL direta #fluxo com a sessão já aberta permanece no fluxo.
+- Produção, em leitura: a tela carregou, lote 10/2026 aberto, sem células encerradas, listas de comissão vazias no filtro. Isso foi leitura, não falha fechada de cálculo.
+- HTTP 200 de producao-dentistas.html sem cookie e HTML estatico. Vazamento: não determinado. Não tratar o 200 do HTML como vazamento até a API responder sem sessão.
+- .htaccess negando _docs, .sql, .zip e .bak, e a listagem proibida da API, aparecem no log Apache como o arquivo funcionando.
+- Compactar todo o conteúdo (mod_deflate) estava marcado. zlib do PHP estava Off. A análise diz que esse par evita comprimir duas vezes.
+- Domínio já em PHP 8.2, não no padrão 7.2 do servidor.
+- Imunify360 sem malware listado naquela leitura. Bloqueador de IP vazio. Sem falha de LVE nas 24 horas descritas.
+- Não reabrir o cPanel não é defeito.
+
+Logout: não testado. Não entra como falha.
+
+--------------------------------------------------------------------------------
+10. SUGESTÕES DE MELHORIA QUE NÃO SÃO DEFEITO FECHADO
+--------------------------------------------------------------------------------
+
+Separadas de F-01 a F-08. Nenhuma deve ser implementada a partir deste arquivo. Onde a fonte é o cPanel, o item continua não revalidado.
+
+10.1 Produto, antes de código
+
+- Decisão escrita: o consolidado operacional exclui QA, ou QA continua e o rótulo avisa que o total inclui teste.
+- Decisão escrita: login por CPF, como a tela, ou por e-mail, como o manual. Se ficar CPF, o manual muda. A seção 0 do manual só aceita mudanca de contrato assim.
+- Decisão escrita: qual menu vale. O de outubro no app.html, o de /relatorios/, ou a barra da seção 3.1. Sem isso, não unificar nav.
+- Tratar contas, unidades, formas e pacientes com prefixo QA como homologação dentro da produção. O relatório operacional não deve somá-los enquanto a regra de origem_teste não estiver visível na tela. Como aplicar no código de outubro: não determinado.
+- Não clicar Encerrar lote, Lancar, Exportar, Imprimir, nem Esqueci minha senha, até haver ambiente que não seja o live, ou um roteiro que pare antes da confirmacao.
+- Não abrir phpMyAdmin para consertar paciente ou lançamento. Primeiro contar, em leitura, pacientes ativos e o lançamento de R$ 3,21, sem copiar CPF.
+
+10.2 Engenharia, depois da captura
+
+- Anotar em PUBLICACOES.md a captura, distinta de publicação, com as versões 20261011 ou o aviso de que o live foi só copiado.
+- Não corrigir o live a partir de docs/my-dents-erp. Esse protótipo não participa do request path de mydents.com.br.
+- O schema.sql de 596 bytes só cria usuários. O restante nasce em CREATE TABLE IF NOT EXISTS e em migrações da API. Melhoria de documentação: depois da captura, descrever o esquema real a partir dos scripts que estão no ar. Não tratar o schema curto como bug de produção. O .htaccess já nega .sql.
+- Busca de paciente: se a investigação de F-05 achar limite, a busca tem de ir ao servidor, com paginação, não só filtrar a página já carregada.
+- Payload de listagem: só reduzir chaves bancárias se H-01 mostrar que a grade não usa e que o valor não precisa viajar na lista.
+- Dois seletores de unidade e dois selects de conta: definir o oficial depois de medir o boot. Não apagar o duplicado antes.
+- Chip: mostrar o nome que sessao.php já devolve, sem gravar esse nome em evidência pública.
+- Repetir o dashboard em mais de uma largura antes de fechar F-04 como estável.
+- Comparar INI live e bootstrap capturado (H-03) sem editar o cPanel.
+- Chamar a API de produção sem cookie. Só então decidir se o HTML 200 sem sessão e problema. Até la, não é vazamento confirmado.
+
+10.3 cPanel, sem misturar com o deploy do PHP (não revalidado)
+
+- Manter mydents.com.br em PHP 8.2 com FPM. Não passar o domínio para o seletor native (7.2). O padrão do servidor esta marcado como obsoleto.
+- memory_limit=256M com pm_max_children=5 pode, no pior caso descrito, passar do 1 GB do plano. Na amostra de 11/10 a memoria ficou em torno de 6 a 10 MB e não houve falta nas últimas 24 horas. Olhar o grafico antes de subir limite. Não foi medido de novo. Não é incidente confirmado.
+- max_execution_time=30. A análise diz que e curto se alguma rotina de folha ou importação passar disso. Não há timeout observado nestas fontes. Não aumentar no escuro.
+- Não ligar zlib.output_compression no INI enquanto "Compactar todo o conteúdo" estiver marcado.
+- No docroot, a análise cita PNG de 1,6 a 2,1 MB (mydents-hero, facetas, ortodontia, proteses) já acompanhados de WebP menor, .well-known.zip de 9,53 MB (o .htaccess nega .zip, o arquivo segue na cota) e JS duplicado com sufixo (1), (2) e homologacao em financeiro/ e recepcao/, além de fase11-fechamento (2).js e recepcao-app (1).js. Limpeza só depois de saber qual arquivo o HTML de outubro referencia. Não apagar o JS que o live pede.
+- Log PHP de 450 KB: ler em busca de notice ou fatal, sem colar IP de cliente nem sessão no Git. O corpo não foi lido. Não e, por si, uma falha.
+- Git do servidor com deploy desligado: não usar como publicação. A captura para o Git privado do projeto e outro passo (F-01).
+- Hotlink protection, bloqueador de IP, FTP extra, WordPress, Sitejet, Social Média, Python e PEAR: a análise diz que o site não precisa disso agora. Não instalar em cima do PHP atual. FTP: zero contas adicionais, no limite de 1. SSH desligado no plano. Não criar conta.
+- E-mail: o grupo E-mail não aparece nas ferramentas. mail/mydents.com.br/ vazio. Uso de disco de e-mail: 0. Não há o que otimizar aí, segundo a análise.
+- Um domínio principal, zero addon, zero subdominio, zero alias extra, zero redirect no painel. O HTTPS e o redirect de producao-dentistas já estão no .htaccess.
+- Imunify360: lista vazia naquela leitura. A análise sugere deixar o verificador como rotina por causa de zips e .bak no home. Não é malware confirmado.
+
+--------------------------------------------------------------------------------
+11. DEPENDÊNCIAS ENTRE CORREÇÕES
+--------------------------------------------------------------------------------
+
+Ordem que o plano pede. Inverter a ordem é o risco descrito na seção 12.
+
+1. F-01, captura do live para o Git, bloqueia todas as outras alterações de arquivo.
+2. Leitura no banco, sem UPDATE, do lançamento de R$ 3,21 e da contagem de pacientes (prepara F-02 e F-05).
+3. Decisão curta do operador: QA fora do consolidado ou não; login CPF ou e-mail; qual menu vale.
+4. Só então os patches de F-02, F-03, F-04 e F-05, no código capturado.
+5. F-07 e F-08 depois, porque dependem da decisão do menu.
+6. R-01 a R-05 em separado, sem misturar com o deploy do PHP.
+
+Dependências pontuais já escritas em cada item:
+
+- F-02 depende do filtro que está no ar, não do fase12.js de setembro.
+- F-03 depende do PHP/JS de relatórios do ar. relatorios-api.php local pode não ser o mesmo. N-04 fecha no mesmo trabalho.
+- F-04 depende de mydents-global-nav.js e do bundle de outubro.
+- F-06 e decisão de produto antes de código.
+- H-01, H-02 e H-03 não viram patch até a investigação no código capturado.
+- N-01 não vira patch até haver regra de persistência.
+
+--------------------------------------------------------------------------------
+12. RISCOS DE ALTERAR PRODUÇÃO
+--------------------------------------------------------------------------------
+
+- Sobrescrever app.html ou o bundle com a versão de setembro tira do ar o shell de outubro. O app.html novo do repositório aponta para um arquivo que o live já responde 404.
+- Inativar ou apagar o lançamento de R$ 3,21 sem trilha muda o saldo que a tela mostrou em 11/10.
+- Apagar unidade QA pode orfanar o lote 10/2026 (Aberto, sem células encerradas) e o dentista fictício do filtro. Não apagar nesta fase.
+- Publicar o index.php de usuários do repositório pode remover recuperação e CPF se o PHP live depender deles. Não foi provado que o POST atual autentique; por isso não se troca o login antes da captura e de um teste com conta de teste.
+- pm_max_children=5 e memory_limit=256M, análise anterior não revalidada: um PHP novo mais pesado pode encostar no teto de 1 GB. Não foi medido na auditoria funcional. Na amostra de 11/10 não houve falta.
+- Não há cron, na análise anterior, para desfazer uma migração.
+- Backup da conta visto na análise anterior: último automático em 09/10, mais um tar manual em 10/10 dentro do home. Não revalidado.
+- Não criar token de API, não mudar PHP, cron, SSL, DNS ou permissão de arquivo a partir do plano de correção do aplicativo.
+- Não usar VAL-FLUXO Paciente 01. Não apagar Cursor Teste nem Codex Teste.
+
+--------------------------------------------------------------------------------
+13. TRÊS PRÓXIMOS PASSOS
+--------------------------------------------------------------------------------
+
+Estes três passos são a ordem sugerida do plano de correção. Nenhum foi executado por este relatório.
+
+1. Capturar o public_html atual para o Git privado, em leitura, fora de deploy, e anotar em PUBLICACOES.md que foi captura, não publicação. Pronto quando um checkout novo tiver os mesmos nomes e tamanhos do GET de 11/10, inclusive o bundle de 1.708.351 bytes e recuperacao.php.
+
+2. Ler no banco, sem UPDATE e sem copiar CPF, a linha de R$ 3,21 (conta, unidade, data, origem, usuário) e a contagem de pacientes por status e unidade, inclusive se TST-CURSOR-Ficha-Stab existe e com qual status.
+
+3. Decisão curta do operador, por escrito: QA fica fora do consolidado operacional ou o rótulo avisa que o total inclui teste; o login fica CPF ou volta para e-mail; qual menu é o oficial.
+
+Só depois desses três passos os patches de fluxo, rótulo de unidade, dashboard e lista de pacientes, sempre no código capturado.
+
+--------------------------------------------------------------------------------
+14. VALIDAÇÃO MANUAL AINDA NECESSÁRIA
+--------------------------------------------------------------------------------
+
+Herdado da auditoria. Não foi feito nesta consolidação.
+
+- Logar de novo se a sessão da aba cair. A auditoria não tem senha para refazer o login.
+- Confirmar com o operador qual conta estava no chip "Administrador".
+- Contar no banco, em leitura: pacientes ativos, o lançamento de R$ 3,21, e se TST-CURSOR-Ficha-Stab existe e com qual status.
+- Ler o PHP live de login.php só depois de copiar o arquivo para o Git, para ver se o campo login é CPF.
+- Repetir o clique do Dashboard mais de uma vez e em outra largura de tela.
+- Abrir Gestão Financeira, Folha, Caixa e Ajustes só em leitura, com cuidado para não listar nomes reais no relatório.
+- Revalidar no cPanel, se ainda importar: validade do certificado, cron vazio, hosts de MySQL remoto, 2FA, e o tar de backup dentro do home.
+- Corpo do log PHP de 450 KB, sem colar IP de cliente nem sessão no Git.
+- Chamar a API de produção sem cookie.
+- Ver se as chaves bancárias do JSON de pacientes vem vazias, sem copiar valor.
+
+Testes depois de cada correção, quando houver correção: só leitura ou homologação já combinada. Não usar VAL-FLUXO Paciente 01. Não apagar Cursor Teste nem Codex Teste. O detalhe do que olhar depois de cada item está na ficha correspondente.
+
+--------------------------------------------------------------------------------
+15. FONTES E EVIDÊNCIAS
+--------------------------------------------------------------------------------
+
+- docs/auditoria-funcional-my-dents.md
+- docs/arquitetura-my-dents.md
+- docs/plano-correcao-tecnica-my-dents.md
+- analise-cpanel-producao.md (store do agente; não revalidada na auditoria funcional)
+- docs/auditoria-evidencias/01-login-sem-sessao.png
+- docs/auditoria-evidencias/02-fluxo-filtros.png
+- docs/auditoria-evidencias/03-relatorios-executivos.png
+- Cópias citadas pela auditoria em media/auditoria-my-dents/ no store do agente da análise de cPanel
+- Capturas do painel citadas em media/cpanel-analise/ (02 a 27, lista na análise de cPanel)
+
+Nada neste arquivo foi medido de novo no navegador, no cPanel ou no banco. Número, causa e regra que a fonte não traz estão escritos como não determinado, hipótese ou não revalidado.
+
+Fim do relatório.
