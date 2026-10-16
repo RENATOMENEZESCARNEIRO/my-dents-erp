@@ -63,7 +63,7 @@ O diff não commitado desses arquivos, lido nesta avaliação, sustenta a inten�
 - fluxo-filtros.js e mydents-global-nav.js: alias de conta e previsto separado do saldo.
 - fase12.js, taxas-cartao-lib.php e lancamentos.php: mesma linha de prazo em dia útil (mtime 13/10/2026 09:40 no disco local; tamanhos iguais aos do servidor).
 
-RELATORIO_REORGANIZACAO_CPANEL_20261013.md: pacientes.php, pacientes-lib.php, app.html, recepcao-app.js, fluxo-filtros.js e usuarios/session.php conferidos no ar naquele dia. 89 entradas foram para /home/mydentscom/arquivos_historicos, sem exclusão definitiva. O relatório diz que o cron visto naquele dia não tinha trabalho. Esta avaliação não reabriu a tela de cron.
+RELATORIO_REORGANIZACAO_CPANEL_20261013.md: pacientes.php, pacientes-lib.php, app.html, recepcao-app.js, fluxo-filtros.js e usuarios/session.php conferidos no ar naquele dia. 89 entradas foram para /home/[cPanel account redacted]/arquivos_historicos, sem exclusão definitiva. O relatório diz que o cron visto naquele dia não tinha trabalho. Esta avaliação não reabriu a tela de cron.
 
 14/10 de manhã — dois PHP publicados e ainda sem commit
 

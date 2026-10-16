@@ -2,7 +2,7 @@ RELATORIO TECNICO — My Dents — correcoes de 14/10/2026
 Destino: revisao por outro agente
 Gerado em: 14/10/2026
 Sistema live: https://mydents.com.br/
-Web root: /home/mydentscom/public_html
+Web root: /home/[cPanel account redacted]/public_html
 Fonte de publicacao: C:\Users\usuario\Projects\My_Dents\codigo-atual\
 Repositorio do codigo: C:\Users\usuario\Projects\My_Dents (branch main, SEM remote)
 Repositorio deste arquivo: docs/my-dents-erp (prototipo; nao e o sistema publicado)
@@ -72,10 +72,10 @@ ser publicado por cima do live.
 3. BACKUP ANTES DE SOBRESCREVER
 
 Fora do web root, no servidor:
-  /home/mydentscom/arquivo-20261014/live-antes/recepcao/
-  /home/mydentscom/arquivo-20261014/live-antes/financeiro/
-  /home/mydentscom/arquivo-20261014/live-antes/financeiro/api/
-  /home/mydentscom/arquivo-20261014/live-antes/relatorios/relatorios-api.php
+  /home/[cPanel account redacted]/arquivo-20261014/live-antes/recepcao/
+  /home/[cPanel account redacted]/arquivo-20261014/live-antes/financeiro/
+  /home/[cPanel account redacted]/arquivo-20261014/live-antes/financeiro/api/
+  /home/[cPanel account redacted]/arquivo-20261014/live-antes/relatorios/relatorios-api.php
 
 Copia local anterior, ignorada pelo Git:
   C:\Users\usuario\Projects\My_Dents\arquivo-20261014\live-antes\
@@ -325,7 +325,7 @@ Correcao em relatorios/relatorios-api.php, funcao relatorios_socios:
 Arquivo publicado:
   relatorios/relatorios-api.php
   Tamanho apos o upload: 78.876 bytes
-  Backup: /home/mydentscom/arquivo-20261014/live-antes/relatorios/relatorios-api.php
+  Backup: /home/[cPanel account redacted]/arquivo-20261014/live-antes/relatorios/relatorios-api.php
   Cache: nenhum. E PHP.
 
 Validado depois do envio, mesmo recorte:

@@ -1,6 +1,6 @@
 RELATÓRIO TÉCNICO — MY DENTS NO AR
 Data da leitura: 14/10/2026.
-Fonte: arquivos do cPanel, conta mydentscom, document root /home/mydentscom/public_html, lidos pela API de listagem e de conteúdo do Gerenciador de arquivos já autenticado em secg327.secrel.com.br:2083. Horários abaixo estão em America/Sao_Paulo.
+Fonte: arquivos do cPanel, conta [cPanel account redacted], document root /home/[cPanel account redacted]/public_html, lidos pela API de listagem e de conteúdo do Gerenciador de arquivos já autenticado em [cPanel host redacted]. Horários abaixo estão em America/Sao_Paulo.
 A pasta local (codigo/, codigo-atual/, o workspace my-dents-erp) foi ignorada como fonte do comportamento. A avaliação anterior (docs/avaliacao-pos-codex-20261014.txt) só entra na seção 8, para apontar o que ela errou ou não pôde ver por ter usado o disco local.
 
 Nada foi editado, salvo, enviado, apagado, movido, restaurado ou teve permissão, PHP, cron, SSL, banco, DNS ou conta alterados. O editor do Gerenciador não foi aberto. Nenhum formulário foi enviado. Não houve logout, exportação, impressão nem clique em Atualizar painel, Atualizar dados ou Atualizar saldos. GET /financeiro/api/pacientes.php não foi chamado, com ou sem acao=diagnostico. A tela Pacientes não foi aberta. VAL-FLUXO Paciente 01 não foi aberto. Senha, cookie, token, .env, anamnese e nomes de pacientes reais não entram neste texto.
@@ -21,16 +21,16 @@ O bundle financeiro/app.bundle.20261005-calculos2.js (1.707.396 bytes) devolveu 
 2. HOME E PASTAS IRMÃS (LISTAGEM, SEM ABRIR CONTEÚDO CLÍNICO)
 --------------------------------------------------------------------------------
 
-Document root servido: /home/mydentscom/public_html (0750, pasta alterada 13/10/2026 18:22:40). www é link para public_html.
+Document root servido: /home/[cPanel account redacted]/public_html (0750, pasta alterada 13/10/2026 18:22:40). www é link para public_html.
 
 Pastas visíveis no home, além dos pontos de sistema (.cagefs, .caldav, .cl.selector, .cpanel, .htpasswds, .koality, .spamassassin, .trash):
 
-- anexos-folha (0750, 09/10/2026): 3 arquivos, extensões jpg, pdf, png. Conteúdo não aberto. O PHP da folha grava documento aqui (f11_documentos_diretorio aponta para dirname três níveis acima de financeiro/api, isto é /home/mydentscom/anexos-folha).
+- anexos-folha (0750, 09/10/2026): 3 arquivos, extensões jpg, pdf, png. Conteúdo não aberto. O PHP da folha grava documento aqui (f11_documentos_diretorio aponta para dirname três níveis acima de financeiro/api, isto é /home/[cPanel account redacted]/anexos-folha).
 - arquivos_historicos (0700, 13/10/2026 18:12:19): backups/ e quarentena/. Não é document root.
-- dados_clinicos (0750, 09/10/2026): 3 arquivos, pdf e png. Conteúdo não aberto. arquivos_clinicos.php grava em /home/mydentscom/dados_clinicos.
+- dados_clinicos (0750, 09/10/2026): 3 arquivos, pdf e png. Conteúdo não aberto. arquivos_clinicos.php grava em /home/[cPanel account redacted]/dados_clinicos.
 - etc, logs, mail, public_ftp, ssl, tmp, access-logs: infra da hospedagem. tmp contém estatística (analog, awstats, webalizer), não a aplicação.
 - private (0700, 13/10/2026 18:25:28): config.php (228 bytes, 03/09/2026, modo 0644) e mydents-live-source/. O bootstrap.php e o db.php publicados fazem require desse config.php, que está fora do document root. O conteúdo de config.php não foi lido. mydents-live-source tem .git e cinco PHP menores e mais antigos que os publicados (fase12-lib.php 65.911 bytes em 15/09; o publicado tem 82.865 bytes em 12/10). Essa pasta não é a raiz do site.
-- Na raiz do home, fora do document root: chat_config.php (85 bytes), chat_conhecimento_regras.md, chat_senha.hash (60 bytes, 0600), Manual_sistema_My_Dents.txt. Conteúdo de senha e de config do chat não foi lido. chat_agente.php publicado faz require de /home/mydentscom/chat_config.php.
+- Na raiz do home, fora do document root: chat_config.php (85 bytes), chat_conhecimento_regras.md, chat_senha.hash (60 bytes, 0600), Manual_sistema_My_Dents.txt. Conteúdo de senha e de config do chat não foi lido. chat_agente.php publicado faz require de /home/[cPanel account redacted]/chat_config.php.
 
 arquivos_historicos/backups/backups_arquivados: 35 pastas de cópia (acessos, ajustes, cadastros, caixa, conciliação, folha, hotfix-previsao-20261013, qa-*, reorganização, entre outras, datas de 23/09 a 13/10) e dezenas de .bak, .tar.gz e zips. Três tar.gz grandes (cerca de 31 MB, 117 MB e 120 MB). Não foram extraídos nem abertos.
 
@@ -77,204 +77,204 @@ O .htaccess de financeiro/api repete o bloqueio de zip/sql/bak e, além disso, n
 
 Listagem completa de public_html (caminho, tamanho no disco, data de modificação). Imagens e o bundle entram só com nome, tamanho e data:
 
-DIR  /home/mydentscom/public_html/_docs  4096 bytes  15/09/2026 11:56:12
-ARQ  /home/mydentscom/public_html/_docs/MATRIZ_REQUISITO_GAP_PRIORIDADE_20260911.md  10450 bytes  11/09/2026 23:54:20
-ARQ  /home/mydentscom/public_html/_docs/SPRINT_C_POLITICA_P1_20260912.md  1111 bytes  11/09/2026 23:53:56
-ARQ  /home/mydentscom/public_html/chat_admin.html  4206 bytes  06/10/2026 13:20:09
-ARQ  /home/mydentscom/public_html/chat_agente.php  13166 bytes  06/10/2026 13:48:55
-DIR  /home/mydentscom/public_html/financeiro  4096 bytes  13/10/2026 18:36:01
-ARQ  /home/mydentscom/public_html/financeiro/anexos-lancamentos.js  8084 bytes  10/09/2026 20:33:49
-DIR  /home/mydentscom/public_html/financeiro/api  4096 bytes  14/10/2026 08:41:18
-ARQ  /home/mydentscom/public_html/financeiro/api/anamnese.php  14446 bytes  10/10/2026 22:53:20
-ARQ  /home/mydentscom/public_html/financeiro/api/anexos-financeiro.php  10461 bytes  15/09/2026 16:36:30
-ARQ  /home/mydentscom/public_html/financeiro/api/api-usuarios.php  22572 bytes  10/10/2026 11:50:22
-ARQ  /home/mydentscom/public_html/financeiro/api/arquivos-clinicos.php  11509 bytes  05/09/2026 15:23:04
-ARQ  /home/mydentscom/public_html/financeiro/api/auditoria.php  5928 bytes  03/09/2026 19:23:10
-ARQ  /home/mydentscom/public_html/financeiro/api/auditoria-lib.php  4797 bytes  03/09/2026 11:25:33
-ARQ  /home/mydentscom/public_html/financeiro/api/bootstrap.php  3982 bytes  11/10/2026 20:31:27
-ARQ  /home/mydentscom/public_html/financeiro/api/busca-global.php  6357 bytes  10/09/2026 09:33:44
-ARQ  /home/mydentscom/public_html/financeiro/api/cadastros.php  11116 bytes  22/09/2026 08:51:53
-ARQ  /home/mydentscom/public_html/financeiro/api/caixa-turno.php  15489 bytes  08/10/2026 17:18:38
-ARQ  /home/mydentscom/public_html/financeiro/api/caixa-turno-lib.php  15268 bytes  08/10/2026 17:18:48
-ARQ  /home/mydentscom/public_html/financeiro/api/catalogo-precos-lib.php  14464 bytes  12/10/2026 19:40:00
-ARQ  /home/mydentscom/public_html/financeiro/api/comunicacoes.php  23030 bytes  03/09/2026 18:06:59
-ARQ  /home/mydentscom/public_html/financeiro/api/configuracoes-clinicas.php  6468 bytes  10/10/2026 22:32:15
-ARQ  /home/mydentscom/public_html/financeiro/api/configuracoes-financeiras.php  11122 bytes  11/10/2026 11:05:51
-ARQ  /home/mydentscom/public_html/financeiro/api/configuracoes-modulos.php  5017 bytes  07/10/2026 17:36:12
-ARQ  /home/mydentscom/public_html/financeiro/api/configuracoes-recepcao.php  6727 bytes  01/09/2026 19:05:06
-ARQ  /home/mydentscom/public_html/financeiro/api/contas-bancarias.php  10488 bytes  09/10/2026 12:12:37
-ARQ  /home/mydentscom/public_html/financeiro/api/contas-config-lib.php  1977 bytes  09/10/2026 12:12:37
-ARQ  /home/mydentscom/public_html/financeiro/api/controles-financeiros.php  72352 bytes  11/10/2026 21:39:59
-ARQ  /home/mydentscom/public_html/financeiro/api/credito-devolucao.php  19592 bytes  06/10/2026 08:48:59
-ARQ  /home/mydentscom/public_html/financeiro/api/db.php  1607 bytes  03/09/2026 19:10:59
-ARQ  /home/mydentscom/public_html/financeiro/api/debitos.php  49530 bytes  13/10/2026 14:12:04
-ARQ  /home/mydentscom/public_html/financeiro/api/debitos-c07.php  47539 bytes  09/10/2026 12:12:39
-ARQ  /home/mydentscom/public_html/financeiro/api/debitos-lib.php  27456 bytes  05/10/2026 18:33:21
-ARQ  /home/mydentscom/public_html/financeiro/api/dentista-horarios-lib.php  15222 bytes  13/10/2026 08:12:36
-ARQ  /home/mydentscom/public_html/financeiro/api/documentos-paciente.php  12421 bytes  28/09/2026 14:39:20
-ARQ  /home/mydentscom/public_html/financeiro/api/erros-tecnicos.php  2423 bytes  04/09/2026 19:32:25
-ARQ  /home/mydentscom/public_html/financeiro/api/escopo-lib.php  16959 bytes  11/10/2026 11:11:54
-ARQ  /home/mydentscom/public_html/financeiro/api/fase12.php  7783 bytes  12/10/2026 19:36:54
-ARQ  /home/mydentscom/public_html/financeiro/api/fase12-arquivos-lib.php  1360 bytes  05/09/2026 15:22:10
-ARQ  /home/mydentscom/public_html/financeiro/api/fase12-lib.php  82865 bytes  12/10/2026 19:36:53
-ARQ  /home/mydentscom/public_html/financeiro/api/fase12-loader.php  483 bytes  05/09/2026 15:23:30
-ARQ  /home/mydentscom/public_html/financeiro/api/fase12-schema.php  15917 bytes  12/10/2026 19:36:44
-ARQ  /home/mydentscom/public_html/financeiro/api/financeiro-lancamentos-lib.php  17405 bytes  13/10/2026 14:12:02
-ARQ  /home/mydentscom/public_html/financeiro/api/financeiro-relatorios-wrapper.php  89 bytes  03/09/2026 14:29:42
-ARQ  /home/mydentscom/public_html/financeiro/api/folha-fechamento.php  71207 bytes  09/10/2026 21:24:51
-ARQ  /home/mydentscom/public_html/financeiro/api/folha-salarial.php  32156 bytes  11/10/2026 11:24:48
-ARQ  /home/mydentscom/public_html/financeiro/api/fornecedores.php  8516 bytes  09/10/2026 21:02:45
-ARQ  /home/mydentscom/public_html/financeiro/api/homologacao-lib.php  14652 bytes  14/10/2026 08:41:17
-ARQ  /home/mydentscom/public_html/financeiro/api/importacao-financeira.php  23129 bytes  09/10/2026 15:52:47
-ARQ  /home/mydentscom/public_html/financeiro/api/jornada-paciente.php  25488 bytes  10/10/2026 14:10:58
-ARQ  /home/mydentscom/public_html/financeiro/api/lancamentos.php  61211 bytes  13/10/2026 10:00:56
-ARQ  /home/mydentscom/public_html/financeiro/api/legacy-state.php  60401 bytes  11/10/2026 22:26:28
-ARQ  /home/mydentscom/public_html/financeiro/api/limpeza-lancamentos.php  4084 bytes  21/09/2026 18:21:36
-ARQ  /home/mydentscom/public_html/financeiro/api/listas.php  11951 bytes  11/10/2026 11:13:23
-ARQ  /home/mydentscom/public_html/financeiro/api/login.php  1393 bytes  24/08/2026 14:50:08
-ARQ  /home/mydentscom/public_html/financeiro/api/logout.php  241 bytes  24/08/2026 14:50:10
-ARQ  /home/mydentscom/public_html/financeiro/api/manutencao-homologacao.php  21459 bytes  06/10/2026 18:17:37
-ARQ  /home/mydentscom/public_html/financeiro/api/paciente-observacoes.php  6982 bytes  24/08/2026 13:44:39
-ARQ  /home/mydentscom/public_html/financeiro/api/pacientes.php  7969 bytes  13/10/2026 18:07:53
-ARQ  /home/mydentscom/public_html/financeiro/api/pacientes-lib.homologacao-20260921.php  28640 bytes  21/09/2026 08:58:30
-ARQ  /home/mydentscom/public_html/financeiro/api/pacientes-lib.php  33415 bytes  14/10/2026 08:41:06
-ARQ  /home/mydentscom/public_html/financeiro/api/pagamento-dentistas.php  43374 bytes  13/10/2026 08:12:58
-ARQ  /home/mydentscom/public_html/financeiro/api/pendencias.php  9506 bytes  03/09/2026 16:12:24
-ARQ  /home/mydentscom/public_html/financeiro/api/pendencias-lib.php  30091 bytes  15/09/2026 14:32:34
-ARQ  /home/mydentscom/public_html/financeiro/api/planos.php  27013 bytes  02/10/2026 13:44:47
-ARQ  /home/mydentscom/public_html/financeiro/api/portal-dentista.php  6805 bytes  10/10/2026 11:51:03
-ARQ  /home/mydentscom/public_html/financeiro/api/previsoes-manuais-lib.php  13302 bytes  11/10/2026 21:39:59
-ARQ  /home/mydentscom/public_html/financeiro/api/recebimentos-financeiros.php  19848 bytes  09/10/2026 21:02:46
-ARQ  /home/mydentscom/public_html/financeiro/api/recepcao.php  37494 bytes  13/10/2026 08:43:06
-ARQ  /home/mydentscom/public_html/financeiro/api/recepcao-catalogos-lib.php  7038 bytes  19/09/2026 21:26:19
-ARQ  /home/mydentscom/public_html/financeiro/api/recepcao-permissoes-lib.php  3477 bytes  15/09/2026 15:17:26
-ARQ  /home/mydentscom/public_html/financeiro/api/relatorios.php  89 bytes  03/09/2026 14:30:21
-ARQ  /home/mydentscom/public_html/financeiro/api/relatorios-consolidados.php  29069 bytes  13/10/2026 14:12:05
-ARQ  /home/mydentscom/public_html/financeiro/api/session.php  611 bytes  24/08/2026 14:50:12
-ARQ  /home/mydentscom/public_html/financeiro/api/taxas-cartao.php  2694 bytes  02/10/2026 16:38:11
-ARQ  /home/mydentscom/public_html/financeiro/api/taxas-cartao-lib.php  18095 bytes  13/10/2026 10:00:31
-ARQ  /home/mydentscom/public_html/financeiro/api/tratamentos.php  16694 bytes  05/09/2026 11:58:34
-ARQ  /home/mydentscom/public_html/financeiro/api/tratamentos-lib.php  4999 bytes  24/08/2026 14:25:35
-ARQ  /home/mydentscom/public_html/financeiro/api/usuarios.php  3614 bytes  01/09/2026 19:14:45
-ARQ  /home/mydentscom/public_html/financeiro/api/virada-producao.php  15082 bytes  16/09/2026 17:31:29
-ARQ  /home/mydentscom/public_html/financeiro/app.bundle.20261005-calculos2.js  1707396 bytes  11/10/2026 20:31:06
-ARQ  /home/mydentscom/public_html/financeiro/app.html  12750 bytes  13/10/2026 18:32:23
-ARQ  /home/mydentscom/public_html/financeiro/apresentacao.js  40058 bytes  07/10/2026 17:35:51
-ARQ  /home/mydentscom/public_html/financeiro/auth-guard.js  11953 bytes  11/10/2026 22:26:51
-ARQ  /home/mydentscom/public_html/financeiro/avisos.js  7930 bytes  10/09/2026 20:31:45
-ARQ  /home/mydentscom/public_html/financeiro/cadastros-clinicos.js  12030 bytes  10/10/2026 22:40:21
-ARQ  /home/mydentscom/public_html/financeiro/cadastros-financeiros.js  16442 bytes  11/10/2026 11:07:32
-ARQ  /home/mydentscom/public_html/financeiro/caixa-turno.js  15099 bytes  10/10/2026 15:37:59
-ARQ  /home/mydentscom/public_html/financeiro/controles-financeiros.js  20279 bytes  08/10/2026 09:50:05
-ARQ  /home/mydentscom/public_html/financeiro/controles-financeiros.php  37950 bytes  02/10/2026 18:38:15
-ARQ  /home/mydentscom/public_html/financeiro/enhancements.js  93873 bytes  11/10/2026 11:07:27
-ARQ  /home/mydentscom/public_html/financeiro/fase10-integracoes.js  20650 bytes  10/10/2026 15:26:58
-ARQ  /home/mydentscom/public_html/financeiro/fase11-fechamento.js  43171 bytes  09/10/2026 21:03:04
-ARQ  /home/mydentscom/public_html/financeiro/fase12.css  27384 bytes  07/10/2026 12:01:05
-ARQ  /home/mydentscom/public_html/financeiro/fase12.js  104309 bytes  13/10/2026 10:02:31
-ARQ  /home/mydentscom/public_html/financeiro/fase12-pendencia-financeira.js  12170 bytes  07/10/2026 10:34:30
-ARQ  /home/mydentscom/public_html/financeiro/financeiro-calculos-20261005.js  7922 bytes  06/10/2026 18:18:05
-ARQ  /home/mydentscom/public_html/financeiro/financeiro-fase02-lib.php  24816 bytes  17/09/2026 15:52:30
-ARQ  /home/mydentscom/public_html/financeiro/financeiro-oficial-v2.js  24136 bytes  09/10/2026 21:03:02
-ARQ  /home/mydentscom/public_html/financeiro/financeiro-performance.js  3566 bytes  18/09/2026 03:03:19
-ARQ  /home/mydentscom/public_html/financeiro/fluxo-filtros.js  24988 bytes  13/10/2026 18:32:21
-ARQ  /home/mydentscom/public_html/financeiro/folha-fechamento.php  29548 bytes  04/09/2026 22:49:45
-ARQ  /home/mydentscom/public_html/financeiro/folha-salarial.js  36214 bytes  11/10/2026 11:24:52
-ARQ  /home/mydentscom/public_html/financeiro/gestao-usuarios.js  28254 bytes  10/10/2026 15:27:00
-ARQ  /home/mydentscom/public_html/financeiro/importacao-excel.js  21446 bytes  06/10/2026 09:22:58
-ARQ  /home/mydentscom/public_html/financeiro/index.html  353 bytes  24/08/2026 14:50:36
-ARQ  /home/mydentscom/public_html/financeiro/index.php  220 bytes  24/08/2026 14:50:02
-ARQ  /home/mydentscom/public_html/financeiro/lancamentos.php  24833 bytes  16/09/2026 23:44:47
-ARQ  /home/mydentscom/public_html/financeiro/layout-modernizacao.js  35988 bytes  09/10/2026 10:34:38
-ARQ  /home/mydentscom/public_html/financeiro/legacy-bridge.js  37518 bytes  11/10/2026 22:26:50
-ARQ  /home/mydentscom/public_html/financeiro/login.html  353 bytes  24/08/2026 14:50:38
-ARQ  /home/mydentscom/public_html/financeiro/manutencao-homologacao.html  10489 bytes  06/10/2026 08:10:32
-ARQ  /home/mydentscom/public_html/financeiro/mensagens-financeiro.js  1348 bytes  25/08/2026 11:51:18
-ARQ  /home/mydentscom/public_html/financeiro/menu-alinhamento.js  781 bytes  28/08/2026 11:42:14
-ARQ  /home/mydentscom/public_html/financeiro/modulos-interface.js  25059 bytes  11/10/2026 11:02:19
-ARQ  /home/mydentscom/public_html/financeiro/mydents-global-nav.js  57105 bytes  13/10/2026 14:08:41
-ARQ  /home/mydentscom/public_html/financeiro/novo-lancamento-modal.js  8837 bytes  10/10/2026 17:09:35
-ARQ  /home/mydentscom/public_html/financeiro/pagamento-dentistas.js  37165 bytes  12/10/2026 22:34:28
-ARQ  /home/mydentscom/public_html/financeiro/portal-dentista.php  6032 bytes  10/10/2026 18:30:00
-ARQ  /home/mydentscom/public_html/financeiro/previsoes-contas-pagar.js  113007 bytes  11/10/2026 21:33:45
-ARQ  /home/mydentscom/public_html/financeiro/previsoes-layout-unificado.js  3778 bytes  08/10/2026 10:00:37
-ARQ  /home/mydentscom/public_html/financeiro/producao-dentistas.html  938 bytes  12/10/2026 19:37:03
-ARQ  /home/mydentscom/public_html/financeiro/recebimentos-previstos.js  19065 bytes  09/10/2026 17:08:21
-ARQ  /home/mydentscom/public_html/financeiro/tailwind-financeiro-20260925.css  11392 bytes  25/09/2026 00:10:30
-ARQ  /home/mydentscom/public_html/financeiro/taxas-cartao.html  561 bytes  02/10/2026 16:43:25
-ARQ  /home/mydentscom/public_html/financeiro/taxas-cartao.js  18002 bytes  02/10/2026 16:42:07
-ARQ  /home/mydentscom/public_html/financeiro/unificacao.js  4330 bytes  30/09/2026 08:54:05
-ARQ  /home/mydentscom/public_html/financeiro/virada-producao.js  6477 bytes  16/09/2026 17:35:45
-ARQ  /home/mydentscom/public_html/index.html  298767 bytes  06/10/2026 12:17:47
-ARQ  /home/mydentscom/public_html/logo-my-dents.png  103458 bytes  02/09/2026 14:36:21
-DIR  /home/mydentscom/public_html/logos  4096 bytes  06/10/2026 11:39:51
-ARQ  /home/mydentscom/public_html/logos/hapvida.png  3769 bytes  06/10/2026 11:35:30
-ARQ  /home/mydentscom/public_html/logos/mydents.png  6627 bytes  06/10/2026 11:39:50
-ARQ  /home/mydentscom/public_html/logos/odontoart.png  3884 bytes  06/10/2026 11:34:32
-ARQ  /home/mydentscom/public_html/logos/odonto-system.png  3447 bytes  06/10/2026 11:29:37
-ARQ  /home/mydentscom/public_html/logos/plano-clin.png  6140 bytes  06/10/2026 11:37:18
-ARQ  /home/mydentscom/public_html/logos/unimed.png  3007 bytes  06/10/2026 11:34:58
-ARQ  /home/mydentscom/public_html/mydents-card-1.webp  6536 bytes  06/10/2026 12:17:02
-ARQ  /home/mydentscom/public_html/mydents-card-2.webp  7380 bytes  06/10/2026 12:17:04
-ARQ  /home/mydentscom/public_html/mydents-card-3.webp  6176 bytes  06/10/2026 12:17:05
-ARQ  /home/mydentscom/public_html/mydents-card-4.webp  6112 bytes  06/10/2026 12:17:06
-ARQ  /home/mydentscom/public_html/mydents-card-5.webp  10588 bytes  06/10/2026 12:17:07
-ARQ  /home/mydentscom/public_html/mydents-card-6.webp  9266 bytes  06/10/2026 12:17:08
-ARQ  /home/mydentscom/public_html/mydents-card-7.webp  13482 bytes  06/10/2026 12:17:10
-ARQ  /home/mydentscom/public_html/mydents-card-8.webp  9536 bytes  06/10/2026 12:17:11
-ARQ  /home/mydentscom/public_html/mydents-facetas.webp  85502 bytes  06/10/2026 11:13:13
-ARQ  /home/mydentscom/public_html/mydents-hero.webp  35450 bytes  06/10/2026 11:13:12
-ARQ  /home/mydentscom/public_html/mydents-ortodontia.webp  55912 bytes  06/10/2026 11:13:12
-ARQ  /home/mydentscom/public_html/mydents-proteses.webp  75028 bytes  06/10/2026 11:13:13
-DIR  /home/mydentscom/public_html/notas-fiscais  4096 bytes  15/09/2026 11:55:45
-ARQ  /home/mydentscom/public_html/notas-fiscais/app.js  8070 bytes  28/08/2026 09:41:11
-ARQ  /home/mydentscom/public_html/notas-fiscais/index.html  5868 bytes  13/09/2026 09:32:58
-ARQ  /home/mydentscom/public_html/notas-fiscais/index.php  221 bytes  02/09/2026 13:46:05
-ARQ  /home/mydentscom/public_html/notas-fiscais/notas-fiscais-app.js  7557 bytes  27/08/2026 19:18:08
-ARQ  /home/mydentscom/public_html/notas-fiscais/notas-fiscais-index.html  5726 bytes  28/08/2026 14:17:13
-DIR  /home/mydentscom/public_html/pacientes  4096 bytes  22/09/2026 08:51:57
-ARQ  /home/mydentscom/public_html/pacientes/index.php  600 bytes  22/09/2026 08:51:56
-ARQ  /home/mydentscom/public_html/php.ini  619 bytes  07/10/2026 14:02:41
-DIR  /home/mydentscom/public_html/producao-dentistas  4096 bytes  12/09/2026 00:18:43
-ARQ  /home/mydentscom/public_html/producao-dentistas/index.php  106 bytes  12/09/2026 00:16:44
-DIR  /home/mydentscom/public_html/recepcao  4096 bytes  13/10/2026 18:22:35
-ARQ  /home/mydentscom/public_html/recepcao/experiencia-integrada.js  98042 bytes  12/10/2026 22:24:14
-ARQ  /home/mydentscom/public_html/recepcao/index.html  638 bytes  29/09/2026 18:17:20
-ARQ  /home/mydentscom/public_html/recepcao/index.php  219 bytes  24/08/2026 14:50:06
-ARQ  /home/mydentscom/public_html/recepcao/melhorias-pacientes.js  9160 bytes  28/09/2026 14:40:34
-ARQ  /home/mydentscom/public_html/recepcao/odontograma.js  9600 bytes  12/09/2026 11:49:02
-ARQ  /home/mydentscom/public_html/recepcao/phase06-jornada.js  23115 bytes  13/09/2026 13:22:14
-ARQ  /home/mydentscom/public_html/recepcao/phase07-comunicacoes.js  19835 bytes  11/09/2026 10:10:04
-ARQ  /home/mydentscom/public_html/recepcao/recepcao.css  38690 bytes  02/10/2026 15:09:15
-ARQ  /home/mydentscom/public_html/recepcao/recepcao-app.css  56203 bytes  25/09/2026 15:33:33
-ARQ  /home/mydentscom/public_html/recepcao/recepcao-app.js  249261 bytes  13/10/2026 18:08:35
-DIR  /home/mydentscom/public_html/relatorios  4096 bytes  13/10/2026 14:12:04
-ARQ  /home/mydentscom/public_html/relatorios/api.php  72 bytes  03/09/2026 14:12:43
-ARQ  /home/mydentscom/public_html/relatorios/controle-acesso.php  11590 bytes  15/09/2026 15:51:14
-ARQ  /home/mydentscom/public_html/relatorios/credito-em-aberto.php  5438 bytes  16/09/2026 17:35:47
-ARQ  /home/mydentscom/public_html/relatorios/dados.php  72 bytes  03/09/2026 14:27:27
-ARQ  /home/mydentscom/public_html/relatorios/index.php  81 bytes  03/09/2026 14:16:30
-ARQ  /home/mydentscom/public_html/relatorios/relatorios-api.php  78757 bytes  13/10/2026 14:12:03
-ARQ  /home/mydentscom/public_html/relatorios/relatorios-index-modern.php  39215 bytes  11/10/2026 20:31:59
-ARQ  /home/mydentscom/public_html/sistema-modern.css  15128 bytes  12/09/2026 12:00:52
-DIR  /home/mydentscom/public_html/usuarios  4096 bytes  13/10/2026 18:08:44
-ARQ  /home/mydentscom/public_html/usuarios/api-experiencia.php  3442 bytes  03/09/2026 15:08:50
-ARQ  /home/mydentscom/public_html/usuarios/clinicas.php  11747 bytes  25/09/2026 19:19:46
-ARQ  /home/mydentscom/public_html/usuarios/clinicas-ui.js  12420 bytes  25/09/2026 19:21:57
-ARQ  /home/mydentscom/public_html/usuarios/controle-acesso.php  27686 bytes  10/10/2026 11:54:18
-ARQ  /home/mydentscom/public_html/usuarios/index.php  20586 bytes  10/10/2026 11:47:50
-ARQ  /home/mydentscom/public_html/usuarios/login.php  1746 bytes  10/10/2026 11:47:33
-ARQ  /home/mydentscom/public_html/usuarios/Logo My Dents.jpeg  89738 bytes  26/08/2026 16:52:45
-ARQ  /home/mydentscom/public_html/usuarios/logout.php  145 bytes  24/08/2026 14:49:44
-ARQ  /home/mydentscom/public_html/usuarios/perfil.php  6536 bytes  25/09/2026 18:44:40
-ARQ  /home/mydentscom/public_html/usuarios/portal-funcionario.html  7481 bytes  13/09/2026 09:32:58
-ARQ  /home/mydentscom/public_html/usuarios/recuperacao.php  3760 bytes  10/10/2026 11:49:00
-ARQ  /home/mydentscom/public_html/usuarios/sessao.php  698 bytes  10/10/2026 15:26:34
-ARQ  /home/mydentscom/public_html/usuarios/session.php  658 bytes  13/10/2026 18:08:43
-ARQ  /home/mydentscom/public_html/usuarios/trocar-senha.php  5068 bytes  10/10/2026 11:48:43
-ARQ  /home/mydentscom/public_html/usuarios/usuarios-experiencia-lib.php  12337 bytes  11/09/2026 18:01:04
-ARQ  /home/mydentscom/public_html/usuarios/usuarios-login.php  1524 bytes  03/09/2026 15:08:53
-ARQ  /home/mydentscom/public_html/usuarios/usuarios-sessao.php  683 bytes  03/09/2026 15:09:00
+DIR  /home/[cPanel account redacted]/public_html/_docs  4096 bytes  15/09/2026 11:56:12
+ARQ  /home/[cPanel account redacted]/public_html/_docs/MATRIZ_REQUISITO_GAP_PRIORIDADE_20260911.md  10450 bytes  11/09/2026 23:54:20
+ARQ  /home/[cPanel account redacted]/public_html/_docs/SPRINT_C_POLITICA_P1_20260912.md  1111 bytes  11/09/2026 23:53:56
+ARQ  /home/[cPanel account redacted]/public_html/chat_admin.html  4206 bytes  06/10/2026 13:20:09
+ARQ  /home/[cPanel account redacted]/public_html/chat_agente.php  13166 bytes  06/10/2026 13:48:55
+DIR  /home/[cPanel account redacted]/public_html/financeiro  4096 bytes  13/10/2026 18:36:01
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/anexos-lancamentos.js  8084 bytes  10/09/2026 20:33:49
+DIR  /home/[cPanel account redacted]/public_html/financeiro/api  4096 bytes  14/10/2026 08:41:18
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/anamnese.php  14446 bytes  10/10/2026 22:53:20
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/anexos-financeiro.php  10461 bytes  15/09/2026 16:36:30
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/api-usuarios.php  22572 bytes  10/10/2026 11:50:22
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/arquivos-clinicos.php  11509 bytes  05/09/2026 15:23:04
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/auditoria.php  5928 bytes  03/09/2026 19:23:10
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/auditoria-lib.php  4797 bytes  03/09/2026 11:25:33
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/bootstrap.php  3982 bytes  11/10/2026 20:31:27
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/busca-global.php  6357 bytes  10/09/2026 09:33:44
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/cadastros.php  11116 bytes  22/09/2026 08:51:53
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/caixa-turno.php  15489 bytes  08/10/2026 17:18:38
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/caixa-turno-lib.php  15268 bytes  08/10/2026 17:18:48
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/catalogo-precos-lib.php  14464 bytes  12/10/2026 19:40:00
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/comunicacoes.php  23030 bytes  03/09/2026 18:06:59
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/configuracoes-clinicas.php  6468 bytes  10/10/2026 22:32:15
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/configuracoes-financeiras.php  11122 bytes  11/10/2026 11:05:51
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/configuracoes-modulos.php  5017 bytes  07/10/2026 17:36:12
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/configuracoes-recepcao.php  6727 bytes  01/09/2026 19:05:06
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/contas-bancarias.php  10488 bytes  09/10/2026 12:12:37
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/contas-config-lib.php  1977 bytes  09/10/2026 12:12:37
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/controles-financeiros.php  72352 bytes  11/10/2026 21:39:59
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/credito-devolucao.php  19592 bytes  06/10/2026 08:48:59
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/db.php  1607 bytes  03/09/2026 19:10:59
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/debitos.php  49530 bytes  13/10/2026 14:12:04
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/debitos-c07.php  47539 bytes  09/10/2026 12:12:39
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/debitos-lib.php  27456 bytes  05/10/2026 18:33:21
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/dentista-horarios-lib.php  15222 bytes  13/10/2026 08:12:36
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/documentos-paciente.php  12421 bytes  28/09/2026 14:39:20
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/erros-tecnicos.php  2423 bytes  04/09/2026 19:32:25
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/escopo-lib.php  16959 bytes  11/10/2026 11:11:54
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/fase12.php  7783 bytes  12/10/2026 19:36:54
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/fase12-arquivos-lib.php  1360 bytes  05/09/2026 15:22:10
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/fase12-lib.php  82865 bytes  12/10/2026 19:36:53
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/fase12-loader.php  483 bytes  05/09/2026 15:23:30
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/fase12-schema.php  15917 bytes  12/10/2026 19:36:44
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/financeiro-lancamentos-lib.php  17405 bytes  13/10/2026 14:12:02
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/financeiro-relatorios-wrapper.php  89 bytes  03/09/2026 14:29:42
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/folha-fechamento.php  71207 bytes  09/10/2026 21:24:51
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/folha-salarial.php  32156 bytes  11/10/2026 11:24:48
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/fornecedores.php  8516 bytes  09/10/2026 21:02:45
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/homologacao-lib.php  14652 bytes  14/10/2026 08:41:17
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/importacao-financeira.php  23129 bytes  09/10/2026 15:52:47
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/jornada-paciente.php  25488 bytes  10/10/2026 14:10:58
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/lancamentos.php  61211 bytes  13/10/2026 10:00:56
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/legacy-state.php  60401 bytes  11/10/2026 22:26:28
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/limpeza-lancamentos.php  4084 bytes  21/09/2026 18:21:36
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/listas.php  11951 bytes  11/10/2026 11:13:23
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/login.php  1393 bytes  24/08/2026 14:50:08
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/logout.php  241 bytes  24/08/2026 14:50:10
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/manutencao-homologacao.php  21459 bytes  06/10/2026 18:17:37
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/paciente-observacoes.php  6982 bytes  24/08/2026 13:44:39
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/pacientes.php  7969 bytes  13/10/2026 18:07:53
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/pacientes-lib.homologacao-20260921.php  28640 bytes  21/09/2026 08:58:30
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/pacientes-lib.php  33415 bytes  14/10/2026 08:41:06
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/pagamento-dentistas.php  43374 bytes  13/10/2026 08:12:58
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/pendencias.php  9506 bytes  03/09/2026 16:12:24
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/pendencias-lib.php  30091 bytes  15/09/2026 14:32:34
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/planos.php  27013 bytes  02/10/2026 13:44:47
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/portal-dentista.php  6805 bytes  10/10/2026 11:51:03
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/previsoes-manuais-lib.php  13302 bytes  11/10/2026 21:39:59
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/recebimentos-financeiros.php  19848 bytes  09/10/2026 21:02:46
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/recepcao.php  37494 bytes  13/10/2026 08:43:06
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/recepcao-catalogos-lib.php  7038 bytes  19/09/2026 21:26:19
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/recepcao-permissoes-lib.php  3477 bytes  15/09/2026 15:17:26
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/relatorios.php  89 bytes  03/09/2026 14:30:21
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/relatorios-consolidados.php  29069 bytes  13/10/2026 14:12:05
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/session.php  611 bytes  24/08/2026 14:50:12
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/taxas-cartao.php  2694 bytes  02/10/2026 16:38:11
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/taxas-cartao-lib.php  18095 bytes  13/10/2026 10:00:31
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/tratamentos.php  16694 bytes  05/09/2026 11:58:34
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/tratamentos-lib.php  4999 bytes  24/08/2026 14:25:35
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/usuarios.php  3614 bytes  01/09/2026 19:14:45
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/api/virada-producao.php  15082 bytes  16/09/2026 17:31:29
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/app.bundle.20261005-calculos2.js  1707396 bytes  11/10/2026 20:31:06
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/app.html  12750 bytes  13/10/2026 18:32:23
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/apresentacao.js  40058 bytes  07/10/2026 17:35:51
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/auth-guard.js  11953 bytes  11/10/2026 22:26:51
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/avisos.js  7930 bytes  10/09/2026 20:31:45
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/cadastros-clinicos.js  12030 bytes  10/10/2026 22:40:21
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/cadastros-financeiros.js  16442 bytes  11/10/2026 11:07:32
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/caixa-turno.js  15099 bytes  10/10/2026 15:37:59
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/controles-financeiros.js  20279 bytes  08/10/2026 09:50:05
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/controles-financeiros.php  37950 bytes  02/10/2026 18:38:15
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/enhancements.js  93873 bytes  11/10/2026 11:07:27
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/fase10-integracoes.js  20650 bytes  10/10/2026 15:26:58
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/fase11-fechamento.js  43171 bytes  09/10/2026 21:03:04
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/fase12.css  27384 bytes  07/10/2026 12:01:05
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/fase12.js  104309 bytes  13/10/2026 10:02:31
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/fase12-pendencia-financeira.js  12170 bytes  07/10/2026 10:34:30
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/financeiro-calculos-20261005.js  7922 bytes  06/10/2026 18:18:05
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/financeiro-fase02-lib.php  24816 bytes  17/09/2026 15:52:30
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/financeiro-oficial-v2.js  24136 bytes  09/10/2026 21:03:02
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/financeiro-performance.js  3566 bytes  18/09/2026 03:03:19
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/fluxo-filtros.js  24988 bytes  13/10/2026 18:32:21
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/folha-fechamento.php  29548 bytes  04/09/2026 22:49:45
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/folha-salarial.js  36214 bytes  11/10/2026 11:24:52
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/gestao-usuarios.js  28254 bytes  10/10/2026 15:27:00
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/importacao-excel.js  21446 bytes  06/10/2026 09:22:58
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/index.html  353 bytes  24/08/2026 14:50:36
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/index.php  220 bytes  24/08/2026 14:50:02
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/lancamentos.php  24833 bytes  16/09/2026 23:44:47
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/layout-modernizacao.js  35988 bytes  09/10/2026 10:34:38
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/legacy-bridge.js  37518 bytes  11/10/2026 22:26:50
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/login.html  353 bytes  24/08/2026 14:50:38
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/manutencao-homologacao.html  10489 bytes  06/10/2026 08:10:32
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/mensagens-financeiro.js  1348 bytes  25/08/2026 11:51:18
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/menu-alinhamento.js  781 bytes  28/08/2026 11:42:14
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/modulos-interface.js  25059 bytes  11/10/2026 11:02:19
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/mydents-global-nav.js  57105 bytes  13/10/2026 14:08:41
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/novo-lancamento-modal.js  8837 bytes  10/10/2026 17:09:35
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/pagamento-dentistas.js  37165 bytes  12/10/2026 22:34:28
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/portal-dentista.php  6032 bytes  10/10/2026 18:30:00
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/previsoes-contas-pagar.js  113007 bytes  11/10/2026 21:33:45
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/previsoes-layout-unificado.js  3778 bytes  08/10/2026 10:00:37
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/producao-dentistas.html  938 bytes  12/10/2026 19:37:03
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/recebimentos-previstos.js  19065 bytes  09/10/2026 17:08:21
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/tailwind-financeiro-20260925.css  11392 bytes  25/09/2026 00:10:30
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/taxas-cartao.html  561 bytes  02/10/2026 16:43:25
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/taxas-cartao.js  18002 bytes  02/10/2026 16:42:07
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/unificacao.js  4330 bytes  30/09/2026 08:54:05
+ARQ  /home/[cPanel account redacted]/public_html/financeiro/virada-producao.js  6477 bytes  16/09/2026 17:35:45
+ARQ  /home/[cPanel account redacted]/public_html/index.html  298767 bytes  06/10/2026 12:17:47
+ARQ  /home/[cPanel account redacted]/public_html/logo-my-dents.png  103458 bytes  02/09/2026 14:36:21
+DIR  /home/[cPanel account redacted]/public_html/logos  4096 bytes  06/10/2026 11:39:51
+ARQ  /home/[cPanel account redacted]/public_html/logos/hapvida.png  3769 bytes  06/10/2026 11:35:30
+ARQ  /home/[cPanel account redacted]/public_html/logos/mydents.png  6627 bytes  06/10/2026 11:39:50
+ARQ  /home/[cPanel account redacted]/public_html/logos/odontoart.png  3884 bytes  06/10/2026 11:34:32
+ARQ  /home/[cPanel account redacted]/public_html/logos/odonto-system.png  3447 bytes  06/10/2026 11:29:37
+ARQ  /home/[cPanel account redacted]/public_html/logos/plano-clin.png  6140 bytes  06/10/2026 11:37:18
+ARQ  /home/[cPanel account redacted]/public_html/logos/unimed.png  3007 bytes  06/10/2026 11:34:58
+ARQ  /home/[cPanel account redacted]/public_html/mydents-card-1.webp  6536 bytes  06/10/2026 12:17:02
+ARQ  /home/[cPanel account redacted]/public_html/mydents-card-2.webp  7380 bytes  06/10/2026 12:17:04
+ARQ  /home/[cPanel account redacted]/public_html/mydents-card-3.webp  6176 bytes  06/10/2026 12:17:05
+ARQ  /home/[cPanel account redacted]/public_html/mydents-card-4.webp  6112 bytes  06/10/2026 12:17:06
+ARQ  /home/[cPanel account redacted]/public_html/mydents-card-5.webp  10588 bytes  06/10/2026 12:17:07
+ARQ  /home/[cPanel account redacted]/public_html/mydents-card-6.webp  9266 bytes  06/10/2026 12:17:08
+ARQ  /home/[cPanel account redacted]/public_html/mydents-card-7.webp  13482 bytes  06/10/2026 12:17:10
+ARQ  /home/[cPanel account redacted]/public_html/mydents-card-8.webp  9536 bytes  06/10/2026 12:17:11
+ARQ  /home/[cPanel account redacted]/public_html/mydents-facetas.webp  85502 bytes  06/10/2026 11:13:13
+ARQ  /home/[cPanel account redacted]/public_html/mydents-hero.webp  35450 bytes  06/10/2026 11:13:12
+ARQ  /home/[cPanel account redacted]/public_html/mydents-ortodontia.webp  55912 bytes  06/10/2026 11:13:12
+ARQ  /home/[cPanel account redacted]/public_html/mydents-proteses.webp  75028 bytes  06/10/2026 11:13:13
+DIR  /home/[cPanel account redacted]/public_html/notas-fiscais  4096 bytes  15/09/2026 11:55:45
+ARQ  /home/[cPanel account redacted]/public_html/notas-fiscais/app.js  8070 bytes  28/08/2026 09:41:11
+ARQ  /home/[cPanel account redacted]/public_html/notas-fiscais/index.html  5868 bytes  13/09/2026 09:32:58
+ARQ  /home/[cPanel account redacted]/public_html/notas-fiscais/index.php  221 bytes  02/09/2026 13:46:05
+ARQ  /home/[cPanel account redacted]/public_html/notas-fiscais/notas-fiscais-app.js  7557 bytes  27/08/2026 19:18:08
+ARQ  /home/[cPanel account redacted]/public_html/notas-fiscais/notas-fiscais-index.html  5726 bytes  28/08/2026 14:17:13
+DIR  /home/[cPanel account redacted]/public_html/pacientes  4096 bytes  22/09/2026 08:51:57
+ARQ  /home/[cPanel account redacted]/public_html/pacientes/index.php  600 bytes  22/09/2026 08:51:56
+ARQ  /home/[cPanel account redacted]/public_html/php.ini  619 bytes  07/10/2026 14:02:41
+DIR  /home/[cPanel account redacted]/public_html/producao-dentistas  4096 bytes  12/09/2026 00:18:43
+ARQ  /home/[cPanel account redacted]/public_html/producao-dentistas/index.php  106 bytes  12/09/2026 00:16:44
+DIR  /home/[cPanel account redacted]/public_html/recepcao  4096 bytes  13/10/2026 18:22:35
+ARQ  /home/[cPanel account redacted]/public_html/recepcao/experiencia-integrada.js  98042 bytes  12/10/2026 22:24:14
+ARQ  /home/[cPanel account redacted]/public_html/recepcao/index.html  638 bytes  29/09/2026 18:17:20
+ARQ  /home/[cPanel account redacted]/public_html/recepcao/index.php  219 bytes  24/08/2026 14:50:06
+ARQ  /home/[cPanel account redacted]/public_html/recepcao/melhorias-pacientes.js  9160 bytes  28/09/2026 14:40:34
+ARQ  /home/[cPanel account redacted]/public_html/recepcao/odontograma.js  9600 bytes  12/09/2026 11:49:02
+ARQ  /home/[cPanel account redacted]/public_html/recepcao/phase06-jornada.js  23115 bytes  13/09/2026 13:22:14
+ARQ  /home/[cPanel account redacted]/public_html/recepcao/phase07-comunicacoes.js  19835 bytes  11/09/2026 10:10:04
+ARQ  /home/[cPanel account redacted]/public_html/recepcao/recepcao.css  38690 bytes  02/10/2026 15:09:15
+ARQ  /home/[cPanel account redacted]/public_html/recepcao/recepcao-app.css  56203 bytes  25/09/2026 15:33:33
+ARQ  /home/[cPanel account redacted]/public_html/recepcao/recepcao-app.js  249261 bytes  13/10/2026 18:08:35
+DIR  /home/[cPanel account redacted]/public_html/relatorios  4096 bytes  13/10/2026 14:12:04
+ARQ  /home/[cPanel account redacted]/public_html/relatorios/api.php  72 bytes  03/09/2026 14:12:43
+ARQ  /home/[cPanel account redacted]/public_html/relatorios/controle-acesso.php  11590 bytes  15/09/2026 15:51:14
+ARQ  /home/[cPanel account redacted]/public_html/relatorios/credito-em-aberto.php  5438 bytes  16/09/2026 17:35:47
+ARQ  /home/[cPanel account redacted]/public_html/relatorios/dados.php  72 bytes  03/09/2026 14:27:27
+ARQ  /home/[cPanel account redacted]/public_html/relatorios/index.php  81 bytes  03/09/2026 14:16:30
+ARQ  /home/[cPanel account redacted]/public_html/relatorios/relatorios-api.php  78757 bytes  13/10/2026 14:12:03
+ARQ  /home/[cPanel account redacted]/public_html/relatorios/relatorios-index-modern.php  39215 bytes  11/10/2026 20:31:59
+ARQ  /home/[cPanel account redacted]/public_html/sistema-modern.css  15128 bytes  12/09/2026 12:00:52
+DIR  /home/[cPanel account redacted]/public_html/usuarios  4096 bytes  13/10/2026 18:08:44
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/api-experiencia.php  3442 bytes  03/09/2026 15:08:50
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/clinicas.php  11747 bytes  25/09/2026 19:19:46
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/clinicas-ui.js  12420 bytes  25/09/2026 19:21:57
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/controle-acesso.php  27686 bytes  10/10/2026 11:54:18
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/index.php  20586 bytes  10/10/2026 11:47:50
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/login.php  1746 bytes  10/10/2026 11:47:33
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/Logo My Dents.jpeg  89738 bytes  26/08/2026 16:52:45
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/logout.php  145 bytes  24/08/2026 14:49:44
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/perfil.php  6536 bytes  25/09/2026 18:44:40
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/portal-funcionario.html  7481 bytes  13/09/2026 09:32:58
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/recuperacao.php  3760 bytes  10/10/2026 11:49:00
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/sessao.php  698 bytes  10/10/2026 15:26:34
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/session.php  658 bytes  13/10/2026 18:08:43
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/trocar-senha.php  5068 bytes  10/10/2026 11:48:43
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/usuarios-experiencia-lib.php  12337 bytes  11/09/2026 18:01:04
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/usuarios-login.php  1524 bytes  03/09/2026 15:08:53
+ARQ  /home/[cPanel account redacted]/public_html/usuarios/usuarios-sessao.php  683 bytes  03/09/2026 15:09:00
 
 Caches que o app.html publicado pede (não são os de setembro):
 
@@ -305,7 +305,7 @@ Entrada
 
 Sessão
 
-- bootstrap.php (11/10) lê /home/mydentscom/private/config.php. Se o arquivo não existe, responde 500 "Configuração indisponível". Define MYDENTS_SESSAO_MAX_INATIVIDADE = 1800 e MYDENTS_SESSAO_MAX_ABSOLUTA = 43200. O comentário no arquivo diz que o INI da hospedagem usa 24 min e que a aplicação ajusta session.gc_maxlifetime para 1800 antes de session_start, sem alterar o cPanel. O .htaccess da raiz ainda declara session.gc_maxlifetime 1440. mydents_encerrar_sessao_segura limpa a sessão e o cookie (secure, httponly, samesite Lax).
+- bootstrap.php (11/10) lê /home/[cPanel account redacted]/private/config.php. Se o arquivo não existe, responde 500 "Configuração indisponível". Define MYDENTS_SESSAO_MAX_INATIVIDADE = 1800 e MYDENTS_SESSAO_MAX_ABSOLUTA = 43200. O comentário no arquivo diz que o INI da hospedagem usa 24 min e que a aplicação ajusta session.gc_maxlifetime para 1800 antes de session_start, sem alterar o cPanel. O .htaccess da raiz ainda declara session.gc_maxlifetime 1440. mydents_encerrar_sessao_segura limpa a sessão e o cookie (secure, httponly, samesite Lax).
 - requisicao_origem_confiavel e requisicao_proteger_origem estão em bootstrap.php. A proteção de origem vista é essa função, não um token no bootstrap.
 - usuarios/clinicas.php tem clinicas_validar_csrf, cuja primeira instrução lê HTTP_X_CSRF_TOKEN. O restante dessa função não foi transcrito. Confirmado no arquivo do ar: o cadastro de clínicas consulta esse cabeçalho. Não determinado: se a ausência do cabeçalho recusa a gravação.
 - db.php abre PDO com host, nome, usuário e senha vindos do config.php. Credencial não foi copiada. Se o config ainda contém o marcador COLOQUE_, responde 500 "Banco de dados ainda não configurado".
@@ -546,7 +546,7 @@ financeiro/api/previsoes-manuais-lib.php: pm_assinatura, pm_data, pm_vencimento,
 financeiro/previsoes-contas-pagar.js: 125 funções de tela (filtro, recorrência, anexo, histórico). Chama listas, fornecedores, controles-financeiros e anexos-financeiro. Não lista todas as 125 neste parágrafo; o corpo foi lido para nomes e URLs.
 
 financeiro/api/fornecedores.php: documento, usuário, categoria, registro, id no formato cad- + hex.
-financeiro/api/anexos-financeiro.php: tipo, registro, CREATE anexos_financeiros, diretório /home/mydentscom/anexos-financeiro, lê estado_financeiro_compartilhado, exige unidade do registro.
+financeiro/api/anexos-financeiro.php: tipo, registro, CREATE anexos_financeiros, diretório /home/[cPanel account redacted]/anexos-financeiro, lê estado_financeiro_compartilhado, exige unidade do registro.
 financeiro/anexos-lancamentos.js: chama /api/anexos-financeiro.php. afRemoverAnexo, load.
 
 financeiro/api/importacao-financeira.php: normaliza linha, assina token com hash_hmac e session_id (o segredo não foi copiado), lote até 2.000 linhas, origemTeste no payload. Inclui lançamentos, contas e financeiro-fase02-lib.
@@ -588,7 +588,7 @@ financeiro/fase12.js: chama /financeiro/api/fase12.php e arquivos-clinicos.php. 
 5.8 Folha
 
 financeiro/api/folha-salarial.php: estrutura, formatar funcionário, catálogos a partir do estado da recepção, vincular empresa com unidade operacional, listar, vencimento, previsão baixada, componentes, sincronizar fornecedor, dados e atualização de previsão (FOR UPDATE no estado financeiro), itens extras, salvar.
-financeiro/api/folha-fechamento.php (71.207 bytes): gera previsões de pagamento dentro de transação, CNPJ, ajuste, f11_origem, f11_controle_homologacao (se a origem não é 1, devolve nulo; o comentário diz que origem 1 já exige admin), editável só em rascunho ou conferido, faltas com divisor 30, competências, linhas, alertas, documentos em /home/mydentscom/anexos-folha.
+financeiro/api/folha-fechamento.php (71.207 bytes): gera previsões de pagamento dentro de transação, CNPJ, ajuste, f11_origem, f11_controle_homologacao (se a origem não é 1, devolve nulo; o comentário diz que origem 1 já exige admin), editável só em rascunho ou conferido, faltas com divisor 30, competências, linhas, alertas, documentos em /home/[cPanel account redacted]/anexos-folha.
 financeiro/folha-fechamento.php (29.548 bytes, 04/09): versão anterior, sem origem_teste e sem o controle de homologação. O JS fase11 chama a cópia da API.
 financeiro/folha-salarial.js e fase11-fechamento.js: telas correspondentes.
 
@@ -641,7 +641,7 @@ CSS (fase12.css, tailwind-financeiro-20260925.css, recepcao.css, recepcao-app.cs
 6. pacientes-lib.homologacao-20260921.php
 --------------------------------------------------------------------------------
 
-Caminho publicado: /home/mydentscom/public_html/financeiro/api/pacientes-lib.homologacao-20260921.php
+Caminho publicado: /home/[cPanel account redacted]/public_html/financeiro/api/pacientes-lib.homologacao-20260921.php
 Tamanho 28.640 bytes, data 21/09/2026 08:58:30. 554 linhas, 25 funções.
 
 Varredura de todo PHP, JS e HTML de public_html: a cadeia "pacientes-lib.homologacao" não aparece em nenhum arquivo, inclusive nele mesmo. Nenhum include ou require do código publicado o carrega. Não foi executado. Não foi pedido por URL.

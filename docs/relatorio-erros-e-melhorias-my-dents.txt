@@ -18,7 +18,7 @@ CONTAGEM USADA NESTE ARQUIVO
 1. RESUMO EXECUTIVO
 --------------------------------------------------------------------------------
 
-O sistema que o operador usa é o PHP de /home/mydentscom/public_html, no domínio mydents.com.br. Não é o protótipo deste workspace (docs/my-dents-erp, Supabase) e não é a cópia em codigo\, alinhada às publicações até 23/09/2026. O HTML servido em 11/10/2026 pede scripts de 05 a 11/10/2026. Publicar a pasta codigo\ por cima do live apagaria o que está em produção. Este é o bloqueio de maior impacto (F-01), antes de qualquer outro conserto.
+O sistema que o operador usa é o PHP de /home/[cPanel account redacted]/public_html, no domínio mydents.com.br. Não é o protótipo deste workspace (docs/my-dents-erp, Supabase) e não é a cópia em codigo\, alinhada às publicações até 23/09/2026. O HTML servido em 11/10/2026 pede scripts de 05 a 11/10/2026. Publicar a pasta codigo\ por cima do live apagaria o que está em produção. Este é o bloqueio de maior impacto (F-01), antes de qualquer outro conserto.
 
 Com sessão administrativa já presente na aba (a auditoria não digitou senha e não determinou o que criou o cookie), o fluxo de caixa de 01/10/2026 a 11/10/2026, unidade Todas, mostrou entradas de R$ 3,21 e uma receita na conta "QA — Banco Todas Unidades 09-10". A unidade Aldeota, no mesmo período, mostrou R$ 0,00 e nenhuma movimentação. O texto da DRE em /relatorios/ exibiu a mesma receita bruta de R$ 3,21. O combo de unidade desse relatório lista clínicas reais como "1", "2" e "3", enquanto unidades de teste aparecem com nome.
 
@@ -80,7 +80,7 @@ O plano de correção explicita o que não entra em implementação futura imedi
 
 Três arvores distintas, lidas em 11/10/2026. Não são o mesmo código.
 
-- https://mydents.com.br e PHP mais HTML/JS estaticos no cPanel. Document root /home/mydentscom/public_html. É o sistema que o operador usa.
+- https://mydents.com.br e PHP mais HTML/JS estaticos no cPanel. Document root /home/[cPanel account redacted]/public_html. É o sistema que o operador usa.
 - c:\Users\usuario\Projects\My_Dents\codigo\ é cópia local do PHP, alinhada às publicações anotadas até 23/09/2026. Está atrás do que o navegador serviu em 11/10/2026.
 - c:\Users\usuario\Projects\My_Dents\docs\my-dents-erp\ é protótipo HTML/JS com Supabase. O README.md descreve hospedagem em GitHub Pages. Não é o que responde em mydents.com.br. Corrigir o live a partir desta pasta não altera o cPanel. js\config.js contém URL e chave anon; os valores ficam de fora deste relatório.
 
@@ -88,20 +88,20 @@ Contrato de comportamento lido: MANUAL_FUNCIONAL_MY_DENTS.md v6.1, de 14/09/2026
 
 Hospedagem, da análise de cPanel de 11/10, não revalidada no painel pela auditoria funcional:
 
-- Conta mydentscom. Domínio mydents.com.br. Home /home/mydentscom. Document root /home/mydentscom/public_html.
+- Conta [cPanel account redacted]. Domínio mydents.com.br. Home /home/[cPanel account redacted]. Document root /home/[cPanel account redacted]/public_html.
 - Não é Laravel, WordPress nem Node. Não há artisan, composer.json, vendor, package.json nem node_modules. E PHP próprio mais HTML/JS estatico.
 - PHP do domínio: 8.2 FPM (ea-php82). Padrão do sistema no painel: PHP 7.2 (ea-php72), marcado como obsoleto. O seletor CloudLinux estava em native (7.2) com 0 dominios. O site e do MultiPHP, não do seletor.
 - Pool FPM descrito: pm_max_children=5, pm_process_idle_timeout=10, pm_max_requests=20. Handler no .htaccess: AddHandler application/x-httpd-ea-php82.
 - Overrides iguais em public_html/php.ini, .user.ini e no bloco gerado do .htaccess: display_errors=Off, log_errors=On, error_log=error_log, max_execution_time=30, max_input_time=60, max_input_vars=1000, memory_limit=256M, post_max_size=32M, upload_max_filesize=16M, session.gc_maxlifetime=1440, zlib.output_compression=Off.
 - Banco único no painel: MySQL financeiro, 3,22 MB, usuário mydents. Não há segundo banco. phpMyAdmin não foi aberto na auditoria funcional. Quantidade de linhas por tabela: não determinada.
-- Config da aplicação: /home/mydentscom/private/config.php, 228 bytes, fora do docroot. Pasta private em 0700. Chaves: db_host, db_name, db_user, db_pass, db_charset, session_name. Não existe .env em public_html, public_html/financeiro, /home/mydentscom nem /home/mydentscom/private. A senha do banco não foi copiada.
+- Config da aplicação: /home/[cPanel account redacted]/private/config.php, 228 bytes, fora do docroot. Pasta private em 0700. Chaves: db_host, db_name, db_user, db_pass, db_charset, session_name. Não existe .env em public_html, public_html/financeiro, /home/[cPanel account redacted] nem /home/[cPanel account redacted]/private. A senha do banco não foi copiada.
 - O código local confirma o desenho de conexão, e isso é o repositório, não uma leitura nova do config.php no servidor: codigo\financeiro\api\db.php lê private/config.php três níveis acima do diretório api e abre PDO MySQL com prepared statements, desligando emulate prepares.
 - Cron de aplicação: a tela Trabalhos Cron da análise anterior diz nenhum trabalho. Não revalidado.
 - SSL na análise anterior: Let's Encrypt, CN mydents.com.br mais www, válido de 02/09/2026 a 01/12/2026. AutoSSL em 11/10 com aviso unmanaged nos 10 nomes. Force HTTPS do domínio desligado; o .htaccess faz 301. O navegador da auditoria abriu https://. Não revalidado no painel.
 - Disco na análise anterior: 1.184 MB de 10.240 MB. public_html usa 23,91 MB. Peso fora do site: arquivos soltos no home 755,93 MB e backups_arquivados/ 274,36 MB. Não revalidado.
 - Backup da conta na ferramenta Backup: pontos até 09/10/2026. Tar manual de 10/10 dentro do home. Não revalidado.
 - Uploads no código local: anexos-financeiro.php, arquivos-clinicos.php, documentos-paciente.php. A análise de cPanel cita dados_clinicos/ (~1,62 MB) e anexos-folha/ (~0,12 MB) fora do document root. Arquivo clínico não foi aberto.
-- Git no servidor, não revalidado: repositório "My Dents live source" em /home/mydentscom/private/mydents-live-source. Sem branch, sem URL de clone, deployable=0. A pasta visível tem poucos PHP, não a árvore do site. Serve como cópia, não como publicação.
+- Git no servidor, não revalidado: repositório "My Dents live source" em /home/[cPanel account redacted]/private/mydents-live-source. Sem branch, sem URL de clone, deployable=0. A pasta visível tem poucos PHP, não a árvore do site. Serve como cópia, não como publicação.
 - No home, fora do docroot, a análise cita chat_config.php, chat_conhecimento_regras.md e chat_senha.hash (0600). O hash não foi lido. Este relatório não cópia o conteúdo.
 - Imunify360 v8.14.1, na análise anterior: aba Maliciosos sem resultado. Bloqueador de IP: nenhum IP bloqueado. Uso de recursos em 11/10: sem problemas nas últimas 24 horas; memoria fisica cerca de 6 a 10 MB de 1 GB; falhas de LVE: 0. Não revalidado.
 - .htaccess do docroot, resumo da análise anterior: Options -Indexes; DirectoryIndex index.php index.html; HTTPS forcado; /_docs proibido; producao-dentistas redireciona 301 para /financeiro/producao-dentistas.html; bloqueio de backup-*, error_log, .jsx, .map, .zip, .sql, .bak e nomes config / .env; headers HSTS, nosniff, SAMEORIGIN, Referrer-Policy, Permissions-Policy e CSP; HTML com Cache-Control no-store.
@@ -292,7 +292,7 @@ Alto naquela análise:
 
 - R-01. Uso do disco e arquivos mortos no home.
 - R-02. SSL: certificado válido até 01/12/2026 e AutoSSL com unmanaged em 11/10.
-- R-03. 2FA da conta cPanel desligado.
+- R-03. Revisar configuração de 2FA da conta cPanel (estado omitido deste relatório público).
 - R-04. Acesso remoto MySQL com quatro hosts.
 - Rotina Imunify360, lista de maliciosos vazia naquela leitura. Não é falha confirmada. Fica em sugestão.
 
@@ -310,14 +310,14 @@ Classificacao: infraestrutura
 Status: confirmado
 Impacto: alto, antes de qualquer outro conserto. Qualquer correção feita em codigo\ e publicada por cima substitui o trabalho de outubro que não está no Git. O plano resume o efeito: corrigir o arquivo de setembro e subir por cima do live destrói o que está em produção. A primeira entrega é cópia do live para o Git, não um patch.
 Onde aparece:
-- Site: https://mydents.com.br, document root /home/mydentscom/public_html
+- Site: https://mydents.com.br, document root /home/[cPanel account redacted]/public_html
 - Arquivo live: /financeiro/app.html (12.727 bytes) contra codigo\ (5.526 bytes)
 - Bundle live: app.bundle.20261005-calculos2.js?v=20261011-cadastros7 (1.708.351 bytes, HTTP 200), ausente em codigo\
 - Bundle do repositório: app.bundle.cloud-refresh-20260921.js, HTTP 404 no ar
 - Scripts de outubro citados no app.html live e ausentes em codigo\, com HTTP 200: mydents-global-nav.js, cadastros-financeiros.js, fluxo-filtros.js, cadastros-clinicos.js, e os demais tamanhos listados no contexto
 - PHP no ar e ausentes em codigo\: recuperacao.php, trocar-senha.php, portal-dentista.php
 - Documentação: PUBLICACOES.md para em 23/09/2026 (?v=20260923-boot1). Regra D-29 do manual: a alteração nasce no Git e o cPanel não é editado direto; divergindo, capturar o live para o repositório antes de alterar
-- Complemento não revalidado: o Git do cPanel em /home/mydentscom/private/mydents-live-source não é a árvore do site (deployable=0, poucos PHP)
+- Complemento não revalidado: o Git do cPanel em /home/[cPanel account redacted]/private/mydents-live-source não é a árvore do site (deployable=0, poucos PHP)
 O que foi observado: o HTML servido em 11/10 usa versões 20261005 a 20261011. Tamanhos de index.html, app.html, fase12.js, auth-guard.js, recepcao-app.js e producao-dentistas.html divergem do repositório. portal-funcionario.html tem o mesmo tamanho (7.481). O bundle antigo do repositório responde 404 no ar. Cache de amostra no HTML live: fase12.js?v=20261009-comissoes-forma1, auth-guard.js?v=20261010-access-routes4, recepcao-app.js?v=20261010-anamnese-historico1, previsoes-contas-pagar.js?v=20261011-cadastros9.
 O que era esperado: o manual manda corrigir o código quando a tela divergir, salvo decisão registrada, e a regra D-29 manda o live estar no Git antes de alterar. Não há, nas fontes, uma decisão posterior a 23/09 que autorize o live ficar a frente do repositório.
 Passos para reproduzir:
@@ -668,7 +668,7 @@ Dependências de outras correções: F-01 para o bootstrap de outubro. O lado IN
 
 Fonte única: analise-cpanel-producao.md, 11 de outubro de 2026, inventário somente leitura. Canal descrito naquela análise: navegador do Cursor, aba já logada no cPanel Secrel, tema Jupiter, cPanel 138.0.15. Nenhuma senha foi digitada. Nada foi salvo, criado, excluido ou editado. A auditoria funcional leu esse texto e não reabriu o painel. Status de todos os itens desta seção: não revalidado. Não tratar como defeito novo descoberto na passagem funcional.
 
-A auditoria diz que disco, tar dentro do home, MySQL remoto, AutoSSL unmanaged, 2FA desligado e cron vazio continuam hipóteses operacionais daquele relatório, não achados novos. Este arquivo guarda o fato documentado e a marca de não revalidado. Não reclassifica esses fatos como confirmados em 11/10 na segunda passagem.
+A auditoria diz que disco, tar dentro do home, MySQL remoto, AutoSSL unmanaged, revisão de 2FA e cron vazio continuam hipóteses operacionais daquele relatório, não achados novos. Este arquivo guarda o fato documentado e a marca de não revalidado. Não reclassifica esses fatos como confirmados em 11/10 na segunda passagem.
 
 ID: R-01
 Título: Arquivos mortos no home ocupam a maior parte da cota
@@ -676,8 +676,8 @@ Classificacao: infraestrutura
 Status: não revalidado
 Impacto: a cota descrita e 1.184 MB de 10.240 MB (cerca de 11,6%). O site em public_html usa 23,91 MB. O próximo backup da conta pode arquivar backup dentro de backup, porque o tar de 10/10 está dentro do home. Não houve falta de disco descrita.
 Onde aparece:
-- Cota da conta mydentscom
-- Arquivos soltos no home: 755,93 MB. .cagefs.zip 371,27 MB (7 out, permissão 0644) e backup-10.10.2026_18-55-41_mydentscom.tar.gz 384,42 MB (10 out, permissão 0600)
+- Cota da conta [cPanel account redacted]
+- Arquivos soltos no home: 755,93 MB. .cagefs.zip 371,27 MB (7 out, permissão 0644) e backup-10.10.2026_18-55-41_[cPanel account redacted].tar.gz 384,42 MB (10 out, permissão 0600)
 - backups_arquivados/: 274,36 MB. Dezenas de pastas de deploy e três tarballs (cerca de 29,6, 111,7 e 114,1 MB, de 24 e 29 set)
 - Subdiretórios ocultos: 64,63 MB, quase tudo em .trash (61,98 MB)
 - private/: 51,79 MB, zips e .bak de homologação, mais config.php
@@ -685,7 +685,7 @@ Onde aparece:
 - Backups da ferramenta Backup, fora do home: 2026-10-09, 10-07, 10-02, 09-30, 09-28, 09-25, 09-23. O mais recente automático citado e 9 de outubro
 O que foi observado: na análise de 11/10, o peso estava em arquivo morto no home, não no site.
 O que era esperado: não determinado. A análise recomenda tirar o tar e o .cagefs.zip do home, e a lixeira depois de olhar, porque o Backup da conta já guarda pontos até 9 de outubro fora do home. Não é regra do manual v6.1.
-Passos para reproduzir: não reexecutados. A fonte usou Uso do disco e o Gerenciador de arquivos em /home/mydentscom. Capturas citadas: 05-file-manager-home.webp, 19-disk-usage.webp, 17-backup.webp, na pasta media/cpanel-analise/.
+Passos para reproduzir: não reexecutados. A fonte usou Uso do disco e o Gerenciador de arquivos em /home/[cPanel account redacted]. Capturas citadas: 05-file-manager-home.webp, 19-disk-usage.webp, 17-backup.webp, na pasta media/cpanel-analise/.
 Evidência: tabelas de disco da análise de cPanel. Não revalidadas.
 Sugestão técnica de correção: revalidar no painel em leitura. Se os tamanhos continuarem, mover ou remover o tar e o .cagefs.zip do home só depois de conferir que o Backup da conta tem ponto utilizável, e olhar a lixeira antes. File and Directory Restoration existe no painel para restauração pontual. Não apagar backup nesta fase. Não fazer isso no mesmo deploy do PHP.
 Risco de alterar produção: apagar o único tar de 10/10 sem um backup de conta mais novo reduz o ponto de retorno. O automático citado para em 09/10. Inodes descritos: 1.750, sem limite aplicado. Banco 3,22 MB de cerca de 8,85 GB. Banda do mês: 565,25 MB, ilimitada.
@@ -715,18 +715,18 @@ Como validar depois: nova leitura de SSL/TLS com data de validade e sem erro unm
 Dependências de outras correções: nenhuma correção de código. Não misturar com F-01.
 
 ID: R-03
-Título: 2FA da conta cPanel desligado
+Título: Revisar configuração de 2FA da conta cPanel
 Classificacao: seguranca
 Status: não revalidado
-Impacto: a conta do painel, naquela leitura, não exigia segundo fator. A tela de senha não foi aberta. Não é o login do My Dents (F-06). Não há evidência, nas fontes, de invasão.
-Onde aparece: API de dois fatores da conta cPanel, is_enabled=0. O recurso twofactorauth estava ligado. Tela Senha e Segurança não foi aberta. Ferramenta: Senha e Segurança, no grupo Preferencias.
-O que foi observado: estado lido pela API, não pela tela.
-O que era esperado: não determinado. A análise recomenda ligar 2FA como passo que o próprio painel oferece.
+Impacto: a análise anterior apontou a necessidade de revisar o segundo fator da conta do painel. O estado atual não é confirmado neste relatório público. Não é o login do My Dents (F-06). Não há evidência, nas fontes, de invasão.
+Onde aparece: ferramenta Senha e Segurança / API de dois fatores da conta cPanel (detalhes de estado redigidos).
+O que foi observado: leitura anterior via API; detalhes omitidos deste documento público.
+O que era esperado: não determinado. Recomenda-se confirmar 2FA com o operador fora do Git público.
 Passos para reproduzir: não reexecutados. Não abrir a tela de senha para copiar segredo neste relatório.
-Evidência: seção de lacuna e item 3 da prioridade alta da análise de cPanel.
-Sugestão técnica de correção: revalidar em leitura. Se continuar desligado, ligar 2FA na conta do painel e uma decisão do operador, fora do deploy de PHP. Não criar token de API. A análise diz que Manage API Tokens existe e que token não foi criado.
+Evidência: seção de lacuna e item 3 da prioridade alta da análise de cPanel (estado redigido).
+Sugestão técnica de correção: revalidar em leitura privada. Se o segundo fator não estiver ativo, ligá-lo por decisão do operador, fora do deploy de PHP. Não criar token de API. A análise diz que Manage API Tokens existe e que token não foi criado.
 Risco de alterar produção: ligar 2FA sem guardar o método de recuperação pode trancar o operador fora do cPanel. Não é risco para o site PHP em si.
-Como validar depois: nova leitura da API ou da tela, com is_enabled diferente de 0, sem copiar segredo para Git.
+Como validar depois: nova leitura privada da API ou da tela, sem copiar segredo para Git.
 Dependências de outras correções: nenhuma. Independente de F-06.
 
 ID: R-04
@@ -735,16 +735,16 @@ Classificacao: seguranca
 Status: não revalidado
 Impacto: quatro endereços podem conectar de fora, segundo a ferramenta Remote Database Access. Não há curinga %. O app fala com o banco em localhost via config.php. Não foi descrito vazamento de dado por esses hosts. O usuário do banco e mydents, privilegiado, banco único financeiro.
 Onde aparece: ferramenta Remote Database Access, sem comentário nos hosts.
-- 10.31.45.250
-- 10.31.45.251 (a análise identifica como IP interno do vhost)
-- 200.194.96.105 (a análise identifica como IP público compartilhado)
-- 201.49.40.250
-O que foi observado: a lista acima, em 11/10, sem comentário. phpMyAdmin não foi aberto na auditoria funcional.
-O que era esperado: não determinado. A análise pede confirmar com a Secrel quais IPs são o próprio servidor antes de remover qualquer um, e não apagar 10.31.45.251 nem 200.194.96.105 no escuro.
+- [IP redacted]
+- [IP redacted] (identificado na análise como IP interno do vhost)
+- [IP redacted] (identificado na análise como IP público compartilhado)
+- [IP redacted]
+O que foi observado: quatro hosts listados em 11/10 (endereços redigidos neste relatório público), sem comentário. phpMyAdmin não foi aberto na auditoria funcional.
+O que era esperado: não determinado. A análise pede confirmar com a hospedagem quais IPs são o próprio servidor antes de remover qualquer um, e não apagar os IPs do servidor no escuro.
 Passos para reproduzir: não reexecutados. Capturas citadas: 20-remote-mysql.webp e 21-remote-mysql-hosts.webp.
 Evidência: seção de banco da análise de cPanel e tabela da arquitetura.
 Sugestão técnica de correção: revalidar a lista em leitura. Não remover host nesta leva. Não abrir acesso remoto além do que a hospedagem confirmar.
-Risco de alterar produção: remover o IP do próprio servidor pode impedir o PHP de falar com o MySQL, se algum caminho não for localhost. A fonte diz que o app usa localhost, e mesmo assim pede para não apagar aqueles dois endereços no escuro.
+Risco de alterar produção: remover o IP do próprio servidor pode impedir o PHP de falar com o MySQL, se algum caminho não for localhost. A fonte diz que o app usa localhost, e mesmo assim pede para não apagar os IPs do servidor no escuro.
 Como validar depois: lista relida, cada host com dono conhecido, sem curinga, e o site ainda abre o fluxo com sessão.
 Dependências de outras correções: nenhuma de código. A leitura do lançamento de R$ 3,21 (F-02) e da contagem de pacientes (F-05), se for feita por phpMyAdmin, usa o banco local. Não exige ampliar esta lista.
 
@@ -753,7 +753,7 @@ Título: Nenhum trabalho cron de aplicação na tela do painel
 Classificacao: infraestrutura
 Status: não revalidado
 Impacto: se alguma rotina de backup, limpeza ou fechamento deveria rodar sozinha, ela não estava agendada naquela leitura. Não há, nas fontes, uma rotina nomeada que esteja faltando. O manual de handoff citado pela auditoria diz que não há cron de aplicação na análise anterior. Não dá para desfazer migração por cron.
-Onde aparece: tela Trabalhos Cron, "Nenhum trabalho cron". O e-mail de saída do cron apontava para a conta mydentscom. O módulo UAPI Cpanel::API::Cron não existe neste host. A API2 listcron devolveu count 1 e fetchcron veio vazio. A tela do painel e a fonte usada: não há job cadastrado.
+Onde aparece: tela Trabalhos Cron, "Nenhum trabalho cron". O e-mail de saída do cron apontava para a conta [cPanel account redacted]. O módulo UAPI Cpanel::API::Cron não existe neste host. A API2 listcron devolveu count 1 e fetchcron veio vazio. A tela do painel e a fonte usada: não há job cadastrado.
 O que foi observado: tela vazia. A divergência count 1 contra fetchcron vazio ficou registrada; a conclusão da fonte e a tela.
 O que era esperado: não determinado. Não há requisito, nestas fontes, de um cron específico do My Dents.
 Passos para reproduzir: não reexecutados. Captura citada: 09-cron.webp.
